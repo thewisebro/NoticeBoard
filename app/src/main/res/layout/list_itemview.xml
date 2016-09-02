@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/recycler_list_item"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/background">
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:id="@+id/start_space"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:id="@+id/recycler_list_category"
+        android:layout_marginLeft="10dp"
+        android:textColor="#1e1e1e"
+        android:layout_below="@id/start_space"/>
+
+    <TextView
+        android:id="@+id/recycler_list_subject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_below="@id/recycler_list_category"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="3dp"
+        android:textColor="#161616"/>
+
+    <TextView
+        android:id="@+id/recycler_list_datetime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12dp"
+        android:layout_above="@id/recycler_list_subject"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:textColor="#707070"/>
+
+    <ToggleButton
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/star_unstar"
+        android:id="@+id/star_button"
+        android:textOff=""
+        android:textOn=""
+        android:layout_below="@+id/recycler_list_datetime"
+        android:layout_alignParentRight="true"
+        android:layout_margin="10dp" />
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:layout_below="@id/recycler_list_subject"/>
+
+</RelativeLayout>
