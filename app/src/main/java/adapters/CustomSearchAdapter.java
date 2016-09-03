@@ -1,7 +1,6 @@
 package adapters;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,11 +42,11 @@ public class CustomSearchAdapter extends ArrayAdapter<NoticeInfo> {
         LayoutInflater inflater = (LayoutInflater)
                 context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View searchlist_view = inflater.inflate(layout, null);
-        TextView category = (TextView) searchlist_view.findViewById(R.id.recycler_list_category);
+        TextView category = (TextView) searchlist_view.findViewById(R.id.category);
         category.setText(noticeInfoArrayList.get(position).getCategory());
-        TextView subject = (TextView) searchlist_view.findViewById(R.id.recycler_list_subject);
+        TextView subject = (TextView) searchlist_view.findViewById(R.id.subject);
         subject.setText(noticeInfoArrayList.get(position).getSubject());
-        TextView datetime = (TextView) searchlist_view.findViewById(R.id.recycler_list_datetime);
+        TextView datetime = (TextView) searchlist_view.findViewById(R.id.datetime);
         String[] date_time = noticeInfoArrayList.get(position).getDatetime_modified().split("T");
 
         try {

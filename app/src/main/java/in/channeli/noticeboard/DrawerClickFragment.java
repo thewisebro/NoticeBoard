@@ -3,7 +3,6 @@ package in.channeli.noticeboard;
 import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -15,21 +14,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import adapters.CustomFragmentAdapter;
 import connections.ConnectTaskHttpGet;
-import connections.ConnectTaskHttpPost;
 import connections.Connections;
-import objects.NoticeInfo;
 import objects.NoticeObject;
 import utilities.Parsing;
 
@@ -55,8 +49,7 @@ public class DrawerClickFragment extends Fragment {
     @TargetApi(21)
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState){
-        View view = null;
-        view = inflater.inflate(R.layout.list_view, container, false);
+        View view = inflater.inflate(R.layout.list_view, container, false);
         Bundle args = getArguments();
         category = args.getString("category","All");
         category = category.replaceAll(" ","%20");
@@ -64,7 +57,7 @@ public class DrawerClickFragment extends Fragment {
         httpPost = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+noticetype+"/"+category+"/All/0/20/0");
 
         SharedPreferences settings = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        SharedPreferences.Editor editor = settings.edit();
+        //SharedPreferences.Editor editor = settings.edit();
         csrftoken = settings.getString("csrftoken","");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
 
@@ -87,13 +80,14 @@ public class DrawerClickFragment extends Fragment {
         parsing = new Parsing();
         noticelist = parsing.parseNotices(content_first_time_notice);
 
-        final ListView lv = (ListView) view.findViewById(R.id.my_list_view);
-        listView = lv;
-        customFragmentAdapter = new CustomFragmentAdapter(this.getActivity(),
+        listView = (ListView) view.findViewById(R.id.my_list_view);
+        customFragmentAdapter = new CustomFragmentAdapter(getActivity().getApplicationContext(),
                 R.layout.list_itemview,noticelist);
-        lv.setAdapter(customFragmentAdapter);
-        lv.setOnItemClickListener(new ListViewItemClickListener());
-        lv.setOnScrollListener(new ListViewScrollListener(2) {
+        customFragmentAdapter.addAll(noticelist);
+        listView.setAdapter(customFragmentAdapter);
+        //listView.setOnItemClickListener(new ListViewItemClickListener());
+
+        listView.setOnScrollListener(new ListViewScrollListener(2) {
             @Override
             public void loadMore(int page, int totalItemsCount) {
                 String result = null;
@@ -131,18 +125,20 @@ public class DrawerClickFragment extends Fragment {
         return view;
     }
 
-    void setRead(int position){
+    /*void setRead(int position,View view){
+        view.setBackgroundDrawable(getResources().getDrawable(R.drawable.read_notice_bg));
         noticelist.get(position).setRead(true);
         HttpPost post=new HttpPost(MainActivity.UrlOfNotice+"read_star_notice/"+
                     noticelist.get(position).getId()+"/add_read/");
         post.setHeader("Cookie","csrftoken="+csrftoken);
         post.setHeader("Content-Type", "application/x-www-form-urlencoded");
         post.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+        post.setHeader("CHANNELI_DEVICE","android");
         post.setHeader("X-CSRFToken",csrftoken);
         ConnectTaskHttpPost readTask= (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(post);
         String result="";
         try {
-            result= readTask.get();
+            result=readTask.get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -172,8 +168,8 @@ public class DrawerClickFragment extends Fragment {
 
             }
             if(!result.equals("")) {
-                if(noticelist.get(position).getRead()==false)
-                    setRead(position);
+                if(!noticelist.get(position).getRead())
+                    setRead(position,view);
                 NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
                 Intent intent = new Intent(getActivity(), Notice.class);
                 intent.putExtra("noticeinfo", noticeInfo.getContent());
@@ -185,7 +181,7 @@ public class DrawerClickFragment extends Fragment {
                 toast.show();
             }
         }
-    }
+    }*/
 
     private abstract class ListViewScrollListener implements ListView.OnScrollListener{
 

@@ -10,4 +10,5 @@
         <item>new</item>
         <item>old</item>
     </string-array>
+    <string name="title_activity_login">Login</string>
 </resources>

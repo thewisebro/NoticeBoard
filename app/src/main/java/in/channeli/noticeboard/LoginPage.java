@@ -167,7 +167,7 @@ public class LoginPage extends Activity{
                         "Sorry! Could not login! Try again later!", Toast.LENGTH_SHORT);
                 toast.show();
             }
-            //finish();
+            finish();
             //TODO close the app
         }
     }

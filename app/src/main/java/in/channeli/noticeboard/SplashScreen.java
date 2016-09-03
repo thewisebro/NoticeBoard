@@ -40,43 +40,6 @@ public class SplashScreen  extends Activity{
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        // This method will be executed once the timer is over
-                        // Start your app main activity
-                        /*
-                        try {
-                            if(isOnline()) {
-                                httpGet = new HttpGet(MainActivity.UrlOfPeopleSearch+"return_details/");
-                                httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
-                                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                                httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
-                                result = new ConnectTaskHttpGet().execute(httpGet).get();
-                                JSONObject json = new JSONObject(result);
-                                msg = json.getString("msg");
-                                if (msg.equals("NO")){
-                                    Intent intent = new Intent(SplashScreen.this, MainActivity.class);
-                                    startActivity(intent);
-                                    finish();
-                                }
-                                else{
-                                    Toast toast = Toast.makeText(getApplicationContext(),
-                                            "Sorry! Could not login. Try again later!", Toast.LENGTH_SHORT);
-                                    toast.show();
-                                    finish();
-                                }
-                            }
-                            else{
-                                Toast toast = Toast.makeText(getApplicationContext(),
-                                        "Sorry! Could not connect. Check the internet connection!", Toast.LENGTH_SHORT);
-                                toast.show();
-                                finish();
-                            }
-                        }
-                        catch(Exception e){
-                            Log.e("log_tag", e.toString());
-                            Intent intent = new Intent(getApplication(), LoginPage.class);
-                            startActivity(intent);
-                            finish();
-                        }*/
                         Intent intent = new Intent(SplashScreen.this, MainActivity.class);
                         startActivity(intent);
                         finish();
@@ -84,7 +47,7 @@ public class SplashScreen  extends Activity{
                 }, SPLASH_TIME_OUT);
         }
         else {
-            Intent intent = new Intent(this, LoginPage.class);
+            Intent intent = new Intent(this, Login.class);
             startActivity(intent);
             finish();
         }

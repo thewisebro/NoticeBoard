@@ -1,49 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/splash"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/promo_graphic">
-    <RelativeLayout
-        android:id="@+id/login"
+    android:id="@+id/login_container">
+    <LinearLayout
+        android:id="@+id/splash"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical" >
-        <TextView
-            android:id="@+id/textlogin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="One Time Channel i login"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="15dp"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="120dp"/>
-        <EditText
-            android:id="@+id/username"
+        android:background="@drawable/promo_graphic">
+        <RelativeLayout
+            android:id="@+id/login"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Username"
-            android:layout_marginBottom="10dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:layout_below="@id/textlogin"/>
-        <EditText
-            android:id="@+id/password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:layout_below="@id/username"
-            android:layout_marginBottom="10dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp" />
-        <Button
-            android:id="@+id/submit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Login"
-            android:layout_below="@id/password"
-            android:layout_centerHorizontal="true"/>
-    </RelativeLayout>
-</LinearLayout>
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+            <TextView
+                android:id="@+id/textlogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="One Time Channel i login"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="15dp"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="120dp"/>
+            <EditText
+                android:id="@+id/username"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Username"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_below="@id/textlogin"/>
+            <EditText
+                android:id="@+id/password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:layout_below="@id/username"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp" />
+            <Button
+                android:id="@+id/submit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Login"
+                android:onClick="login"
+                android:layout_below="@id/password"
+                android:layout_centerHorizontal="true"/>
+        </RelativeLayout>
+    </LinearLayout>
+</RelativeLayout>
