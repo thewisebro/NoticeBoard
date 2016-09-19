@@ -1,8 +1,5 @@
 package objects;
 
-/*
-Created by manohar on 4/2/15.
- */
 public class NoticeObject {
     int id;
     String subject;
@@ -19,6 +16,7 @@ public class NoticeObject {
     public String getDatetime_modified(){return this.datetime_modified;}
     public boolean getStar(){ return this.star; }
     public boolean getRead(){ return this.read;}
+    public String getMain_category(){return this.main_category;}
 
     public void setId(int id){this.id = id;}
     public void setSubject(String subject){this.subject = subject;}

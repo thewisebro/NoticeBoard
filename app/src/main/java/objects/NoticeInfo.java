@@ -19,6 +19,8 @@ public class NoticeInfo {
     public String getCategory(){return category;}
     public String getDatetime_modified(){return datetime_modified;}
     public String getContent(){return content;}
+    public String getReference(){ return reference;}
+    public int getId(){ return id;}
 
     public void setId(int id){this.id = id;}
     public void setReference(String reference){this.reference = reference;}

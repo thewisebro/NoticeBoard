@@ -125,64 +125,6 @@ public class DrawerClickFragment extends Fragment {
         return view;
     }
 
-    /*void setRead(int position,View view){
-        view.setBackgroundDrawable(getResources().getDrawable(R.drawable.read_notice_bg));
-        noticelist.get(position).setRead(true);
-        HttpPost post=new HttpPost(MainActivity.UrlOfNotice+"read_star_notice/"+
-                    noticelist.get(position).getId()+"/add_read/");
-        post.setHeader("Cookie","csrftoken="+csrftoken);
-        post.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        post.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-        post.setHeader("CHANNELI_DEVICE","android");
-        post.setHeader("X-CSRFToken",csrftoken);
-        ConnectTaskHttpPost readTask= (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(post);
-        String result="";
-        try {
-            result=readTask.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private class ListViewItemClickListener implements ListView.OnItemClickListener{
-
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            int selectedId=noticelist.get(position).getId();
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(noticeurl+selectedId);
-            String url = stringBuilder.toString();
-            httpPost = new HttpGet(url);
-            httpPost.setHeader("Cookie","csrftoken="+csrftoken);
-            httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpPost.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-            httpPost.setHeader("X-CSRFToken",csrftoken);
-            String result = null;
-            try {
-                result = new ConnectTaskHttpGet(getActivity()).execute(httpPost).get();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-
-            }
-            if(!result.equals("")) {
-                if(!noticelist.get(position).getRead())
-                    setRead(position,view);
-                NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
-                Intent intent = new Intent(getActivity(), Notice.class);
-                intent.putExtra("noticeinfo", noticeInfo.getContent());
-                startActivity(intent);
-            }
-            else {
-                Toast toast = Toast.makeText(getActivity(),
-                        "Cannot connect to internet", Toast.LENGTH_SHORT);
-                toast.show();
-            }
-        }
-    }*/
-
     private abstract class ListViewScrollListener implements ListView.OnScrollListener{
 
         private int bufferItemCount = 2;
