@@ -15,6 +15,7 @@ import android.widget.ToggleButton;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -148,42 +149,69 @@ public class CustomFragmentAdapter extends ArrayAdapter<NoticeObject> {
         row.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.append(noticeurl + notice.getId());
-                String url = stringBuilder.toString();
-                HttpGet httpGet= new HttpGet(url);
-                httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                httpGet.setHeader("X-CSRFToken", csrftoken);
-                String result = "";
-                try {
-                    result = new ConnectTaskHttpGet().execute(httpGet).get();
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-
-                }
-                if (!result.equals("")) {
-                    if (!notice.getRead()) {
-                        finalRow.setBackgroundDrawable(getContext().getResources().getDrawable(R.drawable.read_notice_bg));
-                        notice.setRead(true);
-                        setRead(notice.getId());
-                    }
-                    NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
+                SQLHelper db=new SQLHelper(context);
+                if(db.checkNoticeContent(notice.getId())){
+                    NoticeInfo noticeInfo=db.getNoticeInfo(notice.getId());
                     Intent intent = new Intent(getContext(), Notice.class);
                     intent.putExtra("noticeinfo", noticeInfo.getContent());
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
-                } else {
-                    Toast toast = Toast.makeText(getContext(),
-                            "Cannot connect to internet", Toast.LENGTH_SHORT);
-                    toast.show();
                 }
+                else{
+                    if (isOnline()){
+                        StringBuilder stringBuilder = new StringBuilder();
+                        stringBuilder.append(noticeurl + notice.getId());
+                        String url = stringBuilder.toString();
+                        HttpGet httpGet= new HttpGet(url);
+                        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                        httpGet.setHeader("X-CSRFToken", csrftoken);
+                        String result = "";
+                        try {
+                            result = new ConnectTaskHttpGet().execute(httpGet).get();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        if (!result.equals("")) {
+                            if (!notice.getRead()) {
+                                finalRow.setBackgroundDrawable(getContext().getResources().getDrawable(R.drawable.read_notice_bg));
+                                notice.setRead(true);
+                                setRead(notice.getId());
+                            }
+                            NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
+                            db.addNoticeInfo(noticeInfo);
+                            Intent intent = new Intent(getContext(), Notice.class);
+                            intent.putExtra("noticeinfo", noticeInfo.getContent());
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(intent);
+                        }
+                    }
+                    else {
+                        Toast toast = Toast.makeText(getContext(),
+                                "Cannot Connect to Internet", Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                }
+                db.close();
             }
 
         });
 
         return row;
+    }
+    public boolean isOnline() {
+
+        Runtime runtime = Runtime.getRuntime();
+        try {
+
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+
+        } catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+
+        return false;
     }
 }

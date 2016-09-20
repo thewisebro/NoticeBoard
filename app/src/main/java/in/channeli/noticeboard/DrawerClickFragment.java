@@ -169,7 +169,6 @@ public class DrawerClickFragment extends Fragment {
     }
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
-
         @Override
         public void onRefresh() {
             new Handler().postDelayed(new Runnable() {

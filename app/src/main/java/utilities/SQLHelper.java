@@ -150,7 +150,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.close();
         return (!(count==0));
     }
-    private boolean checkNoticeContent(int id){
+    public boolean checkNoticeContent(int id){
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES, new String[]{ROW_CONTENT}, ROW_ID + "=" + id, null, null, null, null);
         cursor.moveToFirst();
