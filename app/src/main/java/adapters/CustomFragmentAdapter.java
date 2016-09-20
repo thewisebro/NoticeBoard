@@ -29,6 +29,7 @@ import in.channeli.noticeboard.R;
 import objects.NoticeInfo;
 import objects.NoticeObject;
 import utilities.Parsing;
+import utilities.SQLHelper;
 
 public class CustomFragmentAdapter extends ArrayAdapter<NoticeObject> {
     private Context context;
@@ -39,15 +40,26 @@ public class CustomFragmentAdapter extends ArrayAdapter<NoticeObject> {
     String CHANNELI_SESSID;
     Parsing parsing;
 
-    public CustomFragmentAdapter(Context context, int layout, ArrayList<NoticeObject> noticeArrayList){
-        super(context, layout, noticeArrayList);
+    public CustomFragmentAdapter(Context context, int layout,ArrayList<NoticeObject> list){
+        super(context, layout);
         this.context = context;
-        this.noticeArrayList = noticeArrayList;
         this.layout = layout;
         SharedPreferences settings= getContext().getSharedPreferences(MainActivity.PREFS_NAME,0);
         csrftoken=settings.getString("csrftoken","");
         CHANNELI_SESSID=settings.getString("CHANNELI_SESSID","");
         parsing=new Parsing();
+        noticeArrayList=list;
+    }
+    public void  addList(ArrayList<NoticeObject> list){
+        this.addAll(list);
+        this.notifyDataSetChanged();
+        SQLHelper db=new SQLHelper(context);
+        try {
+            db.addNoticesList(list);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        db.close();
     }
     @Override
     public int getCount(){
@@ -130,7 +142,6 @@ public class CustomFragmentAdapter extends ArrayAdapter<NoticeObject> {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                int a=1;
             }
         });
         final View finalRow = row;

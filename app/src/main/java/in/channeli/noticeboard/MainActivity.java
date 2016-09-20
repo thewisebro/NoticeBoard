@@ -48,7 +48,7 @@ public class MainActivity extends ActionBarActivity {
 
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
-    public static String UrlOfHost="http://192.168.121.187:7001/";
+    public static String UrlOfHost="http://192.168.121.187:7000/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";

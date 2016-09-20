@@ -18,6 +18,7 @@ import android.widget.ListView;
 
 import org.apache.http.client.methods.HttpGet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -26,90 +27,93 @@ import connections.ConnectTaskHttpGet;
 import connections.Connections;
 import objects.NoticeObject;
 import utilities.Parsing;
+import utilities.SQLHelper;
 
-/*
-Created by manohar on 2/2/15.
- */
 public class DrawerClickFragment extends Fragment {
 
-    HttpGet httpPost;
-    ListView listView;
-    CustomFragmentAdapter customFragmentAdapter;
+    private HttpGet httpGet;
+    private ListView listView;
+    private CustomFragmentAdapter customFragmentAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
-    Connections con;
-    Parsing parsing;
-    final String noticeurl = MainActivity.UrlOfNotice+"get_notice/";
-    String category;
-    String noticetype;
-    ArrayList<NoticeObject> noticelist;
-    AsyncTask<HttpGet, Void, String> mTask;
-
-    String csrftoken, CHANNELI_SESSID;
+    private Connections con;
+    private Parsing parsing;
+    private String category;
+    private String noticetype;
+    private ArrayList<NoticeObject> noticelist;
+    private AsyncTask<HttpGet, Void, String> mTask;
+    private SQLHelper sqlHelper;
+    private String csrftoken, CHANNELI_SESSID;
 
     @TargetApi(21)
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState){
         View view = inflater.inflate(R.layout.list_view, container, false);
         Bundle args = getArguments();
-        category = args.getString("category","All");
-        category = category.replaceAll(" ","%20");
+        category = args.getString("category", "All");
+        category = category.replaceAll(" ", "%20");
         noticetype = args.getString("noticetype","new");
-        httpPost = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+noticetype+"/"+category+"/All/0/20/0");
-
+        httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+noticetype+"/"+category+"/All/0/20/0");
+        sqlHelper=new SQLHelper(getActivity());
+        noticelist=new ArrayList<NoticeObject>();
         SharedPreferences settings = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        //SharedPreferences.Editor editor = settings.edit();
         csrftoken = settings.getString("csrftoken","");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
 
-        httpPost.setHeader("Cookie","csrftoken="+csrftoken);
-        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-        httpPost.setHeader("X-CSRFToken",csrftoken);
-        String content_first_time_notice = null;
-
-        try {
-            mTask = new ConnectTaskHttpGet().execute(httpPost);
-            content_first_time_notice = mTask.get();
-            mTask.cancel(true);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+        httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+        httpGet.setHeader("X-CSRFToken",csrftoken);
+        if (isOnline()){
+            String content_first_time_notice = null;
+            try {
+                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                content_first_time_notice = mTask.get();
+                mTask.cancel(true);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+            con = new Connections();
+            parsing = new Parsing();
+            noticelist.addAll(parsing.parseNotices(content_first_time_notice));
         }
-        con = new Connections();
-        parsing = new Parsing();
-        noticelist = parsing.parseNotices(content_first_time_notice);
+        else{
+            ArrayList<NoticeObject> list=sqlHelper.getNotices();
+            if(list!=null)
+                noticelist.addAll(list);
+        }
 
         listView = (ListView) view.findViewById(R.id.my_list_view);
         customFragmentAdapter = new CustomFragmentAdapter(getActivity().getApplicationContext(),
                 R.layout.list_itemview,noticelist);
-        customFragmentAdapter.addAll(noticelist);
         listView.setAdapter(customFragmentAdapter);
-        //listView.setOnItemClickListener(new ListViewItemClickListener());
 
         listView.setOnScrollListener(new ListViewScrollListener(2) {
             @Override
             public void loadMore(int page, int totalItemsCount) {
-                String result = null;
-                try {
-                    httpPost = new HttpGet(MainActivity.UrlOfNotice +
-                            "list_notices/" + noticetype + "/" + category +
-                            "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
-                    httpPost.setHeader("Cookie","csrftoken="+csrftoken);
-                    httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                    httpPost.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                    httpPost.setHeader("X-CSRFToken",csrftoken);
-                    mTask = new ConnectTaskHttpGet().execute(httpPost);
-                    result = mTask.get();
-                    mTask.cancel(true);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+                if (isOnline()){
+                    String result = null;
+                    try {
+                        httpGet = new HttpGet(MainActivity.UrlOfNotice +
+                                "list_notices/" + noticetype + "/" + category +
+                                "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                        httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                        httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                        httpGet.setHeader("X-CSRFToken",csrftoken);
+                        mTask = new ConnectTaskHttpGet().execute(httpGet);
+                        result = mTask.get();
+                        mTask.cancel(true);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                    ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                    noticelist.addAll(list);
+                    customFragmentAdapter.addList(list);
                 }
-
-                noticelist.addAll(parsing.parseNotices(result));
-                customFragmentAdapter.notifyDataSetChanged();
             }
         });
         swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
@@ -171,31 +175,48 @@ public class DrawerClickFragment extends Fragment {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    String result=null;
-                    try {
-                        httpPost = new HttpGet(MainActivity.UrlOfNotice+
-                                "list_notices/"+noticetype+"/"+category+
-                                "/All/0/20/0");
-                        httpPost.setHeader("Cookie","csrftoken="+csrftoken);
-                        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                        httpPost.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                        httpPost.setHeader("X-CSRFToken",csrftoken);
-                        mTask = new ConnectTaskHttpGet().execute(httpPost);
-                        result = mTask.get();
-                        mTask.cancel(true);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
+                    if (isOnline()){
+                        String result=null;
+                        try {
+                            httpGet = new HttpGet(MainActivity.UrlOfNotice+
+                                    "list_notices/"+noticetype+"/"+category+
+                                    "/All/0/20/0");
+                            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                            httpGet.setHeader("X-CSRFToken",csrftoken);
+                            mTask = new ConnectTaskHttpGet().execute(httpGet);
+                            result = mTask.get();
+                            mTask.cancel(true);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                        ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                        noticelist.clear();
+                        customFragmentAdapter.clear();
+                        noticelist.addAll(list);
+                        customFragmentAdapter.addList(list);
+                        swipeRefreshLayout.setRefreshing(false);
                     }
-                    noticelist.clear();
-                    noticelist.addAll(parsing.parseNotices(result));
-                    customFragmentAdapter.notifyDataSetChanged();
-
-                    swipeRefreshLayout.setRefreshing(false);
                 }
             },3000);
 
         }
+    }
+    public boolean isOnline() {
+
+        Runtime runtime = Runtime.getRuntime();
+        try {
+
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+
+        } catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+
+        return false;
     }
 }

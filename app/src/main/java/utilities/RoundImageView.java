@@ -44,6 +44,8 @@ public class RoundImageView extends ImageView {
             return;
         }
         Bitmap b = ((BitmapDrawable) drawable).getBitmap();
+        if(b==null)
+            return;
         Bitmap bitmap = b.copy(Bitmap.Config.ARGB_8888, true);
 
         int w = getWidth(), h = getHeight();

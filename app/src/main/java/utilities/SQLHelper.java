@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.List;
 
 import objects.NoticeInfo;
 import objects.NoticeObject;
@@ -33,7 +32,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static String ROW_CATEGORY="CATEGORY";
     private static String ROW_MAIN_CATEGORY="MAIN_CATEGORY";
     private static String CREATE_TABLE_NOTICES=
-            "CREATE TABLE "+TABLE_NOTICES+" ( "+
+            "CREATE TABLE IF NOT EXISTS "+TABLE_NOTICES+" ( "+
                     ROW_ID+" INT,"+
                     ROW_SUBJECT+" VARCHAR(100),"+
                     ROW_CATEGORY+" VARCHAR(20),"+
@@ -52,7 +51,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     public SQLHelper(Context context) {
         super(context, NAME, null, VERSION);
         SQLiteDatabase db=this.getWritableDatabase();
-        db.execSQL(DELETE_TABLE_NOTICES);
+        //db.execSQL(DELETE_TABLE_NOTICES);
         db.execSQL(CREATE_TABLE_NOTICES);
         db.close();
     }
@@ -64,7 +63,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
     }
-    public int countNotices(){
+    private int countNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES, null, null, null, null, null, null);
         return cursor.getCount();
@@ -74,9 +73,9 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.delete(TABLE_NOTICES,ROW_DATETIME + "= MIN("+ ROW_DATETIME + ")",null);
         db.close();
     }
-    public List<NoticeObject> getNotices(){
+    public ArrayList<NoticeObject> getNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
-        List<NoticeObject> list=new ArrayList<NoticeObject>();
+        ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
                 ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS},null,null,null,null,null);
         if(cursor.moveToFirst()){
@@ -113,11 +112,20 @@ public class SQLHelper extends SQLiteOpenHelper{
         }
         return null;
     }
-    public void addNotice(NoticeObject object) throws ParseException {
+    private void limit(){
+        SQLiteDatabase db=this.getWritableDatabase();
+        String query="DELETE FROM " + TABLE_NOTICES +
+                " WHERE "+ROW_ID+" NOT IN ( "+
+                    " SELECT "+ROW_ID+" FROM "+TABLE_NOTICES+
+                    " ORDER BY "+ROW_DATETIME+" DESC "+
+                    " LIMIT "+MAX_NOTICES+
+                " );";
+        db.execSQL(query);
+        db.close();
+    }
+    private void addNotice(NoticeObject object) throws ParseException {
         if (checkNotice(object.getId()))
             return;
-        if(countNotices()>=MAX_NOTICES)
-            deleteLastNotice();
         SQLiteDatabase db=this.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put(ROW_ID,object.getId());
@@ -129,6 +137,11 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_STAR_STATUS,object.getStar());
         db.insert(TABLE_NOTICES,null,values);
         db.close();
+    }
+    public void addNoticesList(ArrayList<NoticeObject> list) throws ParseException {
+        for(NoticeObject object: list)
+            addNotice(object);
+        limit();
     }
     private boolean checkNotice(int id){
         SQLiteDatabase db=this.getReadableDatabase();
