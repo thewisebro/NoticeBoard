@@ -4,9 +4,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
 
-/**
-  Created by manohar on 25/9/15.
- */
 public class DownloadResultReceiver extends ResultReceiver{
     private Receiver mReceiver;
 

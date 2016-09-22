@@ -11,15 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
-/**
-  Created by manohar on 24/9/15.
- */
+
 public class ProfilePicService extends IntentService {
-    /**
-     * Creates an IntentService.  Invoked by your subclass's constructor.
-     *
-     * @param name Used to name the worker thread, important only for debugging.
-     */
+
     public ProfilePicService(String name) {
         super(name);
     }

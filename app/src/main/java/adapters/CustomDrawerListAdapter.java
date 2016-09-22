@@ -2,21 +2,23 @@ package adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.Space;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
 import connections.ProfilePicService;
@@ -27,9 +29,6 @@ import objects.User;
 import utilities.DownloadResultReceiver;
 import utilities.RoundImageView;
 
-/*
-Created by manohar on 12/2/15.
- */
 public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
 
     private final Context context;
@@ -37,6 +36,8 @@ public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
     private final int layout;
     private User user;
     DownloadResultReceiver resultReceiver;
+    SharedPreferences preferences;
+    SharedPreferences.Editor editor;
 
     public CustomDrawerListAdapter(Context context, int layout, ArrayList<Category> categories, User user){
         super(context, layout, categories);
@@ -44,9 +45,51 @@ public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
         this.categories = categories;
         this.layout = layout;
         this.user = user;
+        preferences=context.getSharedPreferences(MainActivity.PREFS_NAME,0);
+        editor=preferences.edit();
     }
 
     public int getCount(){return categories.size();}
+
+    private void setProfileImage(final RoundImageView view, String url){
+        String bitmapString64=preferences.getString("profilePic","");
+        if(bitmapString64==""){
+            try{
+                resultReceiver = new DownloadResultReceiver(new Handler());
+                resultReceiver.setReceiver(new DownloadResultReceiver.Receiver() {
+                    @Override
+                    public void onReceiveResult(int resultCode, Bundle resultData) {
+                        try{
+                            Bitmap bitmap = resultData.getParcelable("imagebitmap");
+                            view.setImageBitmap(bitmap);
+                            ByteArrayOutputStream stream= new ByteArrayOutputStream();
+                            bitmap.compress(Bitmap.CompressFormat.PNG,100,stream);
+                            String bitmapString64= Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
+                            editor.putString("profilePic", bitmapString64);
+                            editor.commit();
+                            editor.apply();
+                        }
+                        catch(Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                Intent intent = new Intent(Intent.ACTION_SYNC, null, context,
+                        ProfilePicService.class);
+                intent.putExtra("receiver", resultReceiver);
+                intent.putExtra("imageurl", url);
+                context.startService(intent);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else{
+            byte[] bitmapByte= Base64.decode(bitmapString64,Base64.DEFAULT);
+            Bitmap bitmap= BitmapFactory.decodeByteArray(bitmapByte,0,bitmapByte.length);
+            view.setImageBitmap(bitmap);
+        }
+    }
 
     public View getView(int position, View ConvertView, ViewGroup parent){
         View drawerlist_view = null;
@@ -101,33 +144,7 @@ public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
                 StringBuilder stringBuilder = new StringBuilder(imageurl+user.getEnrollmentno()+"/");
                 imageurl = stringBuilder.toString();
                 imageView.setImageResource(R.drawable.profile_photo);
-                try{
-
-                    resultReceiver = new DownloadResultReceiver(new Handler());
-                    resultReceiver.setReceiver(new DownloadResultReceiver.Receiver() {
-                        @Override
-                        public void onReceiveResult(int resultCode, Bundle resultData) {
-                            try{
-                                Bitmap bitmap = resultData.getParcelable("imagebitmap");
-
-                                imageView.setImageBitmap(bitmap);
-
-                            }
-                            catch(Exception e){
-                                e.printStackTrace();
-
-                            }
-                        }
-                    });
-                    Intent intent = new Intent(Intent.ACTION_SYNC, null, context,
-                            ProfilePicService.class);
-                    intent.putExtra("receiver", resultReceiver);
-                    intent.putExtra("imageurl", imageurl);
-                    context.startService(intent);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+                setProfileImage(imageView,imageurl);
             }
             else{
                 LayoutInflater inflater = (LayoutInflater) context
@@ -155,7 +172,7 @@ public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         if (position != 0 && MainActivity.NoticeType.equals("new"))
                             MainActivity.NoticeType = "old";
-                        else if(position != 0)
+                        else if (position != 0)
                             MainActivity.NoticeType = "new";
                     }
 

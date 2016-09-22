@@ -55,10 +55,12 @@ public class MainActivity extends ActionBarActivity {
     private ActionBarDrawerToggle mDrawerToggle;
     public static String NoticeType = "new", MainCategory = "All";
 
-    HttpGet httpPost1;
+    HttpGet httpGet;
     public static final String PREFS_NAME = "MyPrefsFile";
     ArrayList<Category> categories;
     Parsing parsing;
+    SharedPreferences settings;
+    SharedPreferences.Editor editor;
 
     @Override
     @TargetApi(21)
@@ -66,25 +68,34 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME,0);
+        settings = getSharedPreferences(PREFS_NAME, 0);
+        editor=settings.edit();
 
-        httpPost1 = new HttpGet(UrlOfNotice+"get_constants/");
-        httpPost1.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
-        httpPost1.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost1.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
-        String constants = null;
-        AsyncTask<HttpGet, Void, String> mTask;
-        try {
+        httpGet = new HttpGet(UrlOfNotice+"get_constants/");
+        httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
+        //ArrayList<Category> listCategory=new ArrayList<>();
+        String constants = settings.getString("constants","");
+        if (isOnline()){
+            AsyncTask<HttpGet, Void, String> mTask;
+            try {
 
-            mTask = new ConnectTaskHttpGet().execute(httpPost1);
-            constants = mTask.get(4000, TimeUnit.MILLISECONDS);
-            mTask.cancel(true);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                constants = mTask.get(4000, TimeUnit.MILLISECONDS);
+                mTask.cancel(true);
+                if(constants!=null && constants!="") {
+                    editor.putString("constants", constants);
+                    editor.commit();
+                    editor.apply();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
         }
 
         getSupportActionBar().setIcon(R.drawable.ic_drawer);
@@ -111,19 +122,14 @@ public class MainActivity extends ActionBarActivity {
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,
                 mDrawerLayout,
-                //R.drawable.ic_drawer,
                 R.string.drawer_open,
                 R.string.drawer_close
         ){
-            /** Called when a drawer has settled in a completely closed state. */
             public void onDrawerClosed(View view) {
                 super.onDrawerClosed(view);
-                //getActionBar().setTitle("NoticeBoard");
             }
-            /** Called when a drawer has settled in a completely open state. */
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
-                //getActionBar().setTitle(mDrawerTitle);
             }
         };
 
@@ -202,9 +208,7 @@ public class MainActivity extends ActionBarActivity {
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             if(isOnline()) {
                 if (categories.get(position).main_category.contains("Logout")) {
-                    SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-                    SharedPreferences.Editor editor = settings.edit();
-                    HttpGet httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
+                    httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
                     httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
                     httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                     httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
