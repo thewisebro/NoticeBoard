@@ -9,12 +9,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AbsListView;
-import android.widget.ListView;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
-import adapters.CustomFragmentAdapter;
+import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
 import connections.Connections;
 import objects.NoticeObject;
@@ -32,8 +32,8 @@ import utilities.SQLHelper;
 public class DrawerClickFragment extends Fragment {
 
     private HttpGet httpGet;
-    private ListView listView;
-    private CustomFragmentAdapter customFragmentAdapter;
+    private RecyclerView recyclerView;
+    private CustomRecyclerViewAdapter customAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
     private Connections con;
     private Parsing parsing;
@@ -84,24 +84,25 @@ public class DrawerClickFragment extends Fragment {
                 noticelist.addAll(list);
         }
 
-        listView = (ListView) view.findViewById(R.id.my_list_view);
-        customFragmentAdapter = new CustomFragmentAdapter(getActivity().getApplicationContext(),
+        recyclerView= (RecyclerView) view.findViewById(R.id.list_view);
+        customAdapter=new CustomRecyclerViewAdapter(getActivity().getApplicationContext(),
                 R.layout.list_itemview,noticelist);
-        listView.setAdapter(customFragmentAdapter);
+        recyclerView.setAdapter(customAdapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity().getApplicationContext()));
 
-        listView.setOnScrollListener(new ListViewScrollListener(2) {
+        recyclerView.setOnScrollListener(new RecyclerViewScrollListener() {
             @Override
-            public void loadMore(int page, int totalItemsCount) {
-                if (isOnline()){
+            public void loadMore(int totalItemsCount) {
+                if (isOnline()) {
                     String result = null;
                     try {
                         httpGet = new HttpGet(MainActivity.UrlOfNotice +
                                 "list_notices/" + noticetype + "/" + category +
                                 "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
-                        httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
                         httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                        httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                        httpGet.setHeader("X-CSRFToken",csrftoken);
+                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                        httpGet.setHeader("X-CSRFToken", csrftoken);
                         mTask = new ConnectTaskHttpGet().execute(httpGet);
                         result = mTask.get();
                         mTask.cancel(true);
@@ -110,9 +111,10 @@ public class DrawerClickFragment extends Fragment {
                     } catch (ExecutionException e) {
                         e.printStackTrace();
                     }
-                    ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                    ArrayList<NoticeObject> list = parsing.parseNotices(result);
+                    int size=noticelist.size();
                     noticelist.addAll(list);
-                    customFragmentAdapter.addList(list);
+                    customAdapter.notifyItemRangeInserted(size,list.size());
                 }
             }
         });
@@ -128,8 +130,39 @@ public class DrawerClickFragment extends Fragment {
         }
         return view;
     }
+    private abstract class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
+        private int firstVisibleItem=0;
+        private int itemCount=0;
+        private boolean isLoading=true;
+        @Override
+        public void onScrolled(RecyclerView view,int dx,int dy){
+            firstVisibleItem+=dy;
+            int visibleItemCount=view.getChildCount();
+            int totalItemCount=noticelist.size();
+            int lastVisibleItem=firstVisibleItem+visibleItemCount;
 
-    private abstract class ListViewScrollListener implements ListView.OnScrollListener{
+            if (totalItemCount < itemCount) {
+                itemCount = totalItemCount;
+                if (totalItemCount == 0) {
+                    this.isLoading = true;
+                }
+            }
+
+            if (isLoading && (totalItemCount > itemCount)) {
+                isLoading = false;
+                itemCount = totalItemCount;
+            }
+
+            if(!isLoading && lastVisibleItem>=totalItemCount-2) {
+                loadMore(totalItemCount);
+                isLoading=true;
+            }
+
+        }
+        public abstract void loadMore(int totalItemsCount);
+    }
+
+    /*private abstract class ListViewScrollListener implements ListView.OnScrollListener{
 
         private int bufferItemCount = 2;
         private int currentPage = 0;
@@ -152,7 +185,8 @@ public class DrawerClickFragment extends Fragment {
             if (totalItemCount < itemCount) {
                 this.itemCount = totalItemCount;
                 if (totalItemCount == 0) {
-                    this.isLoading = true; }
+                    this.isLoading = true;
+                }
             }
 
             if (isLoading && (totalItemCount > itemCount)) {
@@ -166,7 +200,7 @@ public class DrawerClickFragment extends Fragment {
                 isLoading = true;
             }
         }
-    }
+    }*/
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
         @Override
@@ -193,10 +227,11 @@ public class DrawerClickFragment extends Fragment {
                             e.printStackTrace();
                         }
                         ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                        int size=noticelist.size();
                         noticelist.clear();
-                        customFragmentAdapter.clear();
+                        customAdapter.notifyItemRangeRemoved(0,size);
                         noticelist.addAll(list);
-                        customFragmentAdapter.addList(list);
+                        customAdapter.notifyItemRangeInserted(0,list.size());
                         swipeRefreshLayout.setRefreshing(false);
                     }
                 }
