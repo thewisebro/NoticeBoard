@@ -88,11 +88,13 @@ public class DrawerClickFragment extends Fragment {
         customAdapter=new CustomRecyclerViewAdapter(getActivity().getApplicationContext(),
                 R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(customAdapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity().getApplicationContext()));
+        LinearLayoutManager layoutManager=new LinearLayoutManager(getActivity().getApplicationContext());
+        recyclerView.setLayoutManager(layoutManager);
 
-        recyclerView.setOnScrollListener(new RecyclerViewScrollListener() {
+        recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager) {
             @Override
             public void loadMore(int totalItemsCount) {
+
                 if (isOnline()) {
                     String result = null;
                     try {
@@ -111,13 +113,14 @@ public class DrawerClickFragment extends Fragment {
                     } catch (ExecutionException e) {
                         e.printStackTrace();
                     }
+                    int curSize=customAdapter.getItemCount();
                     ArrayList<NoticeObject> list = parsing.parseNotices(result);
-                    int size=noticelist.size();
                     noticelist.addAll(list);
-                    customAdapter.notifyItemRangeInserted(size,list.size());
+                    customAdapter.notifyItemRangeInserted(curSize,list.size());
                 }
             }
         });
+
         swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         swipeRefreshLayout.setColorSchemeColors(
                 Color.RED, Color.BLUE, Color.BLACK);
@@ -131,15 +134,19 @@ public class DrawerClickFragment extends Fragment {
         return view;
     }
     private abstract class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
-        private int firstVisibleItem=0;
         private int itemCount=0;
         private boolean isLoading=true;
+        private LinearLayoutManager layoutManager;
+        public RecyclerViewScrollListener(LinearLayoutManager manager){
+            this.layoutManager=manager;
+        }
         @Override
         public void onScrolled(RecyclerView view,int dx,int dy){
-            firstVisibleItem+=dy;
+            int firstVisibleItem=layoutManager.findFirstVisibleItemPosition();
             int visibleItemCount=view.getChildCount();
-            int totalItemCount=noticelist.size();
-            int lastVisibleItem=firstVisibleItem+visibleItemCount;
+            int totalItemCount=layoutManager.getItemCount();
+            int lastVisibleItem=layoutManager.findLastVisibleItemPosition();
+
 
             if (totalItemCount < itemCount) {
                 itemCount = totalItemCount;
@@ -153,7 +160,7 @@ public class DrawerClickFragment extends Fragment {
                 itemCount = totalItemCount;
             }
 
-            if(!isLoading && lastVisibleItem>=totalItemCount-2) {
+            if(!isLoading && lastVisibleItem>(totalItemCount-2)) {
                 loadMore(totalItemCount);
                 isLoading=true;
             }
@@ -161,46 +168,6 @@ public class DrawerClickFragment extends Fragment {
         }
         public abstract void loadMore(int totalItemsCount);
     }
-
-    /*private abstract class ListViewScrollListener implements ListView.OnScrollListener{
-
-        private int bufferItemCount = 2;
-        private int currentPage = 0;
-        private int itemCount = 0;
-        private boolean isLoading = true;
-
-        public ListViewScrollListener(int bufferItemCount){
-            this.bufferItemCount = bufferItemCount;
-        }
-
-        public abstract void loadMore(int page, int totalItemsCount);
-
-        @Override
-        public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-        }
-
-        @Override
-        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-            if (totalItemCount < itemCount) {
-                this.itemCount = totalItemCount;
-                if (totalItemCount == 0) {
-                    this.isLoading = true;
-                }
-            }
-
-            if (isLoading && (totalItemCount > itemCount)) {
-                isLoading = false;
-                itemCount = totalItemCount;
-                currentPage++;
-            }
-
-            if (!isLoading && (totalItemCount - visibleItemCount)<=(firstVisibleItem + bufferItemCount)) {
-                loadMore(currentPage + 1, totalItemCount);
-                isLoading = true;
-            }
-        }
-    }*/
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
         @Override
