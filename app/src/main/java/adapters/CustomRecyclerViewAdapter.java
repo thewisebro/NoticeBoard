@@ -75,15 +75,57 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             e.printStackTrace();
         }
     }
+    void setStar(int id,boolean b){
+        String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
+        if (b)
+            uri += "/add_starred/";
+        else
+            uri += "/remove_starred/";
+        HttpPost httpPost = new HttpPost(uri);
+        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
+        httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+        httpPost.setHeader("CHANNELI_DEVICE", "android");
+        httpPost.setHeader("X-CSRFToken=", csrftoken);
+        ConnectTaskHttpPost starTask = (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(httpPost);
+        String result = "";
+        try {
+            result = starTask.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    String getNoticeInfoResult(int id){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(noticeurl + id);
+        String url = stringBuilder.toString();
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+        httpGet.setHeader("X-CSRFToken", csrftoken);
+        String result = "";
+        try {
+            result = new ConnectTaskHttpGet().execute(httpGet).get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+    void stActivity(NoticeInfo noticeInfo){
+        Intent intent = new Intent(context, Notice.class);
+        intent.putExtra("noticeinfo", noticeInfo.getContent());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
 
     @Override
     public void onBindViewHolder(final NoticeObjectViewHolder holder, int position) {
         final NoticeObject noticeObject=list.get(position);
         holder.subject.setText(noticeObject.getSubject());
         holder.category.setText(noticeObject.getMain_category());
-        //holder.datetime.setText(noticeObject.getDatetime_modified());
-        holder.star.setChecked(noticeObject.getStar());
 
+        //Set DateTime
         String[] date_time = noticeObject.getDatetime_modified().split("T");
         String date = date_time[0];
         String time = date_time[1];
@@ -105,77 +147,46 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             holder.datetime.setText(noticeObject.getDatetime_modified());
         }
 
+        //Highlight read notices
+        if(noticeObject.getRead())
+            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
+        else
+            holder.view.setBackgroundDrawable(null);
+
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                String uri = MainActivity.UrlOfNotice + "read_star_notice/" + noticeObject.getId();
-                if (b)
-                    uri += "/add_starred/";
-                else
-                    uri += "/remove_starred/";
-                HttpPost httpPost = new HttpPost(uri);
-                httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
-                httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                httpPost.setHeader("CHANNELI_DEVICE", "android");
-                httpPost.setHeader("X-CSRFToken=", csrftoken);
-                ConnectTaskHttpPost starTask = (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(httpPost);
-                String result = "";
-                try {
-                    result = starTask.get();
+                    setStar(noticeObject.getId(), b);
                     noticeObject.setStar(b);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    compoundButton.setChecked(!b);
-                }
             }
         });
+        holder.star.setChecked(noticeObject.getStar());
 
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 SQLHelper db = new SQLHelper(context);
-                if (db.checkNoticeContent(noticeObject.getId())) {
-                    NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
-                    Intent intent = new Intent(context, Notice.class);
-                    intent.putExtra("noticeinfo", noticeInfo.getContent());
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(intent);
-                } else {
-                    if (isOnline()) {
-                        StringBuilder stringBuilder = new StringBuilder();
-                        stringBuilder.append(noticeurl + noticeObject.getId());
-                        String url = stringBuilder.toString();
-                        HttpGet httpGet = new HttpGet(url);
-                        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                        httpGet.setHeader("X-CSRFToken", csrftoken);
-                        String result = "";
-                        try {
-                            result = new ConnectTaskHttpGet().execute(httpGet).get();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                if (isOnline()) {
+                    String result = getNoticeInfoResult(noticeObject.getId());
+                    if (!result.equals("")) {
+                        if (!noticeObject.getRead()) {
+                            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
+                            noticeObject.setRead(true);
+                            setRead(noticeObject.getId());
                         }
-                        if (!result.equals("")) {
-                            if (!noticeObject.getRead()) {
-                                holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
-                                noticeObject.setRead(true);
-                                setRead(noticeObject.getId());
-                            }
-                            NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
-                            db.addNoticeInfo(noticeInfo);
-                            Intent intent = new Intent(context, Notice.class);
-                            intent.putExtra("noticeinfo", noticeInfo.getContent());
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
-                        }
-                    } else {
-                        Toast toast = Toast.makeText(context,
-                                "Cannot Connect to Internet", Toast.LENGTH_SHORT);
-                        toast.show();
+                        NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
+                        db.addNoticeInfo(noticeInfo);
+                        stActivity(noticeInfo);
                     }
+                } else if (db.checkNoticeContent(noticeObject.getId())) {
+                    //NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
+                    stActivity(db.getNoticeInfo(noticeObject.getId()));
+                } else {
+                    Toast toast = Toast.makeText(context,
+                            "Cannot Connect to Internet", Toast.LENGTH_SHORT);
+                    toast.show();
                 }
+
                 db.close();
             }
 

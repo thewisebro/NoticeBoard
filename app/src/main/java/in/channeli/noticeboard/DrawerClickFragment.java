@@ -19,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import org.apache.http.client.methods.HttpGet;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -43,6 +44,14 @@ public class DrawerClickFragment extends Fragment {
     private AsyncTask<HttpGet, Void, String> mTask;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
+
+    private void addToDB(ArrayList<NoticeObject> list){
+        try {
+            sqlHelper.addNoticesList(list);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
 
     @TargetApi(21)
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -76,7 +85,9 @@ public class DrawerClickFragment extends Fragment {
             }
             con = new Connections();
             parsing = new Parsing();
-            noticelist.addAll(parsing.parseNotices(content_first_time_notice));
+            ArrayList<NoticeObject> list=parsing.parseNotices(content_first_time_notice);
+            addToDB(list);
+            noticelist.addAll(list);
         }
         else{
             ArrayList<NoticeObject> list=sqlHelper.getNotices();
@@ -115,8 +126,9 @@ public class DrawerClickFragment extends Fragment {
                     }
                     int curSize=customAdapter.getItemCount();
                     ArrayList<NoticeObject> list = parsing.parseNotices(result);
+                    addToDB(list);
                     noticelist.addAll(list);
-                    customAdapter.notifyItemRangeInserted(curSize,list.size());
+                    customAdapter.notifyItemRangeInserted(curSize, list.size());
                 }
             }
         });
@@ -194,6 +206,7 @@ public class DrawerClickFragment extends Fragment {
                             e.printStackTrace();
                         }
                         ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                        addToDB(list);
                         int size=noticelist.size();
                         noticelist.clear();
                         customAdapter.notifyItemRangeRemoved(0,size);
