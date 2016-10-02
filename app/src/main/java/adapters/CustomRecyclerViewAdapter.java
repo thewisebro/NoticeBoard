@@ -147,11 +147,13 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             holder.datetime.setText(noticeObject.getDatetime_modified());
         }
 
+
+
         //Highlight read notices
         if(noticeObject.getRead())
-            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
+            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_background));
         else
-            holder.view.setBackgroundDrawable(null);
+            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.background));
 
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

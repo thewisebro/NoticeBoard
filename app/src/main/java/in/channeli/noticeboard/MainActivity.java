@@ -181,20 +181,14 @@ public class MainActivity extends ActionBarActivity {
 
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
-        //if(null != searchView){
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(
-                    new ComponentName(this, SearchResultsActivity.class)));
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchResultsActivity.class)));
         searchView.setIconified(false);
-            //}
+        searchView.setSubmitButtonEnabled(true);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        //int id = item.getItemId();
 
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;

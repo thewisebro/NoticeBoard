@@ -22,23 +22,16 @@ import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import org.apache.http.client.methods.HttpGet;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
 
 import adapters.CustomSearchAdapter;
 import adapters.CustomSpinnerAdapter;
-import connections.ConnectTaskHttpGet;
 import connections.SearchService;
 import objects.NoticeInfo;
 import utilities.DownloadResultReceiver;
 import utilities.Parsing;
 
-/*
- Created by manohar on 9/3/15.
- */
 public class SearchResultsActivity extends ActionBarActivity {
     String query;
     String searchUrl;
@@ -56,7 +49,7 @@ public class SearchResultsActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.search);
         dialog = ProgressDialog.show(this, "Loading", "Please wait...", true);
-        dialog.setCancelable(false);
+        //dialog.setCancelable(true);
 
         parsing = new Parsing();
         noticetype = "new";
@@ -95,7 +88,7 @@ public class SearchResultsActivity extends ActionBarActivity {
                     }
                     catch(Exception e){
                         e.printStackTrace();
-
+                    dialog.dismiss();
                     }
                 }
             });
@@ -108,6 +101,7 @@ public class SearchResultsActivity extends ActionBarActivity {
 
         } catch (Exception e) {
             e.printStackTrace();
+            dialog.dismiss();
         }
 
         getSupportActionBar().setHomeButtonEnabled(true);

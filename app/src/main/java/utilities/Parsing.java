@@ -11,20 +11,13 @@ import objects.NoticeInfo;
 import objects.NoticeObject;
 
 public class Parsing {
-    JSONObject jsonObject, jsonObject2;
-    JSONArray jsonArray;
-    ArrayList<Category> categorieslist;
-    ArrayList<NoticeObject> noticeslist;
-    ArrayList<NoticeInfo> noticeInfoList;
-    Category categories;
-    NoticeObject notice;
-    NoticeInfo noticeInfo;
 
     public ArrayList<Category> parse_constants(String constants){
-        categorieslist = new ArrayList<>();
+        ArrayList<Category> categorieslist = new ArrayList<>();
         try {
-            jsonObject = new JSONObject(constants);
-            jsonArray = jsonObject.getJSONArray("order");
+            JSONObject jsonObject = new JSONObject(constants);
+            JSONArray jsonArray = jsonObject.getJSONArray("order");
+            Category categories=null;
             for(int i=0;i<jsonArray.length();i++){
                 categories = new Category(jsonArray.getString(i),
                         jsonObject.getJSONArray(jsonArray.getString(i)));
@@ -37,20 +30,20 @@ public class Parsing {
     }
 
     public ArrayList<NoticeObject> parseNotices(String notices){
-        noticeslist = new ArrayList<>();
+        ArrayList<NoticeObject> noticeslist = new ArrayList<>();
         try{
-            jsonArray = new JSONArray(notices);
-
+            JSONArray jsonArray = new JSONArray(notices);
+            NoticeObject notice=null;
             for(int i=0;i< jsonArray.length();i++){
-                jsonObject2 = jsonArray.getJSONObject(i);
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
                 notice = new NoticeObject();
-                notice.setId(jsonObject2.getInt("id"));
-                notice.setSubject(jsonObject2.getString("subject"));
-                notice.setDatetime_modified(jsonObject2.getString("datetime_modified"));
-                notice.setCategory(jsonObject2.getString("category"));
-                notice.setMain_category(jsonObject2.getString("main_category"));
-                notice.setStar(jsonObject2.getBoolean("starred_status"));
-                notice.setRead(jsonObject2.getBoolean("read_status"));
+                notice.setId(jsonObject.getInt("id"));
+                notice.setSubject(jsonObject.getString("subject"));
+                notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
+                notice.setCategory(jsonObject.getString("category"));
+                notice.setMain_category(jsonObject.getString("main_category"));
+                notice.setStar(jsonObject.getBoolean("starred_status"));
+                notice.setRead(jsonObject.getBoolean("read_status"));
                 noticeslist.add(notice);
             }
         }
@@ -61,10 +54,11 @@ public class Parsing {
     }
 
     public ArrayList<NoticeInfo> parseSearchedNotices(String result){
-        noticeInfoList = new ArrayList<>();
+        ArrayList<NoticeInfo> noticeInfoList = new ArrayList<>();
         try {
-
-            jsonArray = new JSONArray(result);
+            JSONArray jsonArray = new JSONArray(result);
+            NoticeInfo noticeInfo=null;
+            JSONObject jsonObject=null;
             for(int i=0;i<jsonArray.length();i++){
                 jsonObject = jsonArray.getJSONObject(i);
                 noticeInfo = parseNoticeInfo(jsonObject.toString());
@@ -75,21 +69,42 @@ public class Parsing {
         }
         return noticeInfoList;
     }
+    public ArrayList<NoticeObject> parseSearchNotices(String result){
+        ArrayList<NoticeObject> noticeList = new ArrayList<NoticeObject>();
+        try {
+            JSONArray jsonArray = new JSONArray(result);
+            NoticeObject notice=null;
+            JSONObject jsonObject=null;
+            for(int i=0;i<jsonArray.length();i++){
+                jsonObject = jsonArray.getJSONObject(i);
+                notice=new NoticeObject();
+                notice.setSubject(jsonObject.getString("subject"));
+                notice.setMain_category(jsonObject.getString("category"));
+                notice.setId(jsonObject.getInt("id"));
+                notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
+                noticeList.add(notice);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return noticeList;
+    }
 
     public NoticeInfo parseNoticeInfo(String noticeinfo){
-        noticeInfo = new NoticeInfo();
+        NoticeInfo noticeInfo = new NoticeInfo();
         try{
-            jsonObject2 = new JSONObject(noticeinfo);
-            noticeInfo.setId(jsonObject2.getInt("id"));
-            noticeInfo.setContent(jsonObject2.getString("content"));
-            noticeInfo.setSubject(jsonObject2.getString("subject"));
-            noticeInfo.setDatetime_modified(jsonObject2.getString("datetime_modified"));
-            //noticeInfo.setUsername(jsonObject2.getString("username"));
-            noticeInfo.setCategory(jsonObject2.getString("category"));
+            JSONObject jsonObject = new JSONObject(noticeinfo);
+            noticeInfo.setId(jsonObject.getInt("id"));
+            noticeInfo.setContent(jsonObject.getString("content"));
+            noticeInfo.setSubject(jsonObject.getString("subject"));
+            noticeInfo.setDatetime_modified(jsonObject.getString("datetime_modified"));
+            //noticeInfo.setUsername(jsonObject.getString("username"));
+            noticeInfo.setCategory(jsonObject.getString("category"));
             }
         catch(JSONException e){
             e.printStackTrace();
         }
         return noticeInfo;
     }
+
 }

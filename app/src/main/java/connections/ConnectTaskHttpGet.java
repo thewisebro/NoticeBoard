@@ -10,14 +10,15 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/*
- * Created by manohar on 21/2/15.
- */
+
 public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
     Context context;
     ProgressDialog progressDialog;
@@ -35,7 +36,10 @@ public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
         InputStream isr = null;
         String result="";
         try{
-            HttpClient httpClient = new DefaultHttpClient();
+            HttpParams httpParams=new BasicHttpParams();
+            HttpConnectionParams.setConnectionTimeout(httpParams,5000);
+            HttpConnectionParams.setSoTimeout(httpParams,5000);
+            HttpClient httpClient = new DefaultHttpClient(httpParams);
             HttpResponse response = httpClient.execute(httpPosts[0]);
             HttpEntity entity = response.getEntity();
             isr = entity.getContent();
