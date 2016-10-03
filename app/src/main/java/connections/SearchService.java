@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
-import android.widget.SearchView;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -20,9 +19,7 @@ import java.io.InputStreamReader;
 
 import in.channeli.noticeboard.MainActivity;
 
-/**
- * Created by manohar on 25/9/15.
- */
+
 public class SearchService extends IntentService {
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.

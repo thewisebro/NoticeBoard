@@ -113,10 +113,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         return result;
     }
     void stActivity(NoticeInfo noticeInfo){
-        Intent intent = new Intent(context, Notice.class);
-        intent.putExtra("noticeinfo", noticeInfo.getContent());
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
     }
 
     @Override
@@ -178,11 +174,17 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                         }
                         NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
                         db.addNoticeInfo(noticeInfo);
-                        stActivity(noticeInfo);
+                        Intent intent = new Intent(context, Notice.class);
+                        intent.putExtra("noticeinfo", noticeInfo.getContent());
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
                     }
                 } else if (db.checkNoticeContent(noticeObject.getId())) {
-                    //NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
-                    stActivity(db.getNoticeInfo(noticeObject.getId()));
+                    NoticeInfo noticeInfo=db.getNoticeInfo(noticeObject.getId());
+                    Intent intent = new Intent(context, Notice.class);
+                    intent.putExtra("noticeinfo", noticeInfo.getContent());
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
                 } else {
                     Toast toast = Toast.makeText(context,
                             "Cannot Connect to Internet", Toast.LENGTH_SHORT);
