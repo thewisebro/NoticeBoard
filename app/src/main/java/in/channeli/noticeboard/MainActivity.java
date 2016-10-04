@@ -8,22 +8,18 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -37,22 +33,21 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import adapters.CustomDrawerListAdapter;
 import connections.ConnectTaskHttpGet;
 import objects.Category;
-import objects.User;
 import utilities.Parsing;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
-    private ListView mDrawerList;
     public static String UrlOfHost="http://192.168.121.187:7000/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
     private ActionBarDrawerToggle mDrawerToggle;
+    private Toolbar toolbar;
+    private NavigationView navigationView;
     public static String NoticeType = "new", MainCategory = "All";
 
     HttpGet httpGet;
@@ -67,17 +62,56 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        navigationView= (NavigationView) findViewById(R.id.left_drawer);
+        toolbar= (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         settings = getSharedPreferences(PREFS_NAME, 0);
         editor=settings.edit();
+        parsing = new Parsing();
+        setNavigationView();
 
-        httpGet = new HttpGet(UrlOfNotice+"get_constants/");
-        httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
-        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
-        //ArrayList<Category> listCategory=new ArrayList<>();
+        /*categories = new ArrayList<>();
+        categories.add(new Category(true));
+        categories.add(new Category());
+        categories.add(new Category("space"));
+        categories.addAll(parsing.parse_constants(constants));
+        categories.add(new Category("space"));
+        categories.add(new Category("Feedback"));
+        categories.add(new Category("Logout"));
+        categories.add(new Category("space"));*/
+
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        changingFragment("All");
+        setTitle("All Current");
+
+        mDrawerToggle = new ActionBarDrawerToggle(
+                this,
+                mDrawerLayout,
+                R.string.drawer_open,
+                R.string.drawer_close
+        ){
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+            }
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+            }
+        };
+
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+        mDrawerToggle.syncState();
+    }
+
+    void setNavigationView(){
+        final Menu menu=navigationView.getMenu();
         String constants = settings.getString("constants","");
         if (isOnline()){
+            httpGet = new HttpGet(UrlOfNotice+"get_constants/");
+            httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
             AsyncTask<HttpGet, Void, String> mTask;
             try {
 
@@ -97,82 +131,36 @@ public class MainActivity extends ActionBarActivity {
                 e.printStackTrace();
             }
         }
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener(){
 
-        getSupportActionBar().setIcon(R.drawable.ic_drawer);
-        getSupportActionBar().setHomeButtonEnabled(true);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.rgb(30, 136, 229)));
-        parsing = new Parsing();
+            @Override
+            public boolean onNavigationItemSelected(MenuItem menuItem) {
+                //Checking if the item is in checked state or not, if not make it in checked state
+                if(menuItem.isChecked()) menuItem.setChecked(false);
+                else menuItem.setChecked(true);
 
-        categories = new ArrayList<>();
-        categories.add(new Category(true));
-        categories.add(new Category());
-        categories.add(new Category("space"));
-        categories.addAll(parsing.parse_constants(constants));
-        categories.add(new Category("space"));
-        categories.add(new Category("Feedback"));
-        categories.add(new Category("Logout"));
-        categories.add(new Category("space"));
+                //Closing drawer on item click
+                mDrawerLayout.closeDrawers();
+                switch (menuItem.getItemId()){
 
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        mDrawerList = (ListView) findViewById(R.id.left_drawer);
-        mDrawerList.setBackgroundColor(Color.WHITE);
-        changingFragment("All");
-        setTitle("All Current");
-        mDrawerToggle = new ActionBarDrawerToggle(
-                this,
-                mDrawerLayout,
-                R.string.drawer_open,
-                R.string.drawer_close
-        ){
-            public void onDrawerClosed(View view) {
-                super.onDrawerClosed(view);
+                    default: return true;
+                }
             }
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-            }
-        };
-
-        User user = new User(settings.getString("name",""), settings.getString("info",""),
-                settings.getString("enrollment_no",""));
-        mDrawerList.setAdapter(new CustomDrawerListAdapter(this,
-                R.layout.drawerlist_itemview, categories,user));
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
-        if(Build.VERSION.SDK_INT >= 21){
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(R.color.statusbarcolor));
-            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-        }
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        // Sync the toggle state after onRestoreInstanceState has occurred.
-        mDrawerToggle.syncState();
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        mDrawerToggle.onConfigurationChanged(newConfig);
+        });
     }
 
     void changingFragment(String category){
         Fragment fragment = new DrawerClickFragment();
         Bundle args = new Bundle();
         args.putString("category",category);
-        args.putString("noticetype",NoticeType);
+        args.putString("noticetype", NoticeType);
         fragment.setArguments(args);
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction()
                 .replace(R.id.content_frame, fragment)
+                .addToBackStack(null)
                 .commit();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -238,8 +226,8 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void selectItem(final int position) {
-        mDrawerLayout.closeDrawer(mDrawerList);
-        mDrawerList.setItemChecked(position, true);
+        //mDrawerLayout.closeDrawer(mDrawerList);
+        //mDrawerList.setItemChecked(position, true);
 
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
@@ -280,7 +268,12 @@ public class MainActivity extends ActionBarActivity {
 
         return false;
     }
+    @Override
     public void onBackPressed(){
-        super.onBackPressed();
+        if (getSupportFragmentManager().getBackStackEntryCount()!=0){
+            getSupportFragmentManager().popBackStack();
+        }
+        else
+            finish();
     }
 }

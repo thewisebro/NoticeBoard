@@ -5,20 +5,16 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.SearchView;
 import android.widget.Spinner;
@@ -35,7 +31,7 @@ import connections.ConnectTaskHttpGet;
 import objects.NoticeObject;
 import utilities.Parsing;
 
-public class SearchActivity extends ActionBarActivity {
+public class SearchActivity extends AppCompatActivity {
     String query;
     String searchUrl;
     Parsing parsing;
@@ -53,6 +49,8 @@ public class SearchActivity extends ActionBarActivity {
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.search);
+        Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         parsing = new Parsing();
         noticetype = "new";
         setTitle("Searched Results");
@@ -66,20 +64,12 @@ public class SearchActivity extends ActionBarActivity {
 
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.rgb(30, 136, 229)));
-        if(Build.VERSION.SDK_INT >= 21){
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(getResources().getColor(R.color.statusbarcolor));
-        }
 
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(layoutManager);
         adapter=new CustomRecyclerViewAdapter(getApplicationContext(),R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(adapter);
-
     }
 
     @Override
@@ -114,11 +104,12 @@ public class SearchActivity extends ActionBarActivity {
             });
         }
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        final SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
         if (null != searchView )
         {
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-            searchView.setIconifiedByDefault(false);
+            searchView.setIconified(false);
+            searchView.setSubmitButtonEnabled(true);
         }
         SearchView.OnQueryTextListener queryTextListener = new SearchView.OnQueryTextListener()
         {
@@ -131,11 +122,12 @@ public class SearchActivity extends ActionBarActivity {
                 query = newText;
                 query = query.replaceAll(" ","%20");
                 onTextSubmit();
+                //searchView.onActionViewCollapsed();
                 return true;
             }
         };
         searchView.setOnQueryTextListener(queryTextListener);
-        return super.onCreateOptionsMenu(menu);
+        return true;
     }
 
     @Override
@@ -157,22 +149,32 @@ public class SearchActivity extends ActionBarActivity {
         setNoticelist(url);
     }
 
-    private void setNoticelist(String url){
-        ProgressDialog dialog=new ProgressDialog(this);
-        dialog.setTitle("Loading");
-        dialog.setMessage("");
-        dialog.setCancelable(false);
-        dialog.show();
-        ArrayList<NoticeObject> list=getSearchedNotices(url);
-        if(list!=null) {
-            int size=noticelist.size();
-            noticelist.clear();
-            adapter.notifyItemRangeRemoved(0, size);
-            noticelist.addAll(list);
-            adapter.notifyItemRangeInserted(0, list.size());
-            adapter.notifyDataSetChanged();
-        }
-        dialog.dismiss();
+    private void setNoticelist(final String url){
+        final ProgressDialog pd = new ProgressDialog(this);
+        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        pd.setMessage("Loading...");
+        pd.setIndeterminate(true);
+        pd.setCancelable(false);
+        pd.show();
+        Thread thread= new Thread(){
+            @Override
+            public void run(){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayList<NoticeObject> list=getSearchedNotices(url);
+                        if(list!=null) {
+                            int size=noticelist.size();
+                            noticelist.clear();
+                            noticelist.addAll(list);
+                            adapter.notifyDataSetChanged();
+                        }
+                        pd.dismiss();
+                    }
+                });
+            }
+        };
+        thread.start();
     }
 
     private ArrayList<NoticeObject> getSearchedNotices(String url){

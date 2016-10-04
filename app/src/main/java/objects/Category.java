@@ -5,9 +5,6 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 
-/*
- Created by manohar on 12/2/15.
- */
 public class Category {
     public String main_category;
     public ArrayList<String> sub_categories = new ArrayList<>();
