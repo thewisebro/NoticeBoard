@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 import objects.Category;
+import objects.DrawerItem;
 import objects.NoticeInfo;
 import objects.NoticeObject;
 
@@ -27,6 +28,19 @@ public class Parsing {
             e.printStackTrace();
         }
         return categorieslist;
+    }
+    public ArrayList<DrawerItem> parseConstants(String constants){
+        ArrayList<DrawerItem> list = new ArrayList<>();
+        try {
+            JSONObject jsonObject = new JSONObject(constants);
+            JSONArray jsonArray = jsonObject.getJSONArray("order");
+            for(int i=0;i<jsonArray.length();i++){
+                list.add(new DrawerItem(jsonArray.getString(i)));
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     public ArrayList<NoticeObject> parseNotices(String notices){
