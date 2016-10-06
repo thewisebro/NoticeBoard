@@ -31,6 +31,9 @@ public class DrawerItem {
         else if(name.contains("Feedback")){
             this.logo=(R.drawable.ic_info_black_24dp);
         }
+        else if(name.contains("Starred")){
+            this.logo=R.drawable.ic_star_black_24dp;
+        }
         else
             logo=0;
     }

@@ -165,7 +165,7 @@ public class CustomDrawerListAdapter extends ArrayAdapter<Category> {
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 Spinner s = (Spinner) drawerlist_view.findViewById(R.id.drawer_spinner);
                 s.setAdapter(adapter);
-                s.getBackground().setColorFilter(context.getResources().getColor(R.color.spinnerarrow), PorterDuff.Mode.SRC_ATOP);
+                s.getBackground().setColorFilter(context.getResources().getColor(R.color.black), PorterDuff.Mode.SRC_ATOP);
                 s.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
                     @Override

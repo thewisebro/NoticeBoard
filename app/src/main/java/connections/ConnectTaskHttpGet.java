@@ -1,7 +1,5 @@
 package connections;
 
-import android.app.ProgressDialog;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -20,16 +18,7 @@ import java.io.InputStreamReader;
 
 
 public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
-    Context context;
-    ProgressDialog progressDialog;
-    int check;
-    public ConnectTaskHttpGet(){
-        check=0;
-    }
-    public ConnectTaskHttpGet(Context context) {
-        this.context = context;
-        check = 1;
-    }
+
     @Override
     protected String doInBackground(HttpGet... httpPosts) {
 // TODO Auto-generated method stub

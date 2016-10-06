@@ -9,8 +9,8 @@ android {
             storePassword 'imglab'
         }
     }
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion 23
+    buildToolsVersion '23.0.1'
     defaultConfig {
         applicationId "in.channeli.noticeboard"
         minSdkVersion 16
@@ -36,5 +36,7 @@ dependencies {
     compile 'com.android.support:support-v4:24.2.1'
     compile 'com.android.support:recyclerview-v7:24.2.1'
     compile files('libs/jsoup-1.8.3.jar')
-    compile 'com.android.support:design:22.2.0'
+    compile 'com.android.support:design:23.4.0'
+    compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+    compile 'com.roughike:bottom-bar:1.2.1'
 }

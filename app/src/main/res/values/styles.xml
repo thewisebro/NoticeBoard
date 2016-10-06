@@ -10,5 +10,9 @@
     <style name="RobotoTextViewStyle" parent="android:Widget.TextView">
         <item name="android:fontFamily">sans-serif-light</item>
     </style>
+    <style name="NavigationTheme" parent="AppTheme">
+        <item name="android:textSize">12sp</item>
+        <item  name="android:textStyle">bold</item>
+    </style>
 
 </resources>

@@ -61,7 +61,10 @@ public class DrawerClickFragment extends Fragment {
         category = args.getString("category", "All");
         category = category.replaceAll(" ", "%20");
         noticetype = args.getString("noticetype","new");
-        httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+noticetype+"/"+category+"/All/0/20/0");
+        if(category.matches("Starred"))
+            httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
+        else
+            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+noticetype+"/"+category+"/All/0/20/0");
         sqlHelper=new SQLHelper(getActivity());
         noticelist=new ArrayList<NoticeObject>();
         SharedPreferences settings = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);

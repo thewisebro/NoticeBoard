@@ -16,7 +16,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -25,7 +27,6 @@ import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.widget.BaseAdapter;
 import android.widget.HeaderViewListAdapter;
@@ -33,6 +34,9 @@ import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.roughike.bottombar.BottomBar;
+import com.roughike.bottombar.OnMenuTabSelectedListener;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -64,7 +68,9 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     public static String NoticeType = "new", MainCategory = "All";
     private User user;
+    public BottomBar bottomBar;
 
+    CoordinatorLayout coordinatorLayout;
     HttpGet httpGet;
     public static final String PREFS_NAME = "MyPrefsFile";
     Parsing parsing;
@@ -77,9 +83,11 @@ public class MainActivity extends AppCompatActivity {
     @TargetApi(21)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.main);
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
+        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
+        bottomBar= BottomBar.attach(this,savedInstanceState);
         setSupportActionBar(toolbar);
         settings = getSharedPreferences(PREFS_NAME, 0);
         editor=settings.edit();
@@ -87,9 +95,10 @@ public class MainActivity extends AppCompatActivity {
         user = new User(settings.getString("name",""), settings.getString("info",""),
                 settings.getString("enrollment_no",""));
         setNavigationView();
+        setBottomBar();
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        changingFragment("All");
+        changingFragment();
         setTitle("All Current");
 
         mDrawerToggle = new ActionBarDrawerToggle(
@@ -123,22 +132,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
                 //Checking if the item is in checked state or not, if not make it in checked state
-                if(menuItem.isChecked()) menuItem.setChecked(false);
-                else menuItem.setChecked(true);
+                Menu menu=navigationView.getMenu();
+                for (int i=0;i<menu.size();i++)
+                    menu.getItem(i).setChecked(false);
+                menuItem.setChecked(true);
 
                 //Closing drawer on item click
                 mDrawerLayout.closeDrawers();
-                if(menuItem.getGroupId()==1) {
-                    selectItem(menuItem.getItemId());
+                if(menuItem.getGroupId()==R.id.group1) {
+                    MainCategory=group1.get(menuItem.getItemId()).getName();
+                    selectItem();
                 }
                 else {
                     switch (menuItem.getItemId()){
-                        case 0: //Feedback
+                        case 0: //Starred
+                            MainCategory="Starred";
+                            selectItem();
+                            return true;
+                        case 1: //Feedback
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             intent.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
                             startActivity(intent);
                             return true;
-                        case 1: //Logout
+                        case 2: //Logout
                             logout();
                             return true;
                         default:
@@ -149,7 +165,27 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
+    private void setBottomBar(){
+        bottomBar.setItemsFromMenu(R.menu.menu_bottom_bar, new OnMenuTabSelectedListener() {
+            @Override
+            public void onMenuItemSelected(int itemId) {
+                switch (itemId) {
+                    case R.id.new_items:
+                        NoticeType="new";
+                        changingFragment();
+                        Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
+                        break;
+                    case R.id.old_items:
+                        NoticeType="old";
+                        changingFragment();
+                        Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
+        bottomBar.setActiveTabColor("#C2185B");
+        bottomBar.useDarkTheme(true);
+    }
     private void setHeader(View headerView){
         final RoundImageView view= (RoundImageView) headerView.findViewById(R.id.profile_picture);
         final TextView nameView= (TextView) headerView.findViewById(R.id.name);
@@ -225,19 +261,17 @@ public class MainActivity extends AppCompatActivity {
     }
     void setMenu(){
         final Menu menu=navigationView.getMenu();
-        SubMenu menu1=menu.addSubMenu("Categories");
-        SubMenu menu2=menu.addSubMenu("");
-
         group1=parsing.parseConstants(getConstants());
         group2=new ArrayList<>();
+        group2.add(new DrawerItem("Starred"));
         group2.add(new DrawerItem("Feedback"));
         group2.add(new DrawerItem("Logout"));
         for(int i=0;i<group1.size();i++){
-            menu1.add(1, i, i, group1.get(i).getName())
+            menu.add(R.id.group1, i, i, group1.get(i).getName())
                     .setIcon(group1.get(i).getIcon());
         }
         for(int i=0;i<group2.size();i++){
-            menu2.add(2,i,i,group2.get(i).getName())
+            menu.add(R.id.group2,i,i+group1.size(),group2.get(i).getName())
                     .setIcon(group2.get(i).getIcon());
         }
         for (int i = 0, count = navigationView.getChildCount(); i < count; i++) {
@@ -263,9 +297,8 @@ public class MainActivity extends AppCompatActivity {
                 httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
                 try {
                     new ConnectTaskHttpGet().execute(httpGet);
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "logged out successfully", Toast.LENGTH_SHORT);
-                    toast.show();
+                    Toast.makeText(getApplicationContext(),
+                            "Logged Out Successfully", Toast.LENGTH_SHORT).show();
                     editor.putString("CHANNELI_SESSID", "");
                     editor.putString("csrftoken", "");
                     editor.commit();
@@ -291,10 +324,14 @@ public class MainActivity extends AppCompatActivity {
         }, 250);
 
     }
-    void changingFragment(String category){
+    void changingFragment(){
+        if (MainCategory.equals("Starred"))
+            bottomBar.hide();
+        else
+            bottomBar.show();
         Fragment fragment = new DrawerClickFragment();
         Bundle args = new Bundle();
-        args.putString("category",category);
+        args.putString("category",MainCategory);
         args.putString("noticetype", NoticeType);
         fragment.setArguments(args);
         FragmentManager fragmentManager = getFragmentManager();
@@ -304,20 +341,23 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
-    private void selectItem(final int position) {
+    private void selectItem() {
 
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                    MainCategory = group1.get(position).getName();
-                    changingFragment(MainCategory);
-                    if (NoticeType.equals("new"))
-                        setTitle(MainCategory + " "
-                                + "Current");
-                    else
-                        setTitle(MainCategory + " "
-                                + "Expired");
+                    changingFragment();
+                    if (MainCategory.equals("Starred"))
+                        setTitle("Starred");
+                    else{
+                        if (NoticeType.equals("new"))
+                            setTitle(MainCategory + " "
+                                    + "Current");
+                        else
+                            setTitle(MainCategory + " "
+                                    + "Expired");
+                    }
             }
         };
         handler.postDelayed(runnable, 250);
@@ -373,7 +413,24 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportFragmentManager().getBackStackEntryCount()!=0){
             getSupportFragmentManager().popBackStack();
         }
-        else
-            finish();
+        else{
+            AlertDialog.Builder dialog=new AlertDialog.Builder(this);
+            dialog.setTitle("Exit");
+            dialog.setMessage("Are you sure you want to exit?");
+            dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            });
+            dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+
+            dialog.show();
+        }
     }
 }
