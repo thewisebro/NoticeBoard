@@ -43,6 +43,8 @@ import org.apache.http.client.methods.HttpGet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -127,26 +129,25 @@ public class MainActivity extends AppCompatActivity {
         setHeader(headerView);
         setMenu();
 
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener(){
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
 
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
                 //Checking if the item is in checked state or not, if not make it in checked state
-                Menu menu=navigationView.getMenu();
-                for (int i=0;i<menu.size();i++)
+                Menu menu = navigationView.getMenu();
+                for (int i = 0; i < menu.size(); i++)
                     menu.getItem(i).setChecked(false);
                 menuItem.setChecked(true);
 
                 //Closing drawer on item click
                 mDrawerLayout.closeDrawers();
-                if(menuItem.getGroupId()==R.id.group1) {
-                    MainCategory=group1.get(menuItem.getItemId()).getName();
+                if (menuItem.getGroupId() == R.id.group1) {
+                    MainCategory = group1.get(menuItem.getItemId()).getName();
                     selectItem();
-                }
-                else {
-                    switch (menuItem.getItemId()){
+                } else {
+                    switch (menuItem.getItemId()) {
                         case 0: //Starred
-                            MainCategory="Starred";
+                            MainCategory = "Starred";
                             selectItem();
                             return true;
                         case 1: //Feedback
@@ -171,19 +172,19 @@ public class MainActivity extends AppCompatActivity {
             public void onMenuItemSelected(int itemId) {
                 switch (itemId) {
                     case R.id.new_items:
-                        NoticeType="new";
+                        NoticeType = "new";
                         changingFragment();
                         Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
                         break;
                     case R.id.old_items:
-                        NoticeType="old";
+                        NoticeType = "old";
                         changingFragment();
                         Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
                         break;
                 }
             }
         });
-        bottomBar.setActiveTabColor("#C2185B");
+        bottomBar.setActiveTabColor(getResources().getColor(R.color.bottomBarActive));
         bottomBar.useDarkTheme(true);
     }
     private void setHeader(View headerView){
@@ -232,9 +233,10 @@ public class MainActivity extends AppCompatActivity {
             view.setImageBitmap(bitmap);
         }
     }
-    String getConstants(){
-        String constants = settings.getString("constants", "");
+    ArrayList<DrawerItem> getConstants(){
+        ArrayList<DrawerItem> list=new ArrayList<>();
         if (isOnline()){
+            String constants=null;
             httpGet = new HttpGet(UrlOfNotice+"get_constants/");
             httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -244,11 +246,14 @@ public class MainActivity extends AppCompatActivity {
                 mTask = new ConnectTaskHttpGet().execute(httpGet);
                 constants = mTask.get(4000, TimeUnit.MILLISECONDS);
                 mTask.cancel(true);
-                if(constants!=null && constants!="") {
-                    editor.putString("constants", constants);
-                    editor.commit();
-                    editor.apply();
-                }
+                list.addAll(parsing.parseConstants(constants));
+                Set<String> constantSet=new HashSet<>(list.size());
+                for(int i=0;i<list.size();i++)
+                    constantSet.add(list.get(i).getName());
+                editor.putStringSet("constants",constantSet);
+                editor.apply();
+                editor.commit();
+                return list;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -257,11 +262,16 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        return constants;
+        if(settings.contains("constants")){
+            Set<String> constants=settings.getStringSet("constants",null);
+            for (String s: constants)
+                list.add(new DrawerItem(s));
+        }
+        return list;
     }
     void setMenu(){
         final Menu menu=navigationView.getMenu();
-        group1=parsing.parseConstants(getConstants());
+        group1=getConstants();
         group2=new ArrayList<>();
         group2.add(new DrawerItem("Starred"));
         group2.add(new DrawerItem("Feedback"));

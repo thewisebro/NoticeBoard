@@ -3,6 +3,7 @@
     <color name="colorPrimary">#E91E63</color>
     <color name="colorPrimaryDark">#C2185B</color>
     <color name="colorAccent">#4CAF50</color>
+    <color name="bottomBarActive">#C2185B</color>
     <color name="blue">#2d76d8</color>
     <color name="blue_darker">#0E60D0</color>
     <color name="green">#ff43fa0b</color>

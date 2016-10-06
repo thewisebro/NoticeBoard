@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,10 +16,10 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.SearchView;
-import android.widget.Spinner;
+
+import com.roughike.bottombar.BottomBar;
+import com.roughike.bottombar.OnMenuTabSelectedListener;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -26,7 +28,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import adapters.CustomRecyclerViewAdapter;
-import adapters.CustomSpinnerAdapter;
 import connections.ConnectTaskHttpGet;
 import objects.NoticeObject;
 import utilities.Parsing;
@@ -44,6 +45,8 @@ public class SearchActivity extends AppCompatActivity {
     String csrftoken;
     String CHANNELI_SESSID;
     AsyncTask<HttpGet, Void, String> task;
+    BottomBar bottomBar;
+    CoordinatorLayout coordinatorLayout;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -53,9 +56,13 @@ public class SearchActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         parsing = new Parsing();
         noticetype = "new";
+        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
         setTitle("Searched Results");
         handleIntent(getIntent());
         recyclerView = (RecyclerView) findViewById(R.id.search_list_view);
+        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.search_view);
+        bottomBar= BottomBar.attach(this,savedInstanceState);
+        setBottomBar();
         noticelist=new ArrayList<NoticeObject>();
 
         SharedPreferences preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
@@ -70,39 +77,35 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
         adapter=new CustomRecyclerViewAdapter(getApplicationContext(),R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(adapter);
+        setNoticelist(searchUrl+query);
+    }
+    private void setBottomBar(){
+        bottomBar.setItemsFromMenu(R.menu.menu_bottom_bar, new OnMenuTabSelectedListener() {
+            @Override
+            public void onMenuItemSelected(int itemId) {
+                switch (itemId) {
+                    case R.id.new_items:
+                        noticetype="new";
+                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
+                        setNoticelist(searchUrl+query);
+                        Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
+                        break;
+                    case R.id.old_items:
+                        noticetype="old";
+                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
+                        setNoticelist(searchUrl + query);
+                        Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
+        bottomBar.setActiveTabColor(getResources().getColor(R.color.bottomBarActive));
+        bottomBar.useDarkTheme(true);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
-        getMenuInflater().inflate(R.menu.menu_search, menu);
-
-        Spinner spinner = (Spinner) menu.findItem(R.id.toggle).getActionView();
-        if(null!= spinner) {
-            CustomSpinnerAdapter adapter = new CustomSpinnerAdapter(this,
-                    R.layout.spinner_item, type);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spinner.setAdapter(adapter);
-            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (position != 0) {
-                        noticetype = "old";
-                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
-                    }
-                    else {
-                        noticetype = "new";
-                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
-                    }
-                    setNoticelist(searchUrl+query);
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-
-                }
-            });
-        }
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         final SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
         if (null != searchView )
@@ -122,7 +125,6 @@ public class SearchActivity extends AppCompatActivity {
                 query = newText;
                 query = query.replaceAll(" ","%20");
                 onTextSubmit();
-                //searchView.onActionViewCollapsed();
                 return true;
             }
         };
