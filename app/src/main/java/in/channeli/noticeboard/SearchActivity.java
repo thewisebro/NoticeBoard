@@ -60,7 +60,7 @@ public class SearchActivity extends AppCompatActivity {
         setTitle("Searched Results");
         handleIntent(getIntent());
         recyclerView = (RecyclerView) findViewById(R.id.search_list_view);
-        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.search_view);
+        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
         bottomBar= BottomBar.attach(this,savedInstanceState);
         setBottomBar();
         noticelist=new ArrayList<NoticeObject>();
@@ -75,7 +75,7 @@ public class SearchActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(layoutManager);
-        adapter=new CustomRecyclerViewAdapter(getApplicationContext(),R.layout.list_itemview,noticelist);
+        adapter=new CustomRecyclerViewAdapter(this,R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(adapter);
         setNoticelist(searchUrl+query);
     }

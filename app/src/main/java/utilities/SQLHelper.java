@@ -98,8 +98,8 @@ public class SQLHelper extends SQLiteOpenHelper{
         if (!checkNoticeContent(id))
             return null;
         SQLiteDatabase db=this.getReadableDatabase();
-        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_REFERENCE,ROW_CONTENT},null,null,null,null,null);
+        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY,ROW_REFERENCE,ROW_CONTENT}
+                ,ROW_ID + "=" + id,null,null,null,null);
         if(cursor.moveToFirst()){
             NoticeInfo info=new NoticeInfo();
             info.setId(cursor.getInt(0));

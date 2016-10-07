@@ -1,14 +1,16 @@
 package adapters;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.Toast;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -186,9 +188,11 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 } else {
-                    Toast toast = Toast.makeText(context,
-                            "Cannot Connect to Internet", Toast.LENGTH_SHORT);
-                    toast.show();
+                    CoordinatorLayout layout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
+                    //Toast toast = Toast.makeText(context,
+                    //        "Cannot Connect to Internet", Toast.LENGTH_SHORT);
+                    //toast.show();
+                    Snackbar.make(layout, "Cannot Connect to Internet", Snackbar.LENGTH_SHORT).show();
                 }
 
                 db.close();

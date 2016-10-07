@@ -2,7 +2,7 @@
 <android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:id="@+id/search_view"
+    android:id="@+id/main_content"
     android:layout_height="match_parent">
     <LinearLayout
         android:orientation="vertical"

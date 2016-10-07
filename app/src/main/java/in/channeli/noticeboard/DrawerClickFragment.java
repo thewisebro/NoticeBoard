@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -96,10 +98,11 @@ public class DrawerClickFragment extends Fragment {
             ArrayList<NoticeObject> list=sqlHelper.getNotices();
             if(list!=null)
                 noticelist.addAll(list);
+            showNetworkError();
         }
 
         recyclerView= (RecyclerView) view.findViewById(R.id.list_view);
-        customAdapter=new CustomRecyclerViewAdapter(getActivity().getApplicationContext(),
+        customAdapter=new CustomRecyclerViewAdapter(getActivity(),
                 R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(customAdapter);
         LinearLayoutManager layoutManager=new LinearLayoutManager(getActivity().getApplicationContext());
@@ -122,16 +125,19 @@ public class DrawerClickFragment extends Fragment {
                         mTask = new ConnectTaskHttpGet().execute(httpGet);
                         result = mTask.get();
                         mTask.cancel(true);
+                        if (result!=null){
+                            int curSize=customAdapter.getItemCount();
+                            ArrayList<NoticeObject> list = parsing.parseNotices(result);
+                            addToDB(list);
+                            noticelist.addAll(list);
+                            customAdapter.notifyItemRangeInserted(curSize, list.size());
+                            return;
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (ExecutionException e) {
                         e.printStackTrace();
                     }
-                    int curSize=customAdapter.getItemCount();
-                    ArrayList<NoticeObject> list = parsing.parseNotices(result);
-                    addToDB(list);
-                    noticelist.addAll(list);
-                    customAdapter.notifyItemRangeInserted(curSize, list.size());
                 }
             }
         });
@@ -147,6 +153,10 @@ public class DrawerClickFragment extends Fragment {
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
         }
         return view;
+    }
+    public void showNetworkError(){
+        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) getActivity().findViewById(R.id.main_content);
+        Snackbar.make(coordinatorLayout,"Check Newtwork Connection",Snackbar.LENGTH_LONG).show();
     }
     private abstract class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
         private int itemCount=0;
@@ -187,7 +197,7 @@ public class DrawerClickFragment extends Fragment {
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
         @Override
         public void onRefresh() {
-            new Handler().postDelayed(new Runnable() {
+            new Handler().post(new Runnable() {
                 @Override
                 public void run() {
                     if (isOnline()){
@@ -203,22 +213,25 @@ public class DrawerClickFragment extends Fragment {
                             mTask = new ConnectTaskHttpGet().execute(httpGet);
                             result = mTask.get();
                             mTask.cancel(true);
+                            ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                            addToDB(list);
+                            int size=noticelist.size();
+                            noticelist.clear();
+                            customAdapter.notifyItemRangeRemoved(0, size);
+                            noticelist.addAll(list);
+                            customAdapter.notifyItemRangeInserted(0,list.size());
+                            swipeRefreshLayout.setRefreshing(false);
+                            return;
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
-                        ArrayList<NoticeObject> list=parsing.parseNotices(result);
-                        addToDB(list);
-                        int size=noticelist.size();
-                        noticelist.clear();
-                        customAdapter.notifyItemRangeRemoved(0,size);
-                        noticelist.addAll(list);
-                        customAdapter.notifyItemRangeInserted(0,list.size());
-                        swipeRefreshLayout.setRefreshing(false);
                     }
+                    showNetworkError();
+                    swipeRefreshLayout.setRefreshing(false);
                 }
-            },3000);
+            });
 
         }
     }
