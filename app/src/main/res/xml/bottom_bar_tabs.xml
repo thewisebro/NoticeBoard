@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tabs>
+    <tab
+        id="@+id/new_items"
+        title="Current"
+        icon="@drawable/ic_schedule_black_24dp"
+        inActiveColor="@color/colorPrimary"
+        activeColor="@color/white"
+        barColorWhenSelected="@color/colorPrimaryDark"/>
+    <tab
+        id="@+id/old_items"
+        title="Expired"
+        icon="@drawable/ic_restore_black_24dp"
+        inActiveColor="@color/dark_gray"
+        activeColor="@color/white"
+        barColorWhenSelected="@color/dark_gray" />
+</tabs>

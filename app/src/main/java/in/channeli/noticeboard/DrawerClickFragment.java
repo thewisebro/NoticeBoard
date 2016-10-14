@@ -2,6 +2,7 @@ package in.channeli.noticeboard;
 
 import android.annotation.TargetApi;
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -78,24 +79,41 @@ public class DrawerClickFragment extends Fragment {
         httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
         httpGet.setHeader("X-CSRFToken",csrftoken);
         if (isOnline()){
-            String content_first_time_notice = null;
-            try {
-                mTask = new ConnectTaskHttpGet().execute(httpGet);
-                content_first_time_notice = mTask.get();
-                mTask.cancel(true);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-            con = new Connections();
-            parsing = new Parsing();
-            ArrayList<NoticeObject> list=parsing.parseNotices(content_first_time_notice);
-            addToDB(list);
-            noticelist.addAll(list);
+            final ProgressDialog pd = new ProgressDialog(getActivity());
+            pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            pd.setMessage("Loading...");
+            pd.setIndeterminate(true);
+            pd.setCancelable(false);
+            pd.show();
+            Thread thread=new Thread(){
+                @Override
+                public void run(){
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            String content_first_time_notice = null;
+                            try {
+                                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                                content_first_time_notice = mTask.get();
+                                mTask.cancel(true);
+                                con = new Connections();
+                                parsing = new Parsing();
+                                ArrayList<NoticeObject> list = parsing.parseNotices(content_first_time_notice);
+                                addToDB(list);
+                                noticelist.addAll(list);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                showNetworkError();
+                            }
+                            pd.dismiss();
+                        }
+                    });
+                }
+            };
+            thread.start();
         }
         else{
-            ArrayList<NoticeObject> list=sqlHelper.getNotices();
+            ArrayList<NoticeObject> list=sqlHelper.getNotices(category);
             if(list!=null)
                 noticelist.addAll(list);
             showNetworkError();

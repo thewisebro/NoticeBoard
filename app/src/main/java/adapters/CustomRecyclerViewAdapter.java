@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
@@ -148,10 +149,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
 
         //Highlight read notices
-        if(noticeObject.getRead())
+        if(noticeObject.getRead()) {
             holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_background));
-        else
+            holder.subject.setTypeface(null, Typeface.NORMAL);
+        }
+        else {
             holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.background));
+            holder.subject.setTypeface(null,Typeface.BOLD);
+        }
 
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -189,9 +194,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                     context.startActivity(intent);
                 } else {
                     CoordinatorLayout layout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
-                    //Toast toast = Toast.makeText(context,
-                    //        "Cannot Connect to Internet", Toast.LENGTH_SHORT);
-                    //toast.show();
+
                     Snackbar.make(layout, "Cannot Connect to Internet", Snackbar.LENGTH_SHORT).show();
                 }
 

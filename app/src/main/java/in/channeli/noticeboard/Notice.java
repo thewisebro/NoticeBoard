@@ -34,7 +34,6 @@ public class Notice extends AppCompatActivity {
                 index >= 0;
                 index = result.indexOf("/notices",index + 1)) {
                 count.add(index);
-
             }
 
             int prev = 0;
@@ -62,7 +61,7 @@ public class Notice extends AppCompatActivity {
         WebView webView = (WebView) findViewById(R.id.webView);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setBuiltInZoomControls(true);
-        webView.getSettings().setDisplayZoomControls(false);
+        webView.getSettings().setDisplayZoomControls(true);
         webView.getSettings().setSupportZoom(true);
         webView.loadData(result, "text/html", "utf-8");
 

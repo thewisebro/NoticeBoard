@@ -94,6 +94,34 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.close();
         return list;
     }
+    public ArrayList<NoticeObject> getNotices(String category){
+        SQLiteDatabase db=this.getReadableDatabase();
+        ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
+        String CONDITION=null;
+        category = category.replaceAll("%20"," ");
+        if (category.matches("Starred"))
+            CONDITION=ROW_STAR_STATUS+"= 1";
+        else if (!category.matches("All"))
+            CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"'";
+
+        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,null);
+        if(cursor.moveToFirst()){
+            do{
+                NoticeObject object=new NoticeObject();
+                object.setId(cursor.getInt(0));
+                object.setSubject(cursor.getString(1));
+                object.setDatetime_modified(cursor.getString(2));
+                object.setCategory(cursor.getString(3));
+                object.setMain_category(cursor.getString(4));
+                object.setRead(cursor.getInt(5) > 0);
+                object.setStar(cursor.getInt(6) > 0);
+                list.add(object);
+            }while (cursor.moveToNext());
+        }
+        db.close();
+        return list;
+    }
     public NoticeInfo getNoticeInfo(int id){
         if (!checkNoticeContent(id))
             return null;

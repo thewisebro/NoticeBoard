@@ -19,7 +19,7 @@ import android.view.MenuItem;
 import android.widget.SearchView;
 
 import com.roughike.bottombar.BottomBar;
-import com.roughike.bottombar.OnMenuTabSelectedListener;
+import com.roughike.bottombar.OnTabSelectListener;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -61,7 +61,7 @@ public class SearchActivity extends AppCompatActivity {
         handleIntent(getIntent());
         recyclerView = (RecyclerView) findViewById(R.id.search_list_view);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
-        bottomBar= BottomBar.attach(this,savedInstanceState);
+        bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         setBottomBar();
         noticelist=new ArrayList<NoticeObject>();
 
@@ -80,9 +80,9 @@ public class SearchActivity extends AppCompatActivity {
         setNoticelist(searchUrl+query);
     }
     private void setBottomBar(){
-        bottomBar.setItemsFromMenu(R.menu.menu_bottom_bar, new OnMenuTabSelectedListener() {
+        bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
-            public void onMenuItemSelected(int itemId) {
+            public void onTabSelected(int itemId) {
                 switch (itemId) {
                     case R.id.new_items:
                         noticetype="new";
@@ -99,8 +99,12 @@ public class SearchActivity extends AppCompatActivity {
                 }
             }
         });
-        bottomBar.setActiveTabColor(getResources().getColor(R.color.bottomBarActive));
-        bottomBar.useDarkTheme(true);
+    }
+
+
+    public void showNetworkError(){
+        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
+        Snackbar.make(coordinatorLayout,"Check Newtwork Connection",Snackbar.LENGTH_LONG).show();
     }
 
     @Override
@@ -152,31 +156,35 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void setNoticelist(final String url){
-        final ProgressDialog pd = new ProgressDialog(this);
-        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        pd.setMessage("Loading...");
-        pd.setIndeterminate(true);
-        pd.setCancelable(false);
-        pd.show();
-        Thread thread= new Thread(){
-            @Override
-            public void run(){
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ArrayList<NoticeObject> list=getSearchedNotices(url);
-                        if(list!=null) {
-                            int size=noticelist.size();
-                            noticelist.clear();
-                            noticelist.addAll(list);
-                            adapter.notifyDataSetChanged();
+        if (isOnline()){
+            final ProgressDialog pd = new ProgressDialog(this);
+            pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            pd.setMessage("Loading...");
+            pd.setIndeterminate(true);
+            pd.setCancelable(false);
+            pd.show();
+            Thread thread= new Thread(){
+                @Override
+                public void run(){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            ArrayList<NoticeObject> list=getSearchedNotices(url);
+                            if(list!=null) {
+                                int size=noticelist.size();
+                                noticelist.clear();
+                                noticelist.addAll(list);
+                                adapter.notifyDataSetChanged();
+                            }
+                            pd.dismiss();
                         }
-                        pd.dismiss();
-                    }
-                });
-            }
-        };
-        thread.start();
+                    });
+                }
+            };
+            thread.start();
+        }
+        else
+            showNetworkError();
     }
 
     private ArrayList<NoticeObject> getSearchedNotices(String url){
@@ -197,6 +205,7 @@ public class SearchActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
+        showNetworkError();
         return null;
     }
     public boolean isOnline() {

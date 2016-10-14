@@ -26,8 +26,17 @@
                 android:id="@+id/content_frame"
                 android:layout_width="match_parent"
                 android:scrollbars="none"
+                android:layout_weight="1"
                 android:layout_height="match_parent">
             </FrameLayout>
+            <com.roughike.bottombar.BottomBar
+                android:layout_width="match_parent"
+                android:id="@+id/bottom_bar"
+                app:bb_tabXmlResource="@xml/bottom_bar_tabs"
+                app:bb_showShadow="true"
+                app:bb_behavior="shifting"
+                app:bb_titleTextAppearance="@style/bottomBarTextStyle"
+                android:layout_height="60dp" />
         </LinearLayout>
 
         <android.support.design.widget.NavigationView

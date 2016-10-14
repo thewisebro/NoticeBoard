@@ -36,7 +36,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.roughike.bottombar.BottomBar;
-import com.roughike.bottombar.OnMenuTabSelectedListener;
+import com.roughike.bottombar.OnTabSelectListener;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
-        bottomBar= BottomBar.attach(this,savedInstanceState);
+        bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         setSupportActionBar(toolbar);
         settings = getSharedPreferences(PREFS_NAME, 0);
         editor=settings.edit();
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         changingFragment();
-        setTitle("All Current");
+        setTitle("All");
 
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.addHeaderView(headerView);
         setHeader(headerView);
         setMenu();
-
+        //navigationView.setCheckedItem();
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
 
             @Override
@@ -167,9 +167,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     private void setBottomBar(){
-        bottomBar.setItemsFromMenu(R.menu.menu_bottom_bar, new OnMenuTabSelectedListener() {
+        bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
-            public void onMenuItemSelected(int itemId) {
+            public void onTabSelected(int itemId) {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
@@ -184,8 +184,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        bottomBar.setActiveTabColor(getResources().getColor(R.color.bottomBarActive));
-        bottomBar.useDarkTheme(true);
     }
     private void setHeader(View headerView){
         final RoundImageView view= (RoundImageView) headerView.findViewById(R.id.profile_picture);
@@ -336,9 +334,9 @@ public class MainActivity extends AppCompatActivity {
     }
     void changingFragment(){
         if (MainCategory.equals("Starred"))
-            bottomBar.hide();
+            bottomBar.setVisibility(View.GONE);
         else
-            bottomBar.show();
+            bottomBar.setVisibility(View.VISIBLE);
         Fragment fragment = new DrawerClickFragment();
         Bundle args = new Bundle();
         args.putString("category",MainCategory);
@@ -358,7 +356,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                     changingFragment();
-                    if (MainCategory.equals("Starred"))
+                    setTitle(MainCategory);
+                    /*if (MainCategory.equals("Starred"))
                         setTitle("Starred");
                     else{
                         if (NoticeType.equals("new"))
@@ -367,10 +366,10 @@ public class MainActivity extends AppCompatActivity {
                         else
                             setTitle(MainCategory + " "
                                     + "Expired");
-                    }
+                    }*/
             }
         };
-        handler.postDelayed(runnable, 250);
+        handler.postDelayed(runnable, 300);
     }
 
     public void setTitle(String title){

@@ -4,7 +4,6 @@ public class NoticeObject {
     int id;
     String subject;
     String datetime_modified;
-    //String username;
     String category;
     String main_category;
     boolean star;
