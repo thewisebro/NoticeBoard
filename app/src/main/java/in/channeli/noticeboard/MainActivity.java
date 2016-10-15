@@ -2,8 +2,6 @@ package in.channeli.noticeboard;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -20,8 +19,11 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -42,6 +44,7 @@ import org.apache.http.client.methods.HttpGet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,13 +52,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
+import connections.Connections;
 import connections.ProfilePicService;
 import objects.DrawerItem;
+import objects.NoticeObject;
 import objects.User;
 import utilities.DownloadResultReceiver;
 import utilities.Parsing;
 import utilities.RoundImageView;
+import utilities.SQLHelper;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -81,6 +88,23 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<DrawerItem> group1;
     ArrayList<DrawerItem> group2;
 
+    private RecyclerView recyclerView;
+    private CustomRecyclerViewAdapter customAdapter=null;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private Connections con;
+    private ArrayList<NoticeObject> noticelist;
+    private AsyncTask<HttpGet, Void, String> mTask;
+    private SQLHelper sqlHelper;
+    private String csrftoken, CHANNELI_SESSID;
+
+    private void addToDB(ArrayList<NoticeObject> list){
+        try {
+            sqlHelper.addNoticesList(list);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     @TargetApi(21)
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +113,8 @@ public class MainActivity extends AppCompatActivity {
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
+        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        recyclerView= (RecyclerView) swipeRefreshLayout.findViewById(R.id.list_view);
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         setSupportActionBar(toolbar);
         settings = getSharedPreferences(PREFS_NAME, 0);
@@ -96,13 +122,18 @@ public class MainActivity extends AppCompatActivity {
         parsing = new Parsing();
         user = new User(settings.getString("name",""), settings.getString("info",""),
                 settings.getString("enrollment_no",""));
+        sqlHelper=new SQLHelper(this);
+        noticelist=new ArrayList<NoticeObject>();
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        csrftoken = settings.getString("csrftoken","");
+        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
+        customAdapter=new CustomRecyclerViewAdapter(this,
+                R.layout.list_itemview, noticelist);
+
         setNavigationView();
         setBottomBar();
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        changingFragment();
-        setTitle("All");
-
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,
                 mDrawerLayout,
@@ -121,6 +152,18 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         mDrawerToggle.syncState();
+        setTitle("All");
+
+        recyclerView.setAdapter(customAdapter);
+        LinearLayoutManager layoutManager=new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager));
+
+        swipeRefreshLayout.setColorSchemeColors(
+                Color.RED, Color.BLUE, Color.BLACK);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
+
+
     }
 
     void setNavigationView(){
@@ -173,12 +216,14 @@ public class MainActivity extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
-                        changingFragment();
+                        //changingFragment();
+                        changeList();
                         Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
                         break;
                     case R.id.old_items:
                         NoticeType = "old";
-                        changingFragment();
+                        //changingFragment();
+                        changeList();
                         Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
                         break;
                 }
@@ -261,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if(settings.contains("constants")){
-            Set<String> constants=settings.getStringSet("constants",null);
+            Set<String> constants=settings.getStringSet("constants", null);
             for (String s: constants)
                 list.add(new DrawerItem(s));
         }
@@ -332,14 +377,14 @@ public class MainActivity extends AppCompatActivity {
         }, 250);
 
     }
-    void changingFragment(){
+/*    void changingFragment(){
         if (MainCategory.equals("Starred"))
             bottomBar.setVisibility(View.GONE);
         else
             bottomBar.setVisibility(View.VISIBLE);
         Fragment fragment = new DrawerClickFragment();
         Bundle args = new Bundle();
-        args.putString("category",MainCategory);
+        args.putString("category", MainCategory);
         args.putString("noticetype", NoticeType);
         fragment.setArguments(args);
         FragmentManager fragmentManager = getFragmentManager();
@@ -348,28 +393,177 @@ public class MainActivity extends AppCompatActivity {
                 .addToBackStack(null)
                 .commit();
     }
-
+*/
     private void selectItem() {
 
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                    changingFragment();
+                    //changingFragment();
+                    changeList();
                     setTitle(MainCategory);
-                    /*if (MainCategory.equals("Starred"))
-                        setTitle("Starred");
-                    else{
-                        if (NoticeType.equals("new"))
-                            setTitle(MainCategory + " "
-                                    + "Current");
-                        else
-                            setTitle(MainCategory + " "
-                                    + "Expired");
-                    }*/
             }
         };
         handler.postDelayed(runnable, 300);
+    }
+    private void changeList(){
+        if (MainCategory.equals("Starred")) {
+            bottomBar.setVisibility(View.GONE);
+            httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
+        }
+        else {
+            MainCategory = MainCategory.replaceAll(" ", "%20");
+            bottomBar.setVisibility(View.VISIBLE);
+            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+NoticeType+"/"+MainCategory+"/All/0/20/0");
+        }
+
+        noticelist.clear();
+
+        if (isOnline()){
+            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+            httpGet.setHeader("X-CSRFToken", csrftoken);
+            setContent();
+        }
+        else{
+            ArrayList<NoticeObject> list=sqlHelper.getNotices(MainCategory);
+            if(list!=null)
+                noticelist.addAll(list);
+            showNetworkError();
+        }
+        customAdapter.notifyDataSetChanged();
+    }
+
+
+    private void setContent(){
+        String content = null;
+        try {
+            mTask = new ConnectTaskHttpGet().execute(httpGet);
+            content = mTask.get();
+            mTask.cancel(true);
+            con = new Connections();
+            parsing = new Parsing();
+            ArrayList<NoticeObject> list = parsing.parseNotices(content);
+            addToDB(list);
+            noticelist.addAll(list);
+        } catch (Exception e) {
+            e.printStackTrace();
+            showNetworkError();
+        }
+    }
+
+    private class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
+        private int itemCount=0;
+        private boolean isLoading=true;
+        private LinearLayoutManager layoutManager;
+        public RecyclerViewScrollListener(LinearLayoutManager manager){
+            this.layoutManager=manager;
+        }
+        @Override
+        public void onScrolled(RecyclerView view,int dx,int dy){
+            int firstVisibleItem=layoutManager.findFirstVisibleItemPosition();
+            int visibleItemCount=view.getChildCount();
+            int totalItemCount=layoutManager.getItemCount();
+            int lastVisibleItem=layoutManager.findLastVisibleItemPosition();
+
+
+            if (totalItemCount < itemCount) {
+                itemCount = totalItemCount;
+                if (totalItemCount == 0) {
+                    this.isLoading = true;
+                }
+            }
+
+            if (isLoading && (totalItemCount > itemCount)) {
+                isLoading = false;
+                itemCount = totalItemCount;
+            }
+
+            if(!isLoading && lastVisibleItem>(totalItemCount-2)) {
+                loadMore(totalItemCount);
+                isLoading=true;
+            }
+
+        }
+        public void loadMore(int totalItemsCount) {
+
+            if (isOnline()) {
+                String result = null;
+                try {
+                    httpGet = new HttpGet(MainActivity.UrlOfNotice +
+                            "list_notices/" + NoticeType + "/" + MainCategory +
+                            "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                    httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                    httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                    httpGet.setHeader("X-CSRFToken", csrftoken);
+                    mTask = new ConnectTaskHttpGet().execute(httpGet);
+                    result = mTask.get();
+                    mTask.cancel(true);
+                    if (result != null) {
+                        int curSize = customAdapter.getItemCount();
+                        ArrayList<NoticeObject> list = parsing.parseNotices(result);
+                        addToDB(list);
+                        noticelist.addAll(list);
+                        customAdapter.notifyItemRangeInserted(curSize, list.size());
+                        return;
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
+        @Override
+        public void onRefresh() {
+            new Handler().post(new Runnable() {
+                @Override
+                public void run() {
+                    /*if (isOnline()){
+                        String result=null;
+                        try {
+                            httpGet = new HttpGet(MainActivity.UrlOfNotice+
+                                    "list_notices/"+NoticeType+"/"+MainCategory+
+                                    "/All/0/20/0");
+                            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                            httpGet.setHeader("X-CSRFToken",csrftoken);
+                            mTask = new ConnectTaskHttpGet().execute(httpGet);
+                            result = mTask.get();
+                            mTask.cancel(true);
+                            ArrayList<NoticeObject> list=parsing.parseNotices(result);
+                            addToDB(list);
+                            int size=noticelist.size();
+                            noticelist.clear();
+                            customAdapter.notifyItemRangeRemoved(0, size);
+                            noticelist.addAll(list);
+                            customAdapter.notifyItemRangeInserted(0,list.size());
+                            swipeRefreshLayout.setRefreshing(false);
+                            return;
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    showNetworkError();*/
+                    changeList();
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            });
+
+        }
+    }
+
+    public void showNetworkError(){
+        Snackbar.make(coordinatorLayout,"Check Newtwork Connection",Snackbar.LENGTH_LONG).show();
     }
 
     public void setTitle(String title){
@@ -438,7 +632,6 @@ public class MainActivity extends AppCompatActivity {
                     dialog.dismiss();
                 }
             });
-
             dialog.show();
         }
     }

@@ -3,7 +3,6 @@ package in.channeli.noticeboard;
 import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -17,7 +16,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -37,7 +35,7 @@ public class DrawerClickFragment extends Fragment {
 
     private HttpGet httpGet;
     private RecyclerView recyclerView;
-    private CustomRecyclerViewAdapter customAdapter;
+    private CustomRecyclerViewAdapter customAdapter=null;
     private SwipeRefreshLayout swipeRefreshLayout;
     private Connections con;
     private Parsing parsing;
@@ -84,33 +82,9 @@ public class DrawerClickFragment extends Fragment {
             pd.setMessage("Loading...");
             pd.setIndeterminate(true);
             pd.setCancelable(false);
-            pd.show();
-            Thread thread=new Thread(){
-                @Override
-                public void run(){
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            String content_first_time_notice = null;
-                            try {
-                                mTask = new ConnectTaskHttpGet().execute(httpGet);
-                                content_first_time_notice = mTask.get();
-                                mTask.cancel(true);
-                                con = new Connections();
-                                parsing = new Parsing();
-                                ArrayList<NoticeObject> list = parsing.parseNotices(content_first_time_notice);
-                                addToDB(list);
-                                noticelist.addAll(list);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                showNetworkError();
-                            }
-                            pd.dismiss();
-                        }
-                    });
-                }
-            };
-            thread.start();
+            //pd.show();
+            setContent();
+            //pd.dismiss();
         }
         else{
             ArrayList<NoticeObject> list=sqlHelper.getNotices(category);
@@ -165,12 +139,28 @@ public class DrawerClickFragment extends Fragment {
                 Color.RED, Color.BLUE, Color.BLACK);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
 
-        View v = getActivity().getCurrentFocus();
+        /*View v = getActivity().getCurrentFocus();
         if(v != null) {
             InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-        }
+        }*/
         return view;
+    }
+    private void setContent(){
+        String content_first_time_notice = null;
+        try {
+            mTask = new ConnectTaskHttpGet().execute(httpGet);
+            content_first_time_notice = mTask.get();
+            mTask.cancel(true);
+            con = new Connections();
+            parsing = new Parsing();
+            ArrayList<NoticeObject> list = parsing.parseNotices(content_first_time_notice);
+            addToDB(list);
+            noticelist.addAll(list);
+        } catch (Exception e) {
+            e.printStackTrace();
+            showNetworkError();
+        }
     }
     public void showNetworkError(){
         CoordinatorLayout coordinatorLayout= (CoordinatorLayout) getActivity().findViewById(R.id.main_content);

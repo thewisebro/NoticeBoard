@@ -22,13 +22,19 @@
             <include
                 android:id="@+id/toolbar"
                 layout="@layout/tool_bar" />
-            <FrameLayout
+            <!--<FrameLayout
                 android:id="@+id/content_frame"
                 android:layout_width="match_parent"
                 android:scrollbars="none"
                 android:layout_weight="1"
                 android:layout_height="match_parent">
-            </FrameLayout>
+            </FrameLayout>-->
+            <include
+                android:id="@+id/swipe_refresh_layout"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:layout_width="match_parent"
+                layout="@layout/list_view"/>
             <com.roughike.bottombar.BottomBar
                 android:layout_width="match_parent"
                 android:id="@+id/bottom_bar"
