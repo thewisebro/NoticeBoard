@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -49,6 +50,7 @@ public class Login extends Activity {
         settings=getSharedPreferences(MainActivity.PREFS_NAME, 0);
         editor=settings.edit();
         setContentView(R.layout.login_page);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
     }
     public boolean isConnected(){
         Runtime runtime = Runtime.getRuntime();

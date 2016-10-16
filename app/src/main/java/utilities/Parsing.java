@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import objects.DrawerItem;
 import objects.NoticeInfo;
@@ -14,11 +15,17 @@ public class Parsing {
 
     public ArrayList<DrawerItem> parseConstants(String constants){
         ArrayList<DrawerItem> list = new ArrayList<>();
+        ArrayList<String> constantsList=new ArrayList<>();
         try {
             JSONObject jsonObject = new JSONObject(constants);
             JSONArray jsonArray = jsonObject.getJSONArray("order");
             for(int i=0;i<jsonArray.length();i++){
-                list.add(new DrawerItem(jsonArray.getString(i)));
+                constantsList.add(jsonArray.getString(i));
+                //list.add(new DrawerItem(jsonArray.getString(i)));
+            }
+            Collections.sort(constantsList);
+            for (String s: constantsList){
+                list.add(new DrawerItem(s));
             }
         } catch (JSONException e) {
             e.printStackTrace();

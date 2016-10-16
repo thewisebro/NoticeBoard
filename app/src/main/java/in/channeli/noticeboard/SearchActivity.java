@@ -16,6 +16,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.SearchView;
 
 import com.roughike.bottombar.BottomBar;
@@ -52,6 +53,7 @@ public class SearchActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.search);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         parsing = new Parsing();
@@ -133,6 +135,7 @@ public class SearchActivity extends AppCompatActivity {
             }
         };
         searchView.setOnQueryTextListener(queryTextListener);
+        searchView.clearFocus();
         return true;
     }
 
@@ -157,13 +160,8 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setNoticelist(final String url){
         if (isOnline()){
-            final ProgressDialog pd = new ProgressDialog(this);
-            pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            pd.setMessage("Loading...");
-            pd.setIndeterminate(true);
-            pd.setCancelable(false);
-            pd.show();
-            Thread thread= new Thread(){
+            final ProgressDialog pd=ProgressDialog.show(this,null,"Fetching Results...",true,false);
+            new Thread(){
                 @Override
                 public void run(){
                     runOnUiThread(new Runnable() {
@@ -180,8 +178,7 @@ public class SearchActivity extends AppCompatActivity {
                         }
                     });
                 }
-            };
-            thread.start();
+            }.start();
         }
         else
             showNetworkError();

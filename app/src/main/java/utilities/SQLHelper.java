@@ -105,7 +105,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,null);
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME);
         if(cursor.moveToFirst()){
             do{
                 NoticeObject object=new NoticeObject();
@@ -152,8 +152,8 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.close();
     }
     private void addNotice(NoticeObject object) throws ParseException {
-        if (checkNotice(object.getId()))
-            return;
+        //if (checkNotice(object.getId()))
+        //    return;
         SQLiteDatabase db=this.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put(ROW_ID,object.getId());

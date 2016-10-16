@@ -2,6 +2,7 @@ package in.channeli.noticeboard;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -30,6 +31,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.HeaderViewListAdapter;
 import android.widget.ListView;
@@ -110,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
@@ -377,23 +380,7 @@ public class MainActivity extends AppCompatActivity {
         }, 250);
 
     }
-/*    void changingFragment(){
-        if (MainCategory.equals("Starred"))
-            bottomBar.setVisibility(View.GONE);
-        else
-            bottomBar.setVisibility(View.VISIBLE);
-        Fragment fragment = new DrawerClickFragment();
-        Bundle args = new Bundle();
-        args.putString("category", MainCategory);
-        args.putString("noticetype", NoticeType);
-        fragment.setArguments(args);
-        FragmentManager fragmentManager = getFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment)
-                .addToBackStack(null)
-                .commit();
-    }
-*/
+
     private void selectItem() {
 
         Handler handler = new Handler();
@@ -415,25 +402,39 @@ public class MainActivity extends AppCompatActivity {
         else {
             MainCategory = MainCategory.replaceAll(" ", "%20");
             bottomBar.setVisibility(View.VISIBLE);
-            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/"+NoticeType+"/"+MainCategory+"/All/0/20/0");
+            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory+"/All/0/20/0");
         }
 
         noticelist.clear();
 
-        if (isOnline()){
-            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-            httpGet.setHeader("X-CSRFToken", csrftoken);
-            setContent();
-        }
-        else{
-            ArrayList<NoticeObject> list=sqlHelper.getNotices(MainCategory);
-            if(list!=null)
-                noticelist.addAll(list);
-            showNetworkError();
-        }
-        customAdapter.notifyDataSetChanged();
+        final ProgressDialog pd=ProgressDialog.show(this,null,"Loading...",true,false);
+
+        new Thread(){
+            @Override
+        public void run(){
+                if (isOnline()){
+                    httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                    httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                    httpGet.setHeader("X-CSRFToken", csrftoken);
+                    setContent();
+                }
+                else{
+                    ArrayList<NoticeObject> list=sqlHelper.getNotices(MainCategory);
+                    if(list!=null)
+                        noticelist.addAll(list);
+                    showNetworkError();
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        customAdapter.notifyDataSetChanged();
+                    }
+                });
+
+                pd.dismiss();
+            }
+        }.start();
     }
 
 
@@ -599,6 +600,7 @@ public class MainActivity extends AppCompatActivity {
         searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
         searchView.setIconified(false);
         searchView.setSubmitButtonEnabled(true);
+        searchView.clearFocus();
         return true;
     }
 
