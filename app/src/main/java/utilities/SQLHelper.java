@@ -73,6 +73,11 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.delete(TABLE_NOTICES,ROW_DATETIME + "= MIN("+ ROW_DATETIME + ")",null);
         db.close();
     }
+    public void clear(){
+        SQLiteDatabase db=this.getWritableDatabase();
+        db.delete(TABLE_NOTICES,null,null);
+        db.close();
+    }
     public ArrayList<NoticeObject> getNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
         ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
@@ -105,7 +110,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME);
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
         if(cursor.moveToFirst()){
             do{
                 NoticeObject object=new NoticeObject();

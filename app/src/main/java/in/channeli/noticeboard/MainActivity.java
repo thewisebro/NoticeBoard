@@ -252,10 +252,9 @@ public class MainActivity extends AppCompatActivity {
                             Bitmap bitmap = resultData.getParcelable("imagebitmap");
                             view.setImageBitmap(bitmap);
                             ByteArrayOutputStream stream= new ByteArrayOutputStream();
-                            bitmap.compress(Bitmap.CompressFormat.PNG,100,stream);
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
                             String bitmapString64= Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
                             editor.putString("profilePic", bitmapString64);
-                            editor.commit();
                             editor.apply();
                         }
                         catch(Exception e){
@@ -296,9 +295,8 @@ public class MainActivity extends AppCompatActivity {
                 Set<String> constantSet=new HashSet<>(list.size());
                 for(int i=0;i<list.size();i++)
                     constantSet.add(list.get(i).getName());
-                editor.putStringSet("constants",constantSet);
+                editor.putStringSet("constants", constantSet);
                 editor.apply();
-                editor.commit();
                 return list;
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -347,22 +345,28 @@ public class MainActivity extends AppCompatActivity {
         dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
-                httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
-                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
-                try {
-                    new ConnectTaskHttpGet().execute(httpGet);
-                    Toast.makeText(getApplicationContext(),
-                            "Logged Out Successfully", Toast.LENGTH_SHORT).show();
-                    editor.putString("CHANNELI_SESSID", "");
-                    editor.putString("csrftoken", "");
-                    editor.commit();
-                    startActivity(new Intent(getApplicationContext(), SplashScreen.class));
-                    finish();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (isOnline()){
+                    httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
+                    httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
+                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                    httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
+                    try {
+                        new ConnectTaskHttpGet().execute(httpGet);
+                        Toast.makeText(getApplicationContext(),
+                                "Logged Out Successfully", Toast.LENGTH_SHORT).show();
+                        editor.putString("CHANNELI_SESSID", "");
+                        editor.putString("csrftoken", "");
+                        editor.apply();
+                        sqlHelper.clear();
+                        startActivity(new Intent(getApplicationContext(), SplashScreen.class));
+                        finish();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        showNetworkError();
+                    }
                 }
+                else
+                    showNetworkError();
             }
         });
         dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {

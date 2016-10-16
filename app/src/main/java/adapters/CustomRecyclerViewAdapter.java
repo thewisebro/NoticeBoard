@@ -9,6 +9,7 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
@@ -115,8 +116,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         }
         return result;
     }
-    void stActivity(NoticeInfo noticeInfo){
-    }
 
     @Override
     public void onBindViewHolder(final NoticeObjectViewHolder holder, int position) {
@@ -147,7 +146,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         }
 
 
-
         //Highlight read notices
         if(noticeObject.getRead()) {
             holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_background));
@@ -158,11 +156,24 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             holder.subject.setTypeface(null,Typeface.BOLD);
         }
 
+        final boolean[] checkChangeFlag = {false};
+        holder.star.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                checkChangeFlag[0] = true;
+                return false;
+            }
+        });
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    setStar(noticeObject.getId(), b);
-                    noticeObject.setStar(b);
+                if (checkChangeFlag[0]) {
+                    if (isOnline()) {
+                        setStar(noticeObject.getId(), b);
+                        noticeObject.setStar(b);
+                    } else
+                        showNetworkError();
+                }
             }
         });
         holder.star.setChecked(noticeObject.getStar());
@@ -193,9 +204,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 } else {
-                    CoordinatorLayout layout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
-
-                    Snackbar.make(layout, "Cannot Connect to Internet", Snackbar.LENGTH_SHORT).show();
+                    showNetworkError();
                 }
 
                 db.close();
@@ -207,6 +216,10 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
     @Override
     public int getItemCount() {
         return list.size();
+    }
+    public void showNetworkError(){
+        CoordinatorLayout layout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
+        Snackbar.make(layout, "Check Network Connection", Snackbar.LENGTH_SHORT).show();
     }
     public boolean isOnline() {
 

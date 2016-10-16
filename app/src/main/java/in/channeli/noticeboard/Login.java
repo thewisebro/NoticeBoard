@@ -1,15 +1,18 @@
 package in.channeli.noticeboard;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -21,22 +24,19 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import connections.ConnectTaskHttpGet;
 import connections.CookiesHttpGet;
 import connections.CookiesHttpPost;
 
 
-public class Login extends Activity {
+public class Login extends AppCompatActivity {
     List<NameValuePair> params=new ArrayList<NameValuePair>();
     HttpPost httpPost;
     HttpGet httpGet;
@@ -49,7 +49,7 @@ public class Login extends Activity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         settings=getSharedPreferences(MainActivity.PREFS_NAME, 0);
         editor=settings.edit();
-        setContentView(R.layout.login_page);
+        setContentView(R.layout.login);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
     }
     public boolean isConnected(){
@@ -65,12 +65,25 @@ public class Login extends Activity {
 
         return false;
     }
+    public void showMessage(String msg){
+        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
+        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+        tv.setGravity(Gravity.CENTER_HORIZONTAL);
+        //tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+        snackbar.show();
+    }
 
     private void peopleLogin(String username, String password){
 
         httpGet=new HttpGet(MainActivity.UrlOfLogin);
         try {
             csrfToken= new CookiesHttpGet().execute(httpGet).get();
+            if (csrfToken==null || csrfToken==""){
+                showMessage("Check Network Connection!");
+                return;
+            }
             params.add(new BasicNameValuePair("username", username));
             params.add(new BasicNameValuePair("password",password));
             params.add(new BasicNameValuePair("csrfmiddlewaretoken", csrfToken));
@@ -105,8 +118,7 @@ public class Login extends Activity {
                     editor.putString("info", result.getString("info"));
                     editor.putString("enrollment_no", result.getString("enrollment_no"));
                     editor.putString("csrftoken",cookies.get("csrftoken"));
-                    editor.putString("CHANNELI_SESSID",cookies.get("CHANNELI_SESSID"));
-                    editor.commit();
+                    editor.putString("CHANNELI_SESSID", cookies.get("CHANNELI_SESSID"));
                     editor.apply();
                     Intent intent = new Intent(this,MainActivity.class);
                     startActivity(intent);
@@ -114,33 +126,24 @@ public class Login extends Activity {
                 }
                 else {
                     if(!isConnected()){
-                        Toast toast = Toast.makeText(getApplicationContext(),
-                                "Sorry! Could not connect. Check the internet connection!", Toast.LENGTH_SHORT);
-                        toast.show();
+                        showMessage("Sorry! Could not connect. Check the internet connection!");
                     }
                     else if(result.getString("msg").contains("NO")){
-                        Toast toast = Toast.makeText(getApplicationContext(),
-                                "Wrong username or password!", Toast.LENGTH_SHORT);
-                        toast.show();
+                        showMessage("Wrong username or password!");
                     }
                     else{
-                        Toast toast = Toast.makeText(getApplicationContext(),
-                                "Sorry! Could not login! Try again later!", Toast.LENGTH_SHORT);
-                        toast.show();
+                        showMessage("Sorry! Could not login! Try again later!");
                     }
                 }
             }
             else if (cookies.containsKey("csrftoken"))
-                Toast.makeText(getApplicationContext(),"Wrong Credentials",Toast.LENGTH_SHORT).show();
+                showMessage("Wrong Credentials");
+            else
+                showMessage("Check Network Connection!");
 
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            showMessage("Check Network Connection!");
         }
     }
 
@@ -151,30 +154,30 @@ public class Login extends Activity {
             final String usernameText= Username.getText().toString();
             final String passwordText= Password.getText().toString();
             if (usernameText.matches("")){
-                Toast.makeText(getApplicationContext(),"Enter username", Toast.LENGTH_SHORT).show();
+                showMessage("Enter username");
             }
             else if (passwordText.matches("")){
-                Toast.makeText(getApplicationContext(),"Enter password", Toast.LENGTH_SHORT).show();
+                showMessage("Enter password");
             }
             else {
-                final ProgressDialog progressDialog= ProgressDialog.show(this,"Signing In","Please Wait...",true,false);
-                Thread thread=new Thread(){
+                final ProgressDialog progressDialog= ProgressDialog.show(this,"Sign In","Please Wait...",true,false);
+                new Thread(){
                     @Override
                     public void run(){
-                        runOnUiThread(new Runnable() {
+                        /*runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                peopleLogin(usernameText,passwordText);
-                                progressDialog.dismiss();
+
                             }
-                        });
+                        });*/
+                        peopleLogin(usernameText, passwordText);
+                        progressDialog.dismiss();
                     }
-                };
-                thread.start();
+                }.start();
             }
         }
         else {
-            Toast.makeText(getApplicationContext(), "Check network connection!", Toast.LENGTH_LONG).show();
+            showMessage("Check network connection!");
         }
     }
 }
