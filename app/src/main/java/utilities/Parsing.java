@@ -46,8 +46,10 @@ public class Parsing {
                 notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
                 notice.setCategory(jsonObject.getString("category"));
                 notice.setMain_category(jsonObject.getString("main_category"));
-                notice.setStar(jsonObject.getBoolean("starred_status"));
-                notice.setRead(jsonObject.getBoolean("read_status"));
+                //notice.setStar(jsonObject.getBoolean("starred_status"));
+                //notice.setRead(jsonObject.getBoolean("read_status"));
+                notice.setStar(true);
+                notice.setRead(false);
                 noticeslist.add(notice);
             }
         }
@@ -71,8 +73,10 @@ public class Parsing {
                 notice.setId(jsonObject.getInt("id"));
                 notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
                 notice.setCategory(jsonObject.getString("category"));
-                notice.setRead(jsonObject.getBoolean("read_status"));
-                notice.setStar(jsonObject.getBoolean("starred_status"));
+                notice.setRead(false);
+                notice.setStar(true);
+                //notice.setRead(jsonObject.getBoolean("read_status"));
+                //notice.setStar(jsonObject.getBoolean("starred_status"));
                 noticeList.add(notice);
             }
         } catch (JSONException e) {
@@ -89,7 +93,6 @@ public class Parsing {
             noticeInfo.setContent(jsonObject.getString("content"));
             noticeInfo.setSubject(jsonObject.getString("subject"));
             noticeInfo.setDatetime_modified(jsonObject.getString("datetime_modified"));
-            //noticeInfo.setUsername(jsonObject.getString("username"));
             noticeInfo.setCategory(jsonObject.getString("category"));
             }
         catch(JSONException e){

@@ -30,4 +30,7 @@
     <color name="list_bg">#F5F5F5</color>
     <color name="blue_grey_900_alpha0.7">#B3263238</color>
     <color name="purple_400">#AB47BC</color>
+    <color name="bg_upperLeft">#40b2b3</color>
+    <color name="bg_upperRight">#4396be</color>
+    <color name="bg_bottomRight">#976583</color>
 </resources>

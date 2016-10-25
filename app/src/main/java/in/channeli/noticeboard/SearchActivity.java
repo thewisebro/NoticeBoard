@@ -5,6 +5,7 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
@@ -14,10 +15,14 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import com.roughike.bottombar.BottomBar;
 import com.roughike.bottombar.OnTabSelectListener;
@@ -48,11 +53,13 @@ public class SearchActivity extends AppCompatActivity {
     AsyncTask<HttpGet, Void, String> task;
     BottomBar bottomBar;
     CoordinatorLayout coordinatorLayout;
+    String msg=null;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.search);
+        hideKeyboard();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -64,7 +71,6 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView = (RecyclerView) findViewById(R.id.search_list_view);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
-        setBottomBar();
         noticelist=new ArrayList<NoticeObject>();
 
         SharedPreferences preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
@@ -79,7 +85,7 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
         adapter=new CustomRecyclerViewAdapter(this,R.layout.list_itemview,noticelist);
         recyclerView.setAdapter(adapter);
-        setNoticelist(searchUrl+query);
+        setBottomBar();
     }
     private void setBottomBar(){
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
@@ -89,36 +95,44 @@ public class SearchActivity extends AppCompatActivity {
                     case R.id.new_items:
                         noticetype="new";
                         searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
-                        setNoticelist(searchUrl+query);
-                        Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
+                        setNoticelist(searchUrl + query);
                         break;
                     case R.id.old_items:
                         noticetype="old";
                         searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
                         setNoticelist(searchUrl + query);
-                        Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
                         break;
                 }
             }
         });
     }
 
-
     public void showNetworkError(){
+        showMessage("Check Newtwork Connection");
+    }
+    public void showMessage(String msg){
         CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
-        Snackbar.make(coordinatorLayout,"Check Newtwork Connection",Snackbar.LENGTH_LONG).show();
+        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+        tv.setGravity(Gravity.CENTER);
+        tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTypeface(null, Typeface.BOLD);
+        snackbar.show();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         getMenuInflater().inflate(R.menu.menu_main, menu);
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        final MenuItem searchMenuItem=menu.findItem(R.id.search);
         final SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
         if (null != searchView )
         {
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
             searchView.setIconified(false);
             searchView.setSubmitButtonEnabled(true);
+            searchView.clearFocus();
         }
         SearchView.OnQueryTextListener queryTextListener = new SearchView.OnQueryTextListener()
         {
@@ -131,12 +145,23 @@ public class SearchActivity extends AppCompatActivity {
                 query = newText;
                 query = query.replaceAll(" ","%20");
                 onTextSubmit();
+                hideKeyboard();
+                searchMenuItem.collapseActionView();
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
                 return true;
             }
         };
         searchView.setOnQueryTextListener(queryTextListener);
-        searchView.clearFocus();
         return true;
+    }
+    public void hideKeyboard(){
+        // Check if no view has focus:
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     @Override
@@ -164,19 +189,19 @@ public class SearchActivity extends AppCompatActivity {
             new Thread(){
                 @Override
                 public void run(){
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            ArrayList<NoticeObject> list=getSearchedNotices(url);
-                            if(list!=null) {
-                                int size=noticelist.size();
-                                noticelist.clear();
-                                noticelist.addAll(list);
+                    ArrayList<NoticeObject> list=getSearchedNotices(url);
+                    if(list!=null) {
+                        int size=noticelist.size();
+                        noticelist.clear();
+                        noticelist.addAll(list);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
                                 adapter.notifyDataSetChanged();
+                                pd.dismiss();
                             }
-                            pd.dismiss();
-                        }
-                    });
+                        });
+                    }
                 }
             }.start();
         }

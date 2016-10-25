@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:id="@+id/group1" android:visible="false"></group>
+    <group android:id="@+id/group1" android:visible="true"></group>
     <group android:id="@+id/group2" android:visible="true"></group>
 </menu>

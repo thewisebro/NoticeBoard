@@ -45,7 +45,7 @@ public class Notice extends AppCompatActivity {
         }
         if(result.contains("</a>") && result.contains("<img")){
             stringBuffer = new StringBuffer(result);
-            String add = "Download here";
+            String add = "Download Attachment";
             int index = result.indexOf("<a href");
             while(result.charAt(index) != '>'){
                 index++;

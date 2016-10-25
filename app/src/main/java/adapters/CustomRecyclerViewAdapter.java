@@ -8,11 +8,13 @@ import android.graphics.Typeface;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.TextView;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -124,22 +126,13 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         holder.category.setText(noticeObject.getMain_category());
 
         //Set DateTime
-        String[] date_time = noticeObject.getDatetime_modified().split("T");
-        String date = date_time[0];
-        String time = date_time[1];
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat inputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a dd-MMM-yyyy");
         try {
-            String currentdate = simpleDateFormat.format(new Date());
-            Date current = simpleDateFormat.parse(currentdate);
-            Date strDate = simpleDateFormat.parse(date);
+            Date idate= inputDateFormat.parse(noticeObject.getDatetime_modified());
+            String odate= outputDateFormat.format(idate);
+            holder.datetime.setText(odate);
 
-            if(strDate.equals(current)) {
-                holder.datetime.setText(time);
-            }
-            else {
-                date = new SimpleDateFormat("dd-MMM-yyyy").format(strDate);
-                holder.datetime.setText(date);
-            }
         } catch (ParseException e) {
             e.printStackTrace();
             holder.datetime.setText(noticeObject.getDatetime_modified());
@@ -218,8 +211,17 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         return list.size();
     }
     public void showNetworkError(){
-        CoordinatorLayout layout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
-        Snackbar.make(layout, "Check Network Connection", Snackbar.LENGTH_SHORT).show();
+        showMessage("Check Network Connection!");
+    }
+    public void showMessage(String msg){
+        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
+        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+        tv.setGravity(Gravity.CENTER);
+        tv.setTextColor(context.getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) context.getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTypeface(null, Typeface.BOLD);
+        snackbar.show();
     }
     public boolean isOnline() {
 

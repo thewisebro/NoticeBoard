@@ -27,7 +27,7 @@
             app:bb_titleTextAppearance="@style/bottomBarTextStyle"
             app:bb_showShadow="true"
             app:bb_behavior="shifting"
-            android:layout_height="60dp" />
+            android:layout_height="@dimen/bottomBarHeight" />
 
     </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>

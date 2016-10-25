@@ -1,9 +1,11 @@
 package in.channeli.noticeboard;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -11,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -43,6 +46,7 @@ public class Login extends AppCompatActivity {
     String csrfToken;
     SharedPreferences settings;
     SharedPreferences.Editor editor;
+    CoordinatorLayout coordinatorLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +55,7 @@ public class Login extends AppCompatActivity {
         editor=settings.edit();
         setContentView(R.layout.login);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
     }
     public boolean isConnected(){
         Runtime runtime = Runtime.getRuntime();
@@ -66,12 +71,12 @@ public class Login extends AppCompatActivity {
         return false;
     }
     public void showMessage(String msg){
-        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
-        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        Snackbar snackbar=Snackbar.make(coordinatorLayout, msg, Snackbar.LENGTH_SHORT);
         TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
-        tv.setGravity(Gravity.CENTER_HORIZONTAL);
-        //tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        tv.setGravity(Gravity.CENTER);
         tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTypeface(null, Typeface.BOLD);
         snackbar.show();
     }
 
@@ -148,6 +153,7 @@ public class Login extends AppCompatActivity {
     }
 
     public void login(View view) {
+        hideKeyboard();
         if (isConnected()){
             EditText Username=(EditText) findViewById(R.id.username);
             EditText Password=(EditText) findViewById(R.id.password);
@@ -164,12 +170,6 @@ public class Login extends AppCompatActivity {
                 new Thread(){
                     @Override
                     public void run(){
-                        /*runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-
-                            }
-                        });*/
                         peopleLogin(usernameText, passwordText);
                         progressDialog.dismiss();
                     }
@@ -178,6 +178,14 @@ public class Login extends AppCompatActivity {
         }
         else {
             showMessage("Check network connection!");
+        }
+    }
+    public void hideKeyboard(){
+        // Check if no view has focus:
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 }

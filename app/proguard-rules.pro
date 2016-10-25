@@ -15,3 +15,13 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+-dontwarn android.support.design.**
+-keep class android.support.design.** { *; }
+-keep interface android.support.design.** { *; }
+-keep public class android.support.design.R$* { *; }
+-keep class com.roughike.** { *; }
+-keep class org.apache.http.client.** { *;}
+-keep class org.apache.http.impl.** { *;}
+-dontwarn com.roughike.**
+-dontwarn org.apache.http.client.**
+-dontwarn org.apache.http.impl.**

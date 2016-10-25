@@ -11,7 +11,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -27,11 +27,14 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
 import android.widget.HeaderViewListAdapter;
 import android.widget.ListView;
@@ -48,7 +51,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +61,6 @@ import java.util.concurrent.TimeoutException;
 
 import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
-import connections.Connections;
 import connections.ProfilePicService;
 import objects.DrawerItem;
 import objects.NoticeObject;
@@ -70,7 +74,8 @@ import utilities.SQLHelper;
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
-    public static String UrlOfHost="http://192.168.121.187:7000/";
+    //public static String UrlOfHost="http://192.168.121.187:7000/";
+    public static String UrlOfHost="http://people.iitr.ernet.in/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
@@ -93,11 +98,13 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private CustomRecyclerViewAdapter customAdapter=null;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private Connections con;
     private ArrayList<NoticeObject> noticelist;
     private AsyncTask<HttpGet, Void, String> mTask;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
+
+    String msg=null;
+    boolean drawerClickScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
 
     private void addToDB(ArrayList<NoticeObject> list){
         try {
@@ -161,9 +168,16 @@ public class MainActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager));
+        //Scroll only when touched, not due to drawer clicks
+        recyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                drawerClickScroll=false;
+                return false;
+            }
+        });
 
-        swipeRefreshLayout.setColorSchemeColors(
-                Color.RED, Color.BLUE, Color.BLACK);
+        swipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorPrimary));
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
 
 
@@ -174,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
         navigationView.addHeaderView(headerView);
         setHeader(headerView);
         setMenu();
-        //navigationView.setCheckedItem();
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
 
             @Override
@@ -219,15 +232,15 @@ public class MainActivity extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
-                        //changingFragment();
+                        msg="Current Notices";
                         changeList();
-                        Snackbar.make(coordinatorLayout, "Current Notices", Snackbar.LENGTH_SHORT).show();
+                        //showMessage("Current Notices");
                         break;
                     case R.id.old_items:
                         NoticeType = "old";
-                        //changingFragment();
+                        msg="Expired Notices";
                         changeList();
-                        Snackbar.make(coordinatorLayout, "Expired Notices", Snackbar.LENGTH_SHORT).show();
+                        //showMessage("Expired Notices");
                         break;
                 }
             }
@@ -292,12 +305,14 @@ public class MainActivity extends AppCompatActivity {
                 constants = mTask.get(4000, TimeUnit.MILLISECONDS);
                 mTask.cancel(true);
                 list.addAll(parsing.parseConstants(constants));
-                Set<String> constantSet=new HashSet<>(list.size());
-                for(int i=0;i<list.size();i++)
-                    constantSet.add(list.get(i).getName());
-                editor.putStringSet("constants", constantSet);
-                editor.apply();
-                return list;
+                if(list.size()>0){
+                    Set<String> constantSet=new HashSet<>(list.size());
+                    for(int i=0;i<list.size();i++)
+                        constantSet.add(list.get(i).getName());
+                    editor.putStringSet("constants", constantSet);
+                    editor.apply();
+                    return list;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -308,7 +323,11 @@ public class MainActivity extends AppCompatActivity {
         }
         if(settings.contains("constants")){
             Set<String> constants=settings.getStringSet("constants", null);
+            List<String> listConstants=new ArrayList<>();
             for (String s: constants)
+                listConstants.add(s);
+            Collections.sort(listConstants);
+            for (String s:listConstants)
                 list.add(new DrawerItem(s));
         }
         return list;
@@ -337,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
                 wrapped.notifyDataSetChanged();
             }
         }
+        menu.getItem(0).setChecked(true);
     }
     void logout(){
         final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
@@ -386,7 +406,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectItem() {
-
+        drawerClickScroll=true;
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
@@ -408,7 +428,6 @@ public class MainActivity extends AppCompatActivity {
             bottomBar.setVisibility(View.VISIBLE);
             httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory+"/All/0/20/0");
         }
-
         noticelist.clear();
 
         final ProgressDialog pd=ProgressDialog.show(this,null,"Loading...",true,false);
@@ -433,14 +452,15 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         customAdapter.notifyDataSetChanged();
+                        pd.dismiss();
+                        if (msg!=null)
+                            showMessage();
                     }
                 });
 
-                pd.dismiss();
             }
         }.start();
     }
-
 
     private void setContent(){
         String content = null;
@@ -448,7 +468,6 @@ public class MainActivity extends AppCompatActivity {
             mTask = new ConnectTaskHttpGet().execute(httpGet);
             content = mTask.get();
             mTask.cancel(true);
-            con = new Connections();
             parsing = new Parsing();
             ArrayList<NoticeObject> list = parsing.parseNotices(content);
             addToDB(list);
@@ -468,6 +487,9 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void onScrolled(RecyclerView view,int dx,int dy){
+            if(drawerClickScroll){
+                return;
+            }
             int firstVisibleItem=layoutManager.findFirstVisibleItemPosition();
             int visibleItemCount=view.getChildCount();
             int totalItemCount=layoutManager.getItemCount();
@@ -486,41 +508,51 @@ public class MainActivity extends AppCompatActivity {
                 itemCount = totalItemCount;
             }
 
-            if(!isLoading && lastVisibleItem>(totalItemCount-2)) {
+            if(!isLoading && lastVisibleItem>(totalItemCount-5)) {
                 loadMore(totalItemCount);
                 isLoading=true;
             }
 
         }
-        public void loadMore(int totalItemsCount) {
-
-            if (isOnline()) {
-                String result = null;
-                try {
-                    httpGet = new HttpGet(MainActivity.UrlOfNotice +
-                            "list_notices/" + NoticeType + "/" + MainCategory +
-                            "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
-                    httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                    httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                    httpGet.setHeader("X-CSRFToken", csrftoken);
-                    mTask = new ConnectTaskHttpGet().execute(httpGet);
-                    result = mTask.get();
-                    mTask.cancel(true);
-                    if (result != null) {
-                        int curSize = customAdapter.getItemCount();
-                        ArrayList<NoticeObject> list = parsing.parseNotices(result);
-                        addToDB(list);
-                        noticelist.addAll(list);
-                        customAdapter.notifyItemRangeInserted(curSize, list.size());
-                        return;
+        public void loadMore(final int totalItemsCount) {
+            new Thread(){
+                @Override
+            public void run(){
+                    if (isOnline()) {
+                        //showMessage("Loading more notices...");
+                        httpGet = new HttpGet(MainActivity.UrlOfNotice +
+                                "list_notices/" + NoticeType + "/" + MainCategory +
+                                "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                        httpGet.setHeader("X-CSRFToken", csrftoken);
+                        mTask = new ConnectTaskHttpGet().execute(httpGet);
+                        String result = null;
+                        try {
+                            result = mTask.get();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        mTask.cancel(true);
+                        if (result != null && result!="") {
+                            final String parseString=result;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    int curSize = customAdapter.getItemCount();
+                                    ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
+                                    addToDB(list);
+                                    noticelist.addAll(list);
+                                    customAdapter.notifyItemRangeInserted(curSize, list.size());
+                                }
+                            });
+                            return;
+                        }
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+                    showNetworkError();
                 }
-            }
+            }.start();
         }
     }
 
@@ -530,50 +562,39 @@ public class MainActivity extends AppCompatActivity {
             new Handler().post(new Runnable() {
                 @Override
                 public void run() {
-                    /*if (isOnline()){
-                        String result=null;
-                        try {
-                            httpGet = new HttpGet(MainActivity.UrlOfNotice+
-                                    "list_notices/"+NoticeType+"/"+MainCategory+
-                                    "/All/0/20/0");
-                            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                            httpGet.setHeader("X-CSRFToken",csrftoken);
-                            mTask = new ConnectTaskHttpGet().execute(httpGet);
-                            result = mTask.get();
-                            mTask.cancel(true);
-                            ArrayList<NoticeObject> list=parsing.parseNotices(result);
-                            addToDB(list);
-                            int size=noticelist.size();
-                            noticelist.clear();
-                            customAdapter.notifyItemRangeRemoved(0, size);
-                            noticelist.addAll(list);
-                            customAdapter.notifyItemRangeInserted(0,list.size());
-                            swipeRefreshLayout.setRefreshing(false);
-                            return;
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    showNetworkError();*/
-                    changeList();
                     swipeRefreshLayout.setRefreshing(false);
+                    changeList();
                 }
             });
-
         }
     }
 
     public void showNetworkError(){
-        Snackbar.make(coordinatorLayout,"Check Newtwork Connection",Snackbar.LENGTH_LONG).show();
+        showMessage("Check Newtwork Connection");
     }
-
+    public void showMessage(String msg){
+        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+        tv.setGravity(Gravity.CENTER);
+        tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTypeface(null, Typeface.BOLD);
+        snackbar.show();
+    }
+    public void showMessage(){
+        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+        tv.setGravity(Gravity.CENTER);
+        tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTypeface(null, Typeface.BOLD);
+        snackbar.show();
+        msg=null;
+    }
     public void setTitle(String title){
+        //title.replaceAll("%20"," ");
         try {
-            getSupportActionBar().setTitle(title);
+            getSupportActionBar().setTitle(title.replaceAll("%20"," "));
         }
         catch(Exception e){
             e.printStackTrace();
@@ -598,14 +619,38 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        final MenuItem searchMenuItem=menu.findItem(R.id.search);
+        final SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
         searchView.setIconified(false);
         searchView.setSubmitButtonEnabled(true);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                //searchView.clearFocus();
+                //hideKeyboard();
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
+                searchMenuItem.collapseActionView();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
         searchView.clearFocus();
         return true;
+    }
+    public void hideKeyboard(){
+        // Check if no view has focus:
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     @Override
@@ -619,8 +664,8 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public void onBackPressed(){
-        if (getSupportFragmentManager().getBackStackEntryCount()!=0){
-            getSupportFragmentManager().popBackStack();
+
+        if(false){
         }
         else{
             AlertDialog.Builder dialog=new AlertDialog.Builder(this);

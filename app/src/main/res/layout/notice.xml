@@ -3,18 +3,20 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:layout_width="match_parent"
+    android:scrollbars="none"
     xmlns:android="http://schemas.android.com/apk/res/android" >
     <include layout="@layout/tool_bar"
         android:id="@+id/toolbar"/>
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:orientation="vertical"
         android:layout_width="match_parent"
+        android:scrollbars="none"
         android:layout_height="match_parent">
         <WebView
             android:id="@+id/webView"
             android:layout_width="match_parent"
             android:scrollbars="none"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
         </WebView>
     </ScrollView>

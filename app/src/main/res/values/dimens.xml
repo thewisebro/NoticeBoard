@@ -8,4 +8,5 @@
     <dimen name="elevation_high">4dp</dimen>
     <dimen name="list_margin_top">5dp</dimen>
     <dimen name="list_margin_left">20dp</dimen>
+    <dimen name="bottomBarHeight">60dp</dimen>
 </resources>
