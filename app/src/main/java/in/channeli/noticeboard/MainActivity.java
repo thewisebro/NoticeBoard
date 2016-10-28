@@ -10,7 +10,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -26,18 +25,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Base64;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.BaseAdapter;
-import android.widget.HeaderViewListAdapter;
-import android.widget.ListView;
+import android.widget.ExpandableListView;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,7 +42,6 @@ import com.roughike.bottombar.OnTabSelectListener;
 
 import org.apache.http.client.methods.HttpGet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -59,6 +53,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
 import connections.ProfilePicService;
@@ -82,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
     private ActionBarDrawerToggle mDrawerToggle;
     private Toolbar toolbar;
     private NavigationView navigationView;
-    public static String NoticeType = "new", MainCategory = "All";
+    public static String NoticeType = "new", MainCategory = "All", Category="All";
     private User user;
     public BottomBar bottomBar;
 
@@ -92,11 +87,11 @@ public class MainActivity extends AppCompatActivity {
     Parsing parsing;
     SharedPreferences settings;
     SharedPreferences.Editor editor;
-    ArrayList<DrawerItem> group1;
-    ArrayList<DrawerItem> group2;
+    ArrayList<DrawerItem> drawerList;
 
     private RecyclerView recyclerView;
     private CustomRecyclerViewAdapter customAdapter=null;
+    private CustomDrawerListViewAdapter drawerAdapter=null;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ArrayList<NoticeObject> noticelist;
     private AsyncTask<HttpGet, Void, String> mTask;
@@ -179,52 +174,13 @@ public class MainActivity extends AppCompatActivity {
 
         swipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorPrimary));
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
-
-
     }
 
     void setNavigationView(){
-        View headerView= LayoutInflater.from(this).inflate(R.layout.navigation_profile,null);
-        navigationView.addHeaderView(headerView);
-        setHeader(headerView);
-        setMenu();
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
-
-            @Override
-            public boolean onNavigationItemSelected(MenuItem menuItem) {
-                //Checking if the item is in checked state or not, if not make it in checked state
-                Menu menu = navigationView.getMenu();
-                for (int i = 0; i < menu.size(); i++)
-                    menu.getItem(i).setChecked(false);
-                menuItem.setChecked(true);
-
-                //Closing drawer on item click
-                mDrawerLayout.closeDrawers();
-                if (menuItem.getGroupId() == R.id.group1) {
-                    MainCategory = group1.get(menuItem.getItemId()).getName();
-                    selectItem();
-                } else {
-                    switch (menuItem.getItemId()) {
-                        case 0: //Starred
-                            MainCategory = "Starred";
-                            selectItem();
-                            return true;
-                        case 1: //Feedback
-                            Intent intent = new Intent(Intent.ACTION_VIEW);
-                            intent.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
-                            startActivity(intent);
-                            return true;
-                        case 2: //Logout
-                            logout();
-                            return true;
-                        default:
-                            return true;
-                    }
-                }
-                return true;
-            }
-        });
+        setHeader();
+        setDrawerMenu();
     }
+
     private void setBottomBar(){
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
@@ -232,13 +188,13 @@ public class MainActivity extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
-                        msg="Current Notices";
+                        //msg = "Current Notices";
                         changeList();
                         //showMessage("Current Notices");
                         break;
                     case R.id.old_items:
                         NoticeType = "old";
-                        msg="Expired Notices";
+                        //msg = "Expired Notices";
                         changeList();
                         //showMessage("Expired Notices");
                         break;
@@ -246,15 +202,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    private void setHeader(View headerView){
+    private void setHeader(){
+        View headerView=navigationView.findViewById(R.id.drawer_header);
         final RoundImageView view= (RoundImageView) headerView.findViewById(R.id.profile_picture);
         final TextView nameView= (TextView) headerView.findViewById(R.id.name);
         final TextView infoView= (TextView) headerView.findViewById(R.id.info);
 
         nameView.setText(user.getName());
         infoView.setText(user.getInfo());
-        final String bitmapString64=settings.getString("profilePic","");
-        if(bitmapString64==""){
+        Bitmap bitmap=sqlHelper.getProfilePic();
+        if(bitmap==null){
             try{
                 String url="http://people.iitr.ernet.in/photo/"+user.getEnrollmentno();
                 DownloadResultReceiver resultReceiver = new DownloadResultReceiver(new Handler());
@@ -264,11 +221,7 @@ public class MainActivity extends AppCompatActivity {
                         try{
                             Bitmap bitmap = resultData.getParcelable("imagebitmap");
                             view.setImageBitmap(bitmap);
-                            ByteArrayOutputStream stream= new ByteArrayOutputStream();
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                            String bitmapString64= Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
-                            editor.putString("profilePic", bitmapString64);
-                            editor.apply();
+                            sqlHelper.addProfilePic(bitmap);
                         }
                         catch(Exception e){
                             e.printStackTrace();
@@ -286,29 +239,47 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         else{
-            byte[] bitmapByte= Base64.decode(bitmapString64,Base64.DEFAULT);
-            Bitmap bitmap= BitmapFactory.decodeByteArray(bitmapByte, 0, bitmapByte.length);
             view.setImageBitmap(bitmap);
         }
     }
     ArrayList<DrawerItem> getConstants(){
         ArrayList<DrawerItem> list=new ArrayList<>();
+        Set<String> constants=settings.getStringSet("constants", null);
+        if(constants!=null && constants.size()>0){
+            List<String> listConstants=new ArrayList<>();
+            for (String s: constants)
+                listConstants.add(s);
+            Collections.sort(listConstants);
+            for (String s:listConstants) {
+                Set<String> set=settings.getStringSet(s,null);
+                if (set==null)
+                    list.add(new DrawerItem(s,null));
+                else {
+                    ArrayList list1=new ArrayList<String>(set);
+                    Collections.sort(list1);
+                    list.add(new DrawerItem(s, list1));
+                }
+            }
+            return list;
+        }
         if (isOnline()){
-            String constants=null;
             httpGet = new HttpGet(UrlOfNotice+"get_constants/");
             httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
+            httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
             AsyncTask<HttpGet, Void, String> mTask;
             try {
                 mTask = new ConnectTaskHttpGet().execute(httpGet);
-                constants = mTask.get(4000, TimeUnit.MILLISECONDS);
+                String constant = mTask.get(4000, TimeUnit.MILLISECONDS);
                 mTask.cancel(true);
-                list.addAll(parsing.parseConstants(constants));
+                list.addAll(parsing.parseConstants(constant));
                 if(list.size()>0){
                     Set<String> constantSet=new HashSet<>(list.size());
-                    for(int i=0;i<list.size();i++)
+                    for(int i=0;i<list.size();i++) {
+                        Set<String> s=new HashSet<>(list.get(i).getCategories());
+                        editor.putStringSet(list.get(i).getName(),s);
                         constantSet.add(list.get(i).getName());
+                    }
                     editor.putStringSet("constants", constantSet);
                     editor.apply();
                     return list;
@@ -321,42 +292,83 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        if(settings.contains("constants")){
-            Set<String> constants=settings.getStringSet("constants", null);
-            List<String> listConstants=new ArrayList<>();
-            for (String s: constants)
-                listConstants.add(s);
-            Collections.sort(listConstants);
-            for (String s:listConstants)
-                list.add(new DrawerItem(s));
-        }
+
+        showNetworkError();
         return list;
     }
-    void setMenu(){
-        final Menu menu=navigationView.getMenu();
-        group1=getConstants();
-        group2=new ArrayList<>();
-        group2.add(new DrawerItem("Starred"));
-        group2.add(new DrawerItem("Feedback"));
-        group2.add(new DrawerItem("Logout"));
-        for(int i=0;i<group1.size();i++){
-            menu.add(R.id.group1, i, i, group1.get(i).getName())
-                    .setIcon(group1.get(i).getIcon());
-        }
-        for(int i=0;i<group2.size();i++){
-            menu.add(R.id.group2,i,i+group1.size(),group2.get(i).getName())
-                    .setIcon(group2.get(i).getIcon());
-        }
-        for (int i = 0, count = navigationView.getChildCount(); i < count; i++) {
-            final View child = navigationView.getChildAt(i);
-            if (child != null && child instanceof ListView) {
-                final ListView menuView = (ListView) child;
-                final HeaderViewListAdapter adapter = (HeaderViewListAdapter) menuView.getAdapter();
-                final BaseAdapter wrapped = (BaseAdapter) adapter.getWrappedAdapter();
-                wrapped.notifyDataSetChanged();
+
+    void setDrawerMenu(){
+        final ExpandableListView listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
+        drawerList=getConstants();
+        drawerList.add(new DrawerItem("Starred", null));
+        drawerList.add(new DrawerItem("Feedback", null));
+        drawerList.add(new DrawerItem("Logout", null));
+
+        drawerAdapter=new CustomDrawerListViewAdapter(drawerList,this){
+            int lastGroup=-1;
+
+            @Override
+            public void OnIndicatorClick(boolean isExpanded, int position) {
+                if(isExpanded){
+                    listView.collapseGroup(position);
+                }else{
+                    listView.expandGroup(position);
+                    if(lastGroup!=position)
+                        listView.collapseGroup(lastGroup);
+                    lastGroup=position;
+                }
             }
+            @Override
+            public void OnGroupItemClick(boolean isExpanded, int position) {
+                if (isExpanded) {
+                    listView.collapseGroup(position);
+                }
+                else {
+                    if(lastGroup!=position)
+                        listView.collapseGroup(lastGroup);
+                    lastGroup=position;
+                    clickListener(position, -1);
+                    this.groupPos=position;
+                    this.childPos=-1;
+                    notifyDataSetChanged();
+                }
+            }
+            @Override
+            public void OnChildItemClick(int gp, int cp){
+                clickListener(gp, cp);
+                this.groupPos=gp;
+                this.childPos=cp;
+                notifyDataSetChanged();
+                //int index = listView.getFlatListPosition(ExpandableListView.getPackedPositionForChild(gp, cp));
+                //listView.setItemChecked(index, true);
+            }
+        };
+        listView.setAdapter(drawerAdapter);
+    }
+    private void clickListener(int groupPosition, int childPosition){
+        mDrawerLayout.closeDrawers();
+        switch (drawerList.get(groupPosition).getName()) {
+            case "Starred": //Starred
+                MainCategory = "Starred";
+                Category = "All";
+                selectItem();
+                break;
+            case "Feedback": //Feedback
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
+                startActivity(intent);
+                break;
+            case "Logout": //Logout
+                logout();
+                break;
+            default:
+                MainCategory = drawerList.get(groupPosition).getName();
+                if(childPosition<0)
+                    Category="All";
+                else
+                    Category = drawerList.get(groupPosition).getCategories().get(childPosition);
+                selectItem();
         }
-        menu.getItem(0).setChecked(true);
     }
     void logout(){
         final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
@@ -374,9 +386,11 @@ public class MainActivity extends AppCompatActivity {
                         new ConnectTaskHttpGet().execute(httpGet);
                         Toast.makeText(getApplicationContext(),
                                 "Logged Out Successfully", Toast.LENGTH_SHORT).show();
-                        editor.putString("CHANNELI_SESSID", "");
-                        editor.putString("csrftoken", "");
+                        //editor.putString("CHANNELI_SESSID", "");
+                        //editor.putString("csrftoken", "");
+                        editor.clear();
                         editor.apply();
+                        editor.commit();
                         sqlHelper.clear();
                         startActivity(new Intent(getApplicationContext(), SplashScreen.class));
                         finish();
@@ -411,9 +425,11 @@ public class MainActivity extends AppCompatActivity {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                    //changingFragment();
                     changeList();
-                    setTitle(MainCategory);
+                    if (MainCategory.equals(Category))          //For All - All
+                        setTitle(MainCategory);
+                    else
+                        setTitle(MainCategory + " - " + Category);
             }
         };
         handler.postDelayed(runnable, 300);
@@ -425,8 +441,9 @@ public class MainActivity extends AppCompatActivity {
         }
         else {
             MainCategory = MainCategory.replaceAll(" ", "%20");
+            Category = Category.replaceAll(" ","%20");
             bottomBar.setVisibility(View.VISIBLE);
-            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory+"/All/0/20/0");
+            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory+"/"+Category+"/0/20/0");
         }
         noticelist.clear();
 
@@ -443,7 +460,11 @@ public class MainActivity extends AppCompatActivity {
                     setContent();
                 }
                 else{
-                    ArrayList<NoticeObject> list=sqlHelper.getNotices(MainCategory);
+                    ArrayList<NoticeObject> list=null;
+                    if("All".equals(Category))
+                        list=sqlHelper.getNotices(MainCategory);
+                    else
+                        list=sqlHelper.getNotices(MainCategory,Category);
                     if(list!=null)
                         noticelist.addAll(list);
                     showNetworkError();
@@ -570,7 +591,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showNetworkError(){
-        showMessage("Check Newtwork Connection");
+        showMessage("Check Network Connection");
     }
     public void showMessage(String msg){
         Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);

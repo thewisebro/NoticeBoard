@@ -5,7 +5,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 
+import java.io.ByteArrayOutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 
@@ -20,6 +24,9 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static int VERSION=1;
     private static int MAX_NOTICES=30;
     private static String TABLE_NOTICES="NOTICES";
+    private static String TABLE_PROFILE_PIC="PROFILE_PIC";
+    private static String ROW_BITMAP_STRING="BITMAP_STRING";
+    private static String ROW_BITMAP_ID="BITMAP_ID";
     private static String ROW_ID="ID";
     private static String ROW_SUBJECT="SUBJECT";
     private static String ROW_EXPIRY_DATE="EXP_DATE";
@@ -46,6 +53,12 @@ public class SQLHelper extends SQLiteOpenHelper{
                     ROW_STAR_STATUS+" BOOLEAN, "+
                     "PRIMARY KEY("+ROW_ID+") ON CONFLICT REPLACE "+
                     ");";
+    private static String CREATE_TABLE_PROFILE_PIC=
+            "CREATE TABLE IF NOT EXISTS "+TABLE_PROFILE_PIC+" ( "+
+                    ROW_BITMAP_ID + " INT,"+
+                    ROW_BITMAP_STRING + " TEXT, "+
+                    "PRIMARY KEY("+ROW_BITMAP_ID+") ON CONFLICT REPLACE "+
+                    ");";
     private static String DELETE_TABLE_NOTICES=
             "DROP TABLE OF EXISTS "+TABLE_NOTICES;
     public SQLHelper(Context context) {
@@ -53,6 +66,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db=this.getWritableDatabase();
         //db.execSQL(DELETE_TABLE_NOTICES);
         db.execSQL(CREATE_TABLE_NOTICES);
+        db.execSQL(CREATE_TABLE_PROFILE_PIC);
         db.close();
     }
 
@@ -62,6 +76,32 @@ public class SQLHelper extends SQLiteOpenHelper{
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+    }
+    public void addProfilePic(Bitmap bitmap){
+        if (bitmap==null)
+            return;
+        SQLiteDatabase db= this.getWritableDatabase();
+        ByteArrayOutputStream stream= new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        String bitmapString64= Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
+        ContentValues values=new ContentValues();
+        values.put(ROW_BITMAP_ID,1);
+        values.put(ROW_BITMAP_STRING,bitmapString64);
+        db.insert(TABLE_PROFILE_PIC, null, values);
+        db.close();
+    }
+    public Bitmap getProfilePic(){
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor=db.query(TABLE_PROFILE_PIC, null, null, null, null, null, null);
+        if (cursor.getCount()==0)
+            return null;
+        cursor.moveToFirst();
+        String bitmapString64=cursor.getString(cursor.getColumnIndex(ROW_BITMAP_STRING));
+        if(bitmapString64==null || bitmapString64=="")
+            return null;
+        byte[] bitmapByte= Base64.decode(bitmapString64, Base64.DEFAULT);
+        Bitmap bitmap= BitmapFactory.decodeByteArray(bitmapByte, 0, bitmapByte.length);
+        return bitmap;
     }
     private int countNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
@@ -76,6 +116,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     public void clear(){
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTICES,null,null);
+        db.delete(TABLE_PROFILE_PIC,null,null);
         db.close();
     }
     public ArrayList<NoticeObject> getNotices(){
@@ -99,6 +140,36 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.close();
         return list;
     }
+    public ArrayList<NoticeObject> getNotices(String mainCategory, String category){
+        SQLiteDatabase db=this.getReadableDatabase();
+        ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
+        String CONDITION=null;
+        category = category.replaceAll("%20"," ");
+        mainCategory= mainCategory.replaceAll("%20"," ");
+        if (mainCategory.matches("Starred"))
+            CONDITION=ROW_STAR_STATUS+"= 1";
+        else if (!mainCategory.matches("All"))
+            CONDITION=ROW_MAIN_CATEGORY+" = '"+mainCategory+"' AND "+ROW_CATEGORY+" = '"+category+"'";
+
+        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
+        if(cursor.moveToFirst()){
+            do{
+                NoticeObject object=new NoticeObject();
+                object.setId(cursor.getInt(0));
+                object.setSubject(cursor.getString(1));
+                object.setDatetime_modified(cursor.getString(2));
+                object.setCategory(cursor.getString(3));
+                object.setMain_category(cursor.getString(4));
+                object.setRead(cursor.getInt(5) > 0);
+                object.setStar(cursor.getInt(6) > 0);
+                list.add(object);
+            }while (cursor.moveToNext());
+        }
+        db.close();
+        return list;
+    }
+
     public ArrayList<NoticeObject> getNotices(String category){
         SQLiteDatabase db=this.getReadableDatabase();
         ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();

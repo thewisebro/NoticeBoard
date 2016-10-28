@@ -25,8 +25,8 @@ public class ConnectTaskHttpPost extends AsyncTask<HttpPost, Void, String> {
         String result="";
         try{
             HttpParams httpParams=new BasicHttpParams();
-            HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
-            HttpConnectionParams.setSoTimeout(httpParams,5000);
+            HttpConnectionParams.setConnectionTimeout(httpParams, 7000);
+            HttpConnectionParams.setSoTimeout(httpParams,7000);
             HttpClient httpClient = new DefaultHttpClient(httpParams);
             HttpResponse response = httpClient.execute(httpPosts[0]);
             HttpEntity entity = response.getEntity();

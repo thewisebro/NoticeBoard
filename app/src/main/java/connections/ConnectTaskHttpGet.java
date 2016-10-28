@@ -2,7 +2,6 @@ package connections;
 
 import android.os.AsyncTask;
 import android.util.Log;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -25,8 +24,8 @@ public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
         String result="";
         try{
             HttpParams httpParams=new BasicHttpParams();
-            HttpConnectionParams.setConnectionTimeout(httpParams,5000);
-            HttpConnectionParams.setSoTimeout(httpParams,5000);
+            HttpConnectionParams.setConnectionTimeout(httpParams,7000);
+            HttpConnectionParams.setSoTimeout(httpParams,7000);
             HttpClient httpClient = new DefaultHttpClient(httpParams);
             HttpResponse response = httpClient.execute(httpPosts[0]);
             HttpEntity entity = response.getEntity();

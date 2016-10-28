@@ -9,4 +9,7 @@
     <dimen name="list_margin_top">5dp</dimen>
     <dimen name="list_margin_left">20dp</dimen>
     <dimen name="bottomBarHeight">60dp</dimen>
+    <dimen name="drawerGroupHt">40dp</dimen>
+    <dimen name="drawerChildHt">40dp</dimen>
+    <dimen name="drawerWidth">260dp</dimen>
 </resources>

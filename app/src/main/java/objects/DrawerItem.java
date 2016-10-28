@@ -1,5 +1,7 @@
 package objects;
 
+import java.util.ArrayList;
+
 import in.channeli.noticeboard.R;
 
 /**
@@ -8,8 +10,10 @@ import in.channeli.noticeboard.R;
 public class DrawerItem {
     private String name;
     private int logo;
-    public  DrawerItem(String name){
+    private ArrayList<String> categories;
+    public  DrawerItem(String name,ArrayList<String> categories){
         this.name=name;
+        this.categories=categories;
         setIcon();
     }
     private void setIcon(){
@@ -43,4 +47,5 @@ public class DrawerItem {
     public int getIcon(){
         return this.logo;
     }
+    public ArrayList<String> getCategories() { return this.categories; }
 }

@@ -7,8 +7,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.WindowManager;
 
-import org.apache.http.client.methods.HttpGet;
-
 import java.io.IOException;
 
 /*
@@ -20,8 +18,6 @@ public class SplashScreen  extends Activity{
     public String msg="YES", CHANNELI_SESSID;
 
     SharedPreferences settings;
-    HttpGet httpGet;
-    String result;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

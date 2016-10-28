@@ -14,11 +14,19 @@
             android:id="@+id/toolbar"
             layout="@layout/tool_bar" />
 
-        <android.support.v7.widget.RecyclerView
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:id="@+id/search_list_view"/>
+            android:layout_height="0dp"
+            android:layout_weight="1">
+            <android.support.v7.widget.RecyclerView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/search_list_view"/>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="5dp"
+                android:background="@drawable/toolbar_dropshadow"/>
+        </FrameLayout>
 
         <com.roughike.bottombar.BottomBar
             android:layout_width="match_parent"

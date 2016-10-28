@@ -6,14 +6,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -32,11 +37,19 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import connections.ConnectTaskHttpGet;
 import connections.CookiesHttpGet;
 import connections.CookiesHttpPost;
+import objects.DrawerItem;
+import utilities.Parsing;
+import utilities.SQLHelper;
 
 
 public class Login extends AppCompatActivity {
@@ -47,15 +60,94 @@ public class Login extends AppCompatActivity {
     SharedPreferences settings;
     SharedPreferences.Editor editor;
     CoordinatorLayout coordinatorLayout;
+    SQLHelper sqlHelper;
+    ProgressDialog loginDialog;
+    EditText Username;
+    EditText Password;
+    Boolean flag1=false,flag2=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        setContentView(R.layout.login);
+        sqlHelper=new SQLHelper(this);
         settings=getSharedPreferences(MainActivity.PREFS_NAME, 0);
         editor=settings.edit();
-        setContentView(R.layout.login);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
+        coordinatorLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                setViews();
+                coordinatorLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            }
+        });
+    }
+    public void setViews(){
+        Username=(EditText) findViewById(R.id.username);
+        Password=(EditText) findViewById(R.id.password);
+        final Button button= (Button) findViewById(R.id.submit);
+        final View overButton= findViewById(R.id.overSubmit);
+        overButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMessage("Enter Login Credentials");
+            }
+        });
+        Username.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (Username.getText().toString().trim().isEmpty())
+                    flag1 = false;
+                else
+                    flag1 = true;
+                if (flag1 && flag2) {
+                    button.setEnabled(true);
+                    overButton.setVisibility(View.GONE);
+                } else {
+                    button.setEnabled(false);
+                    overButton.setVisibility(View.VISIBLE);
+                }
+
+            }
+        });
+        Password.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (Password.getText().toString().trim().isEmpty())
+                    flag2=false;
+                else
+                    flag2=true;
+                if (flag1 && flag2){
+                    button.setEnabled(true);
+                    overButton.setVisibility(View.GONE);
+                }
+                else {
+                    button.setEnabled(false);
+                    overButton.setVisibility(View.VISIBLE);
+                }
+            }
+        });
     }
     public boolean isConnected(){
         Runtime runtime = Runtime.getRuntime();
@@ -78,6 +170,37 @@ public class Login extends AppCompatActivity {
         tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
         tv.setTypeface(null, Typeface.BOLD);
         snackbar.show();
+    }
+
+    public void getConstants(){
+        String constants=null;
+        httpGet = new HttpGet(MainActivity.UrlOfNotice+"get_constants/");
+        httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
+        AsyncTask<HttpGet, Void, String> mTask;
+        try {
+            mTask = new ConnectTaskHttpGet().execute(httpGet);
+            constants = mTask.get(4000, TimeUnit.MILLISECONDS);
+            mTask.cancel(true);
+            ArrayList<DrawerItem> list=new Parsing().parseConstants(constants);
+            if(list.size()>0){
+                Set<String> constantSet=new HashSet<>(list.size());
+                for(int i=0;i<list.size();i++) {
+                    Set<String> s=new HashSet<>(list.get(i).getCategories());
+                    editor.putStringSet(list.get(i).getName(),s);
+                    constantSet.add(list.get(i).getName());
+                }
+                editor.putStringSet("constants", constantSet);
+                editor.apply();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
     }
 
     private void peopleLogin(String username, String password){
@@ -125,6 +248,8 @@ public class Login extends AppCompatActivity {
                     editor.putString("csrftoken",cookies.get("csrftoken"));
                     editor.putString("CHANNELI_SESSID", cookies.get("CHANNELI_SESSID"));
                     editor.apply();
+                    getConstants();
+                    loginDialog.dismiss();
                     Intent intent = new Intent(this,MainActivity.class);
                     startActivity(intent);
                     finish();
@@ -155,8 +280,7 @@ public class Login extends AppCompatActivity {
     public void login(View view) {
         hideKeyboard();
         if (isConnected()){
-            EditText Username=(EditText) findViewById(R.id.username);
-            EditText Password=(EditText) findViewById(R.id.password);
+
             final String usernameText= Username.getText().toString();
             final String passwordText= Password.getText().toString();
             if (usernameText.matches("")){
@@ -166,12 +290,12 @@ public class Login extends AppCompatActivity {
                 showMessage("Enter password");
             }
             else {
-                final ProgressDialog progressDialog= ProgressDialog.show(this,"Sign In","Please Wait...",true,false);
+                loginDialog= ProgressDialog.show(this,null,"Signing In...",true,false);
                 new Thread(){
                     @Override
                     public void run(){
                         peopleLogin(usernameText, passwordText);
-                        progressDialog.dismiss();
+                        loginDialog.dismiss();
                     }
                 }.start();
             }

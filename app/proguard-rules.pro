@@ -19,9 +19,12 @@
 -keep class android.support.design.** { *; }
 -keep interface android.support.design.** { *; }
 -keep public class android.support.design.R$* { *; }
--keep class com.roughike.** { *; }
--keep class org.apache.http.client.** { *;}
--keep class org.apache.http.impl.** { *;}
--dontwarn com.roughike.**
--dontwarn org.apache.http.client.**
--dontwarn org.apache.http.impl.**
+-dontwarn com.roughike.bottombar.**
+-keep class org.** { *; }
+-keep class org.apache.http.** { *; }
+-keep class org.apache.commons.codec.** { *; }
+-keep class org.apache.commons.logging.** { *; }
+-keep class android.net.compatibility.** { *; }
+-keep class android.net.http.** { *; }
+-dontwarn org.apache.http.**
+-dontwarn android.webkit.**

@@ -1,6 +1,7 @@
 package adapters;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -81,7 +83,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             e.printStackTrace();
         }
     }
-    void setStar(int id,boolean b){
+    boolean setStar(int id,boolean b){
         String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
         if (b)
             uri += "/add_starred/";
@@ -97,9 +99,15 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         String result = "";
         try {
             result = starTask.get();
+            if (result!=null && result!="") {
+                JSONObject jsonObject = new JSONObject(result);
+                if ("true".equals(jsonObject.getString("success")))
+                    return true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
     String getNoticeInfoResult(int id){
         StringBuilder stringBuilder = new StringBuilder();
@@ -123,7 +131,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
     public void onBindViewHolder(final NoticeObjectViewHolder holder, int position) {
         final NoticeObject noticeObject=list.get(position);
         holder.subject.setText(noticeObject.getSubject());
-        holder.category.setText(noticeObject.getMain_category());
+        holder.category.setText(noticeObject.getCategory());
 
         //Set DateTime
         SimpleDateFormat inputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -162,10 +170,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if (checkChangeFlag[0]) {
                     if (isOnline()) {
-                        setStar(noticeObject.getId(), b);
-                        noticeObject.setStar(b);
+                        if (setStar(noticeObject.getId(), b)) {
+                            noticeObject.setStar(b);
+                            return;
+                        } else
+                            showMessage("Unable to Star/Unstar. Please try later.");
                     } else
                         showNetworkError();
+                    compoundButton.setChecked(!b);
                 }
             }
         });
@@ -174,33 +186,42 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SQLHelper db = new SQLHelper(context);
-                if (isOnline()) {
-                    String result = getNoticeInfoResult(noticeObject.getId());
-                    if (!result.equals("")) {
-                        if (!noticeObject.getRead()) {
-                            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
-                            noticeObject.setRead(true);
-                            setRead(noticeObject.getId());
+                final ProgressDialog progressDialog= ProgressDialog.show(context,null,"Opening...",true,false);
+                new Thread(){
+                    @Override
+                    public void run(){
+                        SQLHelper db = new SQLHelper(context);
+                        if (isOnline()) {
+                            String result = getNoticeInfoResult(noticeObject.getId());
+                            if (!result.equals("")) {
+                                if (!noticeObject.getRead()) {
+                                    holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
+                                    noticeObject.setRead(true);
+                                    setRead(noticeObject.getId());
+                                }
+                                NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
+                                db.addNoticeInfo(noticeInfo);
+                                Intent intent = new Intent(context, Notice.class);
+                                intent.putExtra("noticeinfo", noticeInfo.getContent());
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                context.startActivity(intent);
+                                progressDialog.dismiss();
+                                return;
+                            }
                         }
-                        NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
-                        db.addNoticeInfo(noticeInfo);
-                        Intent intent = new Intent(context, Notice.class);
-                        intent.putExtra("noticeinfo", noticeInfo.getContent());
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(intent);
+                        if (db.checkNoticeContent(noticeObject.getId())) {
+                            NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
+                            Intent intent = new Intent(context, Notice.class);
+                            intent.putExtra("noticeinfo", noticeInfo.getContent());
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(intent);
+                        } else {
+                            showNetworkError();
+                        }
+                        db.close();
+                        progressDialog.dismiss();
                     }
-                } else if (db.checkNoticeContent(noticeObject.getId())) {
-                    NoticeInfo noticeInfo=db.getNoticeInfo(noticeObject.getId());
-                    Intent intent = new Intent(context, Notice.class);
-                    intent.putExtra("noticeinfo", noticeInfo.getContent());
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(intent);
-                } else {
-                    showNetworkError();
-                }
-
-                db.close();
+                }.start();
             }
 
         });

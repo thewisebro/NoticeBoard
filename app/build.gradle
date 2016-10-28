@@ -3,14 +3,15 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         config {
-            keyAlias 'noticeboardkey'
-            keyPassword 'imglab'
-            storeFile file('android.keystore')
-            storePassword 'imglab'
+            keyAlias 'android_key'
+            keyPassword 'ax50ankush'
+            storeFile file('android.jks')
+            storePassword 'ax50ankush'
         }
     }
     compileSdkVersion 23
     buildToolsVersion '23.0.1'
+    useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "in.channeli.noticeboard"
         minSdkVersion 16
@@ -21,7 +22,7 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             
         }
@@ -35,6 +36,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.android.support:support-v4:24.2.1'
     compile 'com.android.support:design:23.4.0'
-    compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+    //compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
     compile 'com.roughike:bottom-bar:2.0.2'
 }

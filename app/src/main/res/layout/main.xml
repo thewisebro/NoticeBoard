@@ -22,19 +22,21 @@
             <include
                 android:id="@+id/toolbar"
                 layout="@layout/tool_bar" />
-            <!--<FrameLayout
-                android:id="@+id/content_frame"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:scrollbars="none"
                 android:layout_weight="1"
-                android:layout_height="match_parent">
-            </FrameLayout>-->
-            <include
-                android:id="@+id/swipe_refresh_layout"
-                android:layout_weight="1"
-                android:layout_height="0dp"
-                android:layout_width="match_parent"
-                layout="@layout/list_view"/>
+                android:layout_height="0dp">
+                <include
+                    android:id="@+id/swipe_refresh_layout"
+                    android:layout_height="match_parent"
+                    android:layout_width="match_parent"
+                    layout="@layout/list_view"/>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="5dp"
+                    android:background="@drawable/toolbar_dropshadow"/>
+            </FrameLayout>
+
             <com.roughike.bottombar.BottomBar
                 android:layout_width="match_parent"
                 android:id="@+id/bottom_bar"
@@ -47,11 +49,29 @@
 
         <android.support.design.widget.NavigationView
             android:id="@+id/left_drawer"
-            android:layout_width="wrap_content"
+            android:layout_width="@dimen/drawerWidth"
             android:layout_height="match_parent"
             android:theme="@style/NavigationTheme"
             android:scrollbars="none"
-            android:layout_gravity="start"/>
+            android:layout_gravity="start">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:layout_height="match_parent">
+                <include
+                    android:id="@+id/drawer_header"
+                    layout="@layout/navigation_profile"/>
+
+                <ExpandableListView
+                    android:layout_width="match_parent"
+                    android:id="@+id/drawer_menu"
+                    android:groupIndicator="@null"
+                    android:choiceMode="singleChoice"
+                    android:divider="@android:color/transparent"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+        </android.support.design.widget.NavigationView>
 
     </android.support.v4.widget.DrawerLayout>
 </android.support.design.widget.CoordinatorLayout>

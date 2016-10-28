@@ -21,11 +21,14 @@ public class Parsing {
             JSONArray jsonArray = jsonObject.getJSONArray("order");
             for(int i=0;i<jsonArray.length();i++){
                 constantsList.add(jsonArray.getString(i));
-                //list.add(new DrawerItem(jsonArray.getString(i)));
             }
             Collections.sort(constantsList);
             for (String s: constantsList){
-                list.add(new DrawerItem(s));
+                ArrayList<String> categories=new ArrayList<>();
+                JSONArray array=jsonObject.getJSONArray(s);
+                for(int i=0;i<array.length();i++)
+                    categories.add(array.getString(i));
+                list.add(new DrawerItem(s,categories));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -46,10 +49,8 @@ public class Parsing {
                 notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
                 notice.setCategory(jsonObject.getString("category"));
                 notice.setMain_category(jsonObject.getString("main_category"));
-                //notice.setStar(jsonObject.getBoolean("starred_status"));
-                //notice.setRead(jsonObject.getBoolean("read_status"));
-                notice.setStar(true);
-                notice.setRead(false);
+                notice.setStar(jsonObject.getBoolean("starred_status"));
+                notice.setRead(jsonObject.getBoolean("read_status"));
                 noticeslist.add(notice);
             }
         }
@@ -73,10 +74,8 @@ public class Parsing {
                 notice.setId(jsonObject.getInt("id"));
                 notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
                 notice.setCategory(jsonObject.getString("category"));
-                notice.setRead(false);
-                notice.setStar(true);
-                //notice.setRead(jsonObject.getBoolean("read_status"));
-                //notice.setStar(jsonObject.getBoolean("starred_status"));
+                notice.setRead(jsonObject.getBoolean("read_status"));
+                notice.setStar(jsonObject.getBoolean("starred_status"));
                 noticeList.add(notice);
             }
         } catch (JSONException e) {

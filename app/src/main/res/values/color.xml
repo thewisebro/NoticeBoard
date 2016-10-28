@@ -33,4 +33,6 @@
     <color name="bg_upperLeft">#40b2b3</color>
     <color name="bg_upperRight">#4396be</color>
     <color name="bg_bottomRight">#976583</color>
+    <color name="color_alizarin">#e74c3c</color>
+    <color name="translucent">#20E0E0E0</color>
 </resources>
