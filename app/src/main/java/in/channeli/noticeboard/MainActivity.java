@@ -35,7 +35,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ExpandableListView;
 import android.widget.SearchView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.roughike.bottombar.BottomBar;
 import com.roughike.bottombar.OnTabSelectListener;
@@ -378,26 +377,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (isOnline()){
-                    httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
-                    httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
-                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                    httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
-                    try {
-                        new ConnectTaskHttpGet().execute(httpGet);
-                        Toast.makeText(getApplicationContext(),
-                                "Logged Out Successfully", Toast.LENGTH_SHORT).show();
-                        //editor.putString("CHANNELI_SESSID", "");
-                        //editor.putString("csrftoken", "");
-                        editor.clear();
-                        editor.apply();
-                        editor.commit();
-                        sqlHelper.clear();
-                        startActivity(new Intent(getApplicationContext(), SplashScreen.class));
-                        finish();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        showNetworkError();
-                    }
+                    final ProgressDialog progressDialog=ProgressDialog.show(MainActivity.this,null,"Logging out",true,false);
+                    new Thread(){
+                        @Override
+                        public void run(){
+                            httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
+                            httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
+                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                            httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
+                            try {
+                                new ConnectTaskHttpGet().execute(httpGet);
+                                editor.clear();
+                                editor.apply();
+                                editor.commit();
+                                sqlHelper.clear();
+                                startActivity(new Intent(getApplicationContext(), SplashScreen.class));
+                                progressDialog.dismiss();
+                                finish();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                showNetworkError();
+                            }
+                            progressDialog.dismiss();
+                        }
+                    }.start();
                 }
                 else
                     showNetworkError();
@@ -529,7 +532,7 @@ public class MainActivity extends AppCompatActivity {
                 itemCount = totalItemCount;
             }
 
-            if(!isLoading && lastVisibleItem>(totalItemCount-5)) {
+            if(!isLoading && lastVisibleItem>(totalItemCount-3)) {
                 loadMore(totalItemCount);
                 isLoading=true;
             }
@@ -570,8 +573,9 @@ public class MainActivity extends AppCompatActivity {
                             });
                             return;
                         }
+                        showNetworkError();
                     }
-                    showNetworkError();
+                    isLoading=false;
                 }
             }.start();
         }
@@ -646,6 +650,7 @@ public class MainActivity extends AppCompatActivity {
         searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
         searchView.setIconified(false);
         searchView.setSubmitButtonEnabled(true);
+        searchView.setQueryHint("Search notices");
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

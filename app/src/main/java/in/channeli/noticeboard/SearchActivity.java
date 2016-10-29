@@ -133,6 +133,7 @@ public class SearchActivity extends AppCompatActivity {
             searchView.setIconified(false);
             searchView.setSubmitButtonEnabled(true);
             searchView.clearFocus();
+            searchView.setQueryHint("Search notices");
         }
         SearchView.OnQueryTextListener queryTextListener = new SearchView.OnQueryTextListener()
         {

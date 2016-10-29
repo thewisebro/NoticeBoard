@@ -22,7 +22,8 @@ public class Notice extends AppCompatActivity {
         if(result.contains("<img")  || result.contains("href")) {
             ArrayList<Integer> count = new ArrayList<>();
             stringBuffer = new StringBuffer(result);
-            String add = "https://channeli.in";
+            //String add = "https://channeli.in";
+            String add= "http://people.iitr.ernet.in";
 
             for(int index = result.indexOf("/media");
                     index >= 0;
@@ -47,10 +48,12 @@ public class Notice extends AppCompatActivity {
             stringBuffer = new StringBuffer(result);
             String add = "Download Attachment";
             int index = result.indexOf("<a href");
-            while(result.charAt(index) != '>'){
-                index++;
+            int startIndex=index;
+            while(result.charAt(startIndex) != '>'){
+                startIndex++;
             }
-            int startIndex = index+1;
+
+            startIndex++;
 
             int endIndex = result.indexOf("</a>");
             //String toBeReplaced = result.substring(startIndex,endIndex);

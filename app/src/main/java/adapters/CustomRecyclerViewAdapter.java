@@ -167,17 +167,33 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         });
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+            public void onCheckedChanged(final CompoundButton compoundButton, final boolean b) {
                 if (checkChangeFlag[0]) {
                     if (isOnline()) {
-                        if (setStar(noticeObject.getId(), b)) {
-                            noticeObject.setStar(b);
-                            return;
-                        } else
-                            showMessage("Unable to Star/Unstar. Please try later.");
-                    } else
+                        new Thread() {
+                            @Override
+                            public void run() {
+                                if (setStar(noticeObject.getId(), b)) {
+                                    noticeObject.setStar(b);
+                                    //showMessage("starred");
+                                } else {
+                                    ((Activity)context).runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            showNetworkError();
+                                            checkChangeFlag[0]=false;
+                                            compoundButton.setChecked(!b);
+                                        }
+                                    });
+                                }
+                            }
+                        }.start();
+
+                    } else {
                         showNetworkError();
-                    compoundButton.setChecked(!b);
+                        compoundButton.setChecked(!b);
+                    }
+                    checkChangeFlag[0]=false;
                 }
             }
         });
@@ -191,11 +207,26 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                     @Override
                     public void run(){
                         SQLHelper db = new SQLHelper(context);
+                        if (db.checkNoticeContent(noticeObject.getId(),noticeObject.getDatetime_modified())) {
+                            NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId(),noticeObject.getDatetime_modified());
+                            Intent intent = new Intent(context, Notice.class);
+                            intent.putExtra("noticeinfo", noticeInfo.getContent());
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(intent);
+                            progressDialog.dismiss();
+                            return;
+                        }
                         if (isOnline()) {
                             String result = getNoticeInfoResult(noticeObject.getId());
                             if (!result.equals("")) {
                                 if (!noticeObject.getRead()) {
-                                    holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_notice_bg));
+                                    ((Activity)context).runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            holder.view.setBackgroundDrawable(
+                                                    context.getResources().getDrawable(R.drawable.read_notice_bg));
+                                        }
+                                    });
                                     noticeObject.setRead(true);
                                     setRead(noticeObject.getId());
                                 }

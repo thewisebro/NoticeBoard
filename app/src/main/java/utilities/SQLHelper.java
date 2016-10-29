@@ -103,7 +103,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         Bitmap bitmap= BitmapFactory.decodeByteArray(bitmapByte, 0, bitmapByte.length);
         return bitmap;
     }
-    private int countNotices(){
+    public int countNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES, null, null, null, null, null, null);
         return cursor.getCount();
@@ -123,7 +123,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db=this.getReadableDatabase();
         ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS},null,null,null,null,null);
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_STAR_STATUS},null,null,null,null,null);
         if(cursor.moveToFirst()){
             do{
                 NoticeObject object=new NoticeObject();
@@ -152,7 +152,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             CONDITION=ROW_MAIN_CATEGORY+" = '"+mainCategory+"' AND "+ROW_CATEGORY+" = '"+category+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_STAR_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
         if(cursor.moveToFirst()){
             do{
                 NoticeObject object=new NoticeObject();
@@ -181,7 +181,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
-                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_READ_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
+                ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_STAR_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
         if(cursor.moveToFirst()){
             do{
                 NoticeObject object=new NoticeObject();
@@ -192,6 +192,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                 object.setMain_category(cursor.getString(4));
                 object.setRead(cursor.getInt(5) > 0);
                 object.setStar(cursor.getInt(6) > 0);
+                int a=cursor.getInt(6);
                 list.add(object);
             }while (cursor.moveToNext());
         }
@@ -204,6 +205,24 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY,ROW_REFERENCE,ROW_CONTENT}
                 ,ROW_ID + "=" + id,null,null,null,null);
+        if(cursor.moveToFirst()){
+            NoticeInfo info=new NoticeInfo();
+            info.setId(cursor.getInt(0));
+            info.setSubject(cursor.getString(1));
+            info.setDatetime_modified(cursor.getString(2));
+            info.setCategory(cursor.getString(3));
+            info.setReference(cursor.getString(4));
+            info.setContent(cursor.getString(5));
+            return info;
+        }
+        return null;
+    }
+    public NoticeInfo getNoticeInfo(int id, String date){
+        if (!checkNoticeContent(id))
+            return null;
+        SQLiteDatabase db=this.getReadableDatabase();
+        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY,ROW_REFERENCE,ROW_CONTENT}
+                ,ROW_ID + "=" + id + " AND "+ROW_DATETIME+" = '"+ date +"'" ,null,null,null,null);
         if(cursor.moveToFirst()){
             NoticeInfo info=new NoticeInfo();
             info.setId(cursor.getInt(0));
@@ -239,7 +258,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_DATETIME, object.getDatetime_modified());
         values.put(ROW_READ_STATUS,object.getRead());
         values.put(ROW_STAR_STATUS,object.getStar());
-        db.insert(TABLE_NOTICES,null,values);
+        db.insert(TABLE_NOTICES, null, values);
         db.close();
     }
     public void addNoticesList(ArrayList<NoticeObject> list) throws ParseException {
@@ -257,6 +276,17 @@ public class SQLHelper extends SQLiteOpenHelper{
     public boolean checkNoticeContent(int id){
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES, new String[]{ROW_CONTENT}, ROW_ID + "=" + id, null, null, null, null);
+        if(cursor.getCount()==0)
+            return false;
+        cursor.moveToFirst();
+        String c=cursor.getString(0);
+        db.close();
+        return (!(c==null || c==""));
+    }
+    public boolean checkNoticeContent(int id,String date){
+        SQLiteDatabase db=this.getReadableDatabase();
+        Cursor cursor=db.query(TABLE_NOTICES, new String[]{ROW_CONTENT}
+                , ROW_ID + "=" + id + " AND "+ROW_DATETIME+" = '"+ date +"'", null, null, null, null);
         if(cursor.getCount()==0)
             return false;
         cursor.moveToFirst();
