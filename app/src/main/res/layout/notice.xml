@@ -4,28 +4,62 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:scrollbars="none"
+    android:id="@+id/notice"
     xmlns:android="http://schemas.android.com/apk/res/android" >
     <include layout="@layout/tool_bar"
         android:id="@+id/toolbar"/>
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
+        android:orientation="vertical"
         android:layout_height="match_parent">
-        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:orientation="vertical"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:scrollbars="none"
-            android:layout_height="match_parent">
+            android:orientation="vertical"
+            android:layout_height="wrap_content"
+            android:background="@color/off_white"
+            android:layout_margin="5dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:id="@+id/notice_subject"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="@color/black"
+                android:gravity="center_horizontal"
+                android:padding="5dp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:id="@+id/notice_category"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="@color/blue_grey_800"
+                android:paddingLeft="5dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:id="@+id/notice_date"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="@color/blue_grey_800"
+                android:paddingLeft="5dp" />
+        </LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:background="#80000000"
+            android:layout_height="1dp"/>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:layout_height="0dp">
             <WebView
                 android:id="@+id/webView"
                 android:layout_width="match_parent"
                 android:scrollbars="none"
-                android:layout_height="wrap_content">
-
+                android:layout_height="match_parent">
             </WebView>
-        </ScrollView>
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="5dp"
-            android:background="@drawable/toolbar_dropshadow"/>
-    </FrameLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="5dp"
+                android:background="@drawable/toolbar_dropshadow"/>
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>

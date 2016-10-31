@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -96,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
     private AsyncTask<HttpGet, Void, String> mTask;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
+    private ExpandableListView listView;
 
     String msg=null;
     boolean drawerClickScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
@@ -156,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         mDrawerToggle.syncState();
-        setTitle("All");
+        //setTitle("All");
 
         recyclerView.setAdapter(customAdapter);
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
@@ -297,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void setDrawerMenu(){
-        final ExpandableListView listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
+        listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
         drawerList=getConstants();
         drawerList.add(new DrawerItem("Starred", null));
         drawerList.add(new DrawerItem("Feedback", null));
@@ -429,15 +431,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                     changeList();
-                    if (MainCategory.equals(Category))          //For All - All
-                        setTitle(MainCategory);
-                    else
-                        setTitle(MainCategory + " - " + Category);
             }
         };
         handler.postDelayed(runnable, 300);
     }
     private void changeList(){
+        if (MainCategory.equals(Category))          //For All - All
+            setTitle(MainCategory);
+        else
+            setTitle(MainCategory + " - " + Category);
+
+
         if (MainCategory.equals("Starred")) {
             bottomBar.setVisibility(View.GONE);
             httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
@@ -654,7 +658,7 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                //searchView.clearFocus();
+                searchView.clearFocus();
                 //hideKeyboard();
                 searchView.setVisibility(View.INVISIBLE);
                 searchView.setVisibility(View.VISIBLE);
@@ -668,6 +672,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         searchView.clearFocus();
+        MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item) {
+                searchView.requestFocus();
+                ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).
+                        toggleSoftInput(InputMethodManager.SHOW_FORCED,
+                                InputMethodManager.HIDE_IMPLICIT_ONLY);
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item) {
+                searchView.clearFocus();
+                hideKeyboard();
+                return true;
+            }
+        });
         return true;
     }
     public void hideKeyboard(){
@@ -691,9 +712,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed(){
 
-        if(false){
-        }
-        else{
+        if (MainCategory.contains("All")){
             AlertDialog.Builder dialog=new AlertDialog.Builder(this);
             dialog.setTitle("Exit");
             dialog.setMessage("Are you sure you want to exit?");
@@ -711,5 +730,7 @@ public class MainActivity extends AppCompatActivity {
             });
             dialog.show();
         }
+        else
+            listView.getChildAt(0).performClick();
     }
 }

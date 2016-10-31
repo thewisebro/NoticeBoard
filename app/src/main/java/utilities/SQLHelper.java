@@ -304,4 +304,11 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.update(TABLE_NOTICES, values, ROW_ID + "=" + info.getId(), null);
         db.close();
     }
+    public void setStar(int id, boolean b){
+        SQLiteDatabase db= this.getWritableDatabase();
+        ContentValues values=new ContentValues();
+        values.put(ROW_STAR_STATUS,b);
+        db.update(TABLE_NOTICES,values,ROW_ID + " = "+ id,null);
+        db.close();
+    }
 }

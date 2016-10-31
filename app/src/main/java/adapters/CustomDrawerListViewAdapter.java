@@ -103,9 +103,11 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             }
         });
         if (drawerItemList.get(groupPosition).getCategories()==null || drawerItemList.get(groupPosition).getCategories().size()==0) {
-            indicator.setImageResource(android.R.color.transparent);
+            //indicator.setImageResource(android.R.color.transparent);
+            indicator.setVisibility(View.GONE);
         }
         else {
+            indicator.setVisibility(View.VISIBLE);
             if (isExpanded)
                 indicator.setImageResource(R.drawable.ic_keyboard_arrow_up_black_24dp);
             else

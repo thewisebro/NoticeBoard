@@ -1,9 +1,8 @@
 package objects;
 
-/*
-Created by manohar on 5/2/15.
- */
-public class NoticeInfo {
+import java.io.Serializable;
+
+public class NoticeInfo implements Serializable {
     int id;
     String reference;
     String subject;

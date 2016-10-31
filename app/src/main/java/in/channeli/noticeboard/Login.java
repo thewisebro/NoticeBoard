@@ -279,30 +279,30 @@ public class Login extends AppCompatActivity {
 
     public void login(View view) {
         hideKeyboard();
-        if (isConnected()){
+        loginDialog= ProgressDialog.show(this,null,"Signing In...",true,false);
+        new Thread(){
+            @Override
+            public void run(){
+                if (isConnected()){
 
-            final String usernameText= Username.getText().toString();
-            final String passwordText= Password.getText().toString();
-            if (usernameText.matches("")){
-                showMessage("Enter username");
-            }
-            else if (passwordText.matches("")){
-                showMessage("Enter password");
-            }
-            else {
-                loginDialog= ProgressDialog.show(this,null,"Signing In...",true,false);
-                new Thread(){
-                    @Override
-                    public void run(){
-                        peopleLogin(usernameText, passwordText);
-                        loginDialog.dismiss();
+                    final String usernameText= Username.getText().toString();
+                    final String passwordText= Password.getText().toString();
+                    if (usernameText.matches("")){
+                        showMessage("Enter username");
                     }
-                }.start();
+                    else if (passwordText.matches("")){
+                        showMessage("Enter password");
+                    }
+                    else {
+                        peopleLogin(usernameText, passwordText);
+                    }
+                }
+                else {
+                    showMessage("Check network connection!");
+                }
+                loginDialog.dismiss();
             }
-        }
-        else {
-            showMessage("Check network connection!");
-        }
+        }.start();
     }
     public void hideKeyboard(){
         // Check if no view has focus:

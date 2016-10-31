@@ -8,6 +8,8 @@
 
    <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
+        android:divider="#80000000"
+        android:dividerHeight="1dp"
         android:layout_height="match_parent"
         android:id="@+id/list_view"/>
 

@@ -19,7 +19,6 @@ import android.widget.TextView;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -83,7 +82,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             e.printStackTrace();
         }
     }
-    boolean setStar(int id,boolean b){
+    /*boolean setStar(int id,boolean b){
         String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
         if (b)
             uri += "/add_starred/";
@@ -108,7 +107,23 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             e.printStackTrace();
         }
         return false;
+    }*/
+    void setStar(int id,boolean b){
+        String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
+        if (b)
+            uri += "/add_starred/";
+        else
+            uri += "/remove_starred/";
+        HttpPost httpPost = new HttpPost(uri);
+        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
+        httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+        httpPost.setHeader("CHANNELI_DEVICE", "android");
+        httpPost.setHeader("X-CSRFToken=", csrftoken);
+        new ConnectTaskHttpPost().execute(httpPost);
+        new SQLHelper(context).setStar(id,b);
     }
+
     String getNoticeInfoResult(int id){
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(noticeurl + id);
@@ -170,7 +185,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             public void onCheckedChanged(final CompoundButton compoundButton, final boolean b) {
                 if (checkChangeFlag[0]) {
                     if (isOnline()) {
-                        new Thread() {
+                        /*new Thread() {
                             @Override
                             public void run() {
                                 if (setStar(noticeObject.getId(), b)) {
@@ -187,13 +202,15 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                     });
                                 }
                             }
-                        }.start();
-
+                        }.start();*/
+                        setStar(noticeObject.getId(), b);
+                        noticeObject.setStar(b);
+                        checkChangeFlag[0] = false;
                     } else {
                         showNetworkError();
+                        checkChangeFlag[0] = false;
                         compoundButton.setChecked(!b);
                     }
-                    checkChangeFlag[0]=false;
                 }
             }
         });
@@ -209,10 +226,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                         SQLHelper db = new SQLHelper(context);
                         if (db.checkNoticeContent(noticeObject.getId(),noticeObject.getDatetime_modified())) {
                             NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId(),noticeObject.getDatetime_modified());
-                            Intent intent = new Intent(context, Notice.class);
-                            intent.putExtra("noticeinfo", noticeInfo.getContent());
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
+                            openNotice(noticeInfo);
                             progressDialog.dismiss();
                             return;
                         }
@@ -225,6 +239,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                         public void run() {
                                             holder.view.setBackgroundDrawable(
                                                     context.getResources().getDrawable(R.drawable.read_notice_bg));
+                                            holder.subject.setTypeface(null,Typeface.NORMAL);
                                         }
                                     });
                                     noticeObject.setRead(true);
@@ -232,20 +247,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                 }
                                 NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
                                 db.addNoticeInfo(noticeInfo);
-                                Intent intent = new Intent(context, Notice.class);
-                                intent.putExtra("noticeinfo", noticeInfo.getContent());
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                context.startActivity(intent);
+                                openNotice(noticeInfo);
                                 progressDialog.dismiss();
                                 return;
                             }
                         }
                         if (db.checkNoticeContent(noticeObject.getId())) {
                             NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
-                            Intent intent = new Intent(context, Notice.class);
-                            intent.putExtra("noticeinfo", noticeInfo.getContent());
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
+                            openNotice(noticeInfo);
                         } else {
                             showNetworkError();
                         }
@@ -257,6 +266,12 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
         });
 
+    }
+    public void openNotice(NoticeInfo noticeInfo){
+        Intent intent = new Intent(context, Notice.class);
+        intent.putExtra("noticeinfo", noticeInfo);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
     }
     @Override
     public int getItemCount() {
