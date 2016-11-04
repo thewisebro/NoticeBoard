@@ -61,6 +61,7 @@ import objects.DrawerItem;
 import objects.NoticeObject;
 import objects.User;
 import utilities.DownloadResultReceiver;
+import utilities.EndlessRecyclerViewScrollListener;
 import utilities.Parsing;
 import utilities.RoundImageView;
 import utilities.SQLHelper;
@@ -98,9 +99,10 @@ public class MainActivity extends AppCompatActivity {
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
     private ExpandableListView listView;
+    private EndlessRecyclerViewScrollListener scrollListener;
 
     String msg=null;
-    boolean drawerClickScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
+    boolean refreshScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
 
     private void addToDB(ArrayList<NoticeObject> list){
         try {
@@ -163,12 +165,55 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(customAdapter);
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager));
+        scrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
+            @Override
+            public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
+                new Thread(){
+                    @Override
+                    public void run(){
+                        if (isOnline()) {
+                            httpGet = new HttpGet(MainActivity.UrlOfNotice +
+                                    "list_notices/" + NoticeType + "/" + MainCategory +
+                                    "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                            httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                            httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                            httpGet.setHeader("X-CSRFToken", csrftoken);
+                            mTask = new ConnectTaskHttpGet().execute(httpGet);
+                            String result = null;
+                            try {
+                                result = mTask.get();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            mTask.cancel(true);
+                            if (result != null && result!="") {
+                                final String parseString=result;
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        int curSize = customAdapter.getItemCount();
+                                        ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
+                                        addToDB(list);
+                                        noticelist.addAll(list);
+                                        customAdapter.notifyItemRangeInserted(curSize, list.size());
+                                    }
+                                });
+                                return;
+                            }
+                            showNetworkError();
+                        }
+                    }
+                }.start();
+            }
+        };
+        recyclerView.setOnScrollListener(scrollListener);
+        //recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager));
         //Scroll only when touched, not due to drawer clicks
         recyclerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                drawerClickScroll=false;
+                refreshScroll=false;
                 return false;
             }
         });
@@ -186,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
             public void onTabSelected(int itemId) {
+                refreshScroll=true;
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
@@ -425,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectItem() {
-        drawerClickScroll=true;
+        refreshScroll=true;
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
@@ -479,7 +525,9 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        recyclerView.scrollToPosition(0);
                         customAdapter.notifyDataSetChanged();
+                        scrollListener.resetState();
                         pd.dismiss();
                         if (msg!=null)
                             showMessage();
@@ -506,7 +554,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
+/*    private class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
         private int itemCount=0;
         private boolean isLoading=true;
         private LinearLayoutManager layoutManager;
@@ -515,7 +563,10 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void onScrolled(RecyclerView view,int dx,int dy){
-            if(drawerClickScroll){
+            if(refreshScroll){
+                isLoading=false;
+                itemCount=0;
+                refreshScroll=false;
                 return;
             }
             int firstVisibleItem=layoutManager.findFirstVisibleItemPosition();
@@ -523,12 +574,10 @@ public class MainActivity extends AppCompatActivity {
             int totalItemCount=layoutManager.getItemCount();
             int lastVisibleItem=layoutManager.findLastVisibleItemPosition();
 
-
             if (totalItemCount < itemCount) {
-                itemCount = totalItemCount;
+                this.itemCount = totalItemCount;
                 if (totalItemCount == 0) {
-                    this.isLoading = true;
-                }
+                    this.isLoading = true; }
             }
 
             if (isLoading && (totalItemCount > itemCount)) {
@@ -536,9 +585,9 @@ public class MainActivity extends AppCompatActivity {
                 itemCount = totalItemCount;
             }
 
-            if(!isLoading && lastVisibleItem>(totalItemCount-3)) {
-                loadMore(totalItemCount);
+            if(!isLoading && lastVisibleItem>(totalItemCount-5)) {
                 isLoading=true;
+                loadMore(totalItemCount);
             }
 
         }
@@ -575,15 +624,16 @@ public class MainActivity extends AppCompatActivity {
                                     customAdapter.notifyItemRangeInserted(curSize, list.size());
                                 }
                             });
+                            //isLoading=false;
                             return;
                         }
                         showNetworkError();
                     }
-                    //isLoading=false;
+                    isLoading=false;
                 }
             }.start();
         }
-    }
+    }*/
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
         @Override

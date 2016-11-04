@@ -17,6 +17,10 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.channeli.noticeboard.MainActivity;
+import com.channeli.noticeboard.Notice;
+import com.channeli.noticeboard.R;
+
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 
@@ -29,9 +33,6 @@ import java.util.concurrent.ExecutionException;
 
 import connections.ConnectTaskHttpGet;
 import connections.ConnectTaskHttpPost;
-import com.channeli.noticeboard.MainActivity;
-import com.channeli.noticeboard.Notice;
-import com.channeli.noticeboard.R;
 import objects.NoticeInfo;
 import objects.NoticeObject;
 import objects.NoticeObjectViewHolder;
@@ -185,24 +186,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             public void onCheckedChanged(final CompoundButton compoundButton, final boolean b) {
                 if (checkChangeFlag[0]) {
                     if (isOnline()) {
-                        /*new Thread() {
-                            @Override
-                            public void run() {
-                                if (setStar(noticeObject.getId(), b)) {
-                                    noticeObject.setStar(b);
-                                    //showMessage("starred");
-                                } else {
-                                    ((Activity)context).runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            showNetworkError();
-                                            checkChangeFlag[0]=false;
-                                            compoundButton.setChecked(!b);
-                                        }
-                                    });
-                                }
-                            }
-                        }.start();*/
                         setStar(noticeObject.getId(), b);
                         noticeObject.setStar(b);
                         checkChangeFlag[0] = false;
