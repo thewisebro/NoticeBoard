@@ -29,9 +29,9 @@ import java.util.concurrent.ExecutionException;
 
 import connections.ConnectTaskHttpGet;
 import connections.ConnectTaskHttpPost;
-import in.channeli.noticeboard.MainActivity;
-import in.channeli.noticeboard.Notice;
-import in.channeli.noticeboard.R;
+import com.channeli.noticeboard.MainActivity;
+import com.channeli.noticeboard.Notice;
+import com.channeli.noticeboard.R;
 import objects.NoticeInfo;
 import objects.NoticeObject;
 import objects.NoticeObjectViewHolder;

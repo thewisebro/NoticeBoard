@@ -2,7 +2,7 @@ package objects;
 
 import java.util.ArrayList;
 
-import in.channeli.noticeboard.R;
+import com.channeli.noticeboard.R;
 
 /**
  * Created by Ankush on 05-10-2016.

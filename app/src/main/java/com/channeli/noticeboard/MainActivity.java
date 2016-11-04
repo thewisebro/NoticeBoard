@@ -1,4 +1,4 @@
-package in.channeli.noticeboard;
+package com.channeli.noticeboard;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -579,7 +579,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         showNetworkError();
                     }
-                    isLoading=false;
+                    //isLoading=false;
                 }
             }.start();
         }

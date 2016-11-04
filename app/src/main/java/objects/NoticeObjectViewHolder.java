@@ -5,7 +5,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
-import in.channeli.noticeboard.R;
+import com.channeli.noticeboard.R;
 
 /**
  * Created by Ankush on 23-09-2016.

@@ -10,7 +10,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import in.channeli.noticeboard.R;
+import com.channeli.noticeboard.R;
 import objects.DrawerItem;
 
 /**

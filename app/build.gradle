@@ -13,11 +13,11 @@ android {
     buildToolsVersion '23.0.1'
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
-        applicationId "in.channeli.noticeboard"
+        applicationId "com.channeli.noticeboard"
         minSdkVersion 16
         targetSdkVersion 21
-        versionCode 20
-        versionName "2.0"
+        versionCode 10
+        versionName "1.0"
         signingConfig signingConfigs.config
     }
     buildTypes {

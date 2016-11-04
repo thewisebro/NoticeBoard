@@ -1,4 +1,4 @@
-package in.channeli.noticeboard;
+package com.channeli.noticeboard;
 
 import android.app.Activity;
 import android.content.Intent;
