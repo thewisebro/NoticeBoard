@@ -3,9 +3,9 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         config {
-            keyAlias 'noticeboardkey'
+            keyAlias 'noticeboard_key'
             keyPassword 'imglab'
-            storeFile file('android.keystore')
+            storeFile file('noticeboard_keystore.jks')
             storePassword 'imglab'
         }
     }
