@@ -20,8 +20,8 @@ public class CookiesHttpGet extends AsyncTask<HttpGet, Void, String>{
     protected String doInBackground(HttpGet... params) {
         String csrfToken="";
         HttpParams httpParams=new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
-        HttpConnectionParams.setSoTimeout(httpParams,5000);
+        HttpConnectionParams.setConnectionTimeout(httpParams, 10000);
+        HttpConnectionParams.setSoTimeout(httpParams,10000);
         DefaultHttpClient httpClient = new DefaultHttpClient(httpParams);
         try {
             httpClient.execute(params[0]);

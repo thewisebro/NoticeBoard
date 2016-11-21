@@ -19,8 +19,8 @@ public class CookiesHttpPost extends AsyncTask<HttpPost, Void, HashMap<String,St
     @Override
     protected HashMap<String,String> doInBackground(HttpPost[] params) {
         HttpParams httpParams=new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
-        HttpConnectionParams.setSoTimeout(httpParams,5000);
+        HttpConnectionParams.setConnectionTimeout(httpParams, 10000);
+        HttpConnectionParams.setSoTimeout(httpParams,10000);
         DefaultHttpClient httpClient = new DefaultHttpClient(httpParams);
         cookie_list = new HashMap<String,String>();
         try {

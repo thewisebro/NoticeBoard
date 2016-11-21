@@ -168,43 +168,45 @@ public class MainActivity extends AppCompatActivity {
         scrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
-                new Thread(){
-                    @Override
-                    public void run(){
-                        if (isOnline()) {
-                            httpGet = new HttpGet(MainActivity.UrlOfNotice +
-                                    "list_notices/" + NoticeType + "/" + MainCategory +
-                                    "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
-                            httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-                            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                            httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                            httpGet.setHeader("X-CSRFToken", csrftoken);
-                            mTask = new ConnectTaskHttpGet().execute(httpGet);
-                            String result = null;
-                            try {
-                                result = mTask.get();
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                if(totalItemsCount>0)
+                    new Thread(){
+                        @Override
+                        public void run(){
+                            if (isOnline()) {
+                                httpGet = new HttpGet(MainActivity.UrlOfNotice +
+                                        "list_notices/" + NoticeType + "/" + MainCategory +
+                                        "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                                httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
+                                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                                httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                                httpGet.setHeader("X-CSRFToken", csrftoken);
+                                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                                String result = null;
+                                try {
+                                    result = mTask.get();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                mTask.cancel(true);
+                                if (result != null && result!="") {
+                                    final String parseString=result;
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            int curSize = customAdapter.getItemCount();
+                                            ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
+                                            addToDB(list);
+                                            noticelist.addAll(list);
+                                            customAdapter.notifyItemRangeInserted(curSize, list.size());
+                                        }
+                                    });
+                                    return;
+                                }
+                                showNetworkError();
                             }
-                            mTask.cancel(true);
-                            if (result != null && result!="") {
-                                final String parseString=result;
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        int curSize = customAdapter.getItemCount();
-                                        ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
-                                        addToDB(list);
-                                        noticelist.addAll(list);
-                                        customAdapter.notifyItemRangeInserted(curSize, list.size());
-                                    }
-                                });
-                                return;
-                            }
-                            showNetworkError();
+                            scrollListener.resetState();
                         }
-                    }
-                }.start();
+                    }.start();
             }
         };
         recyclerView.setOnScrollListener(scrollListener);
@@ -213,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                refreshScroll=false;
+                refreshScroll = false;
                 return false;
             }
         });
@@ -471,7 +473,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectItem() {
-        refreshScroll=true;
         Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
@@ -553,87 +554,6 @@ public class MainActivity extends AppCompatActivity {
             showNetworkError();
         }
     }
-
-/*    private class RecyclerViewScrollListener extends RecyclerView.OnScrollListener{
-        private int itemCount=0;
-        private boolean isLoading=true;
-        private LinearLayoutManager layoutManager;
-        public RecyclerViewScrollListener(LinearLayoutManager manager){
-            this.layoutManager=manager;
-        }
-        @Override
-        public void onScrolled(RecyclerView view,int dx,int dy){
-            if(refreshScroll){
-                isLoading=false;
-                itemCount=0;
-                refreshScroll=false;
-                return;
-            }
-            int firstVisibleItem=layoutManager.findFirstVisibleItemPosition();
-            int visibleItemCount=view.getChildCount();
-            int totalItemCount=layoutManager.getItemCount();
-            int lastVisibleItem=layoutManager.findLastVisibleItemPosition();
-
-            if (totalItemCount < itemCount) {
-                this.itemCount = totalItemCount;
-                if (totalItemCount == 0) {
-                    this.isLoading = true; }
-            }
-
-            if (isLoading && (totalItemCount > itemCount)) {
-                isLoading = false;
-                itemCount = totalItemCount;
-            }
-
-            if(!isLoading && lastVisibleItem>(totalItemCount-5)) {
-                isLoading=true;
-                loadMore(totalItemCount);
-            }
-
-        }
-        public void loadMore(final int totalItemsCount) {
-            new Thread(){
-                @Override
-            public void run(){
-                    if (isOnline()) {
-                        //showMessage("Loading more notices...");
-                        httpGet = new HttpGet(MainActivity.UrlOfNotice +
-                                "list_notices/" + NoticeType + "/" + MainCategory +
-                                "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
-                        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                        httpGet.setHeader("X-CSRFToken", csrftoken);
-                        mTask = new ConnectTaskHttpGet().execute(httpGet);
-                        String result = null;
-                        try {
-                            result = mTask.get();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        mTask.cancel(true);
-                        if (result != null && result!="") {
-                            final String parseString=result;
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    int curSize = customAdapter.getItemCount();
-                                    ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
-                                    addToDB(list);
-                                    noticelist.addAll(list);
-                                    customAdapter.notifyItemRangeInserted(curSize, list.size());
-                                }
-                            });
-                            //isLoading=false;
-                            return;
-                        }
-                        showNetworkError();
-                    }
-                    isLoading=false;
-                }
-            }.start();
-        }
-    }*/
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
         @Override
