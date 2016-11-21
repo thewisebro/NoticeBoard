@@ -83,32 +83,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             e.printStackTrace();
         }
     }
-    /*boolean setStar(int id,boolean b){
-        String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
-        if (b)
-            uri += "/add_starred/";
-        else
-            uri += "/remove_starred/";
-        HttpPost httpPost = new HttpPost(uri);
-        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
-        httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-        httpPost.setHeader("CHANNELI_DEVICE", "android");
-        httpPost.setHeader("X-CSRFToken=", csrftoken);
-        ConnectTaskHttpPost starTask = (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(httpPost);
-        String result = "";
-        try {
-            result = starTask.get();
-            if (result!=null && result!="") {
-                JSONObject jsonObject = new JSONObject(result);
-                if ("true".equals(jsonObject.getString("success")))
-                    return true;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }*/
     void setStar(int id,boolean b){
         String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
         if (b)
