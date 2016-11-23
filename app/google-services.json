@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "343724392038",
+    "firebase_url": "https://channel-i-noticeboard-aabaa.firebaseio.com",
+    "project_id": "channel-i-noticeboard-aabaa",
+    "storage_bucket": "channel-i-noticeboard-aabaa.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343724392038:android:8a043f07def36b66",
+        "android_client_info": {
+          "package_name": "com.channeli.noticeboard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "343724392038-la4j6keqjh8of0flsdifsbirle0i09r7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKQS8r7dTxknNHAOpU0dgF64e8jrj3pj0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

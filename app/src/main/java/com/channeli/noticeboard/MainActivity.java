@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
+    public static String UrlOfFCMRegistration = UrlOfHost+"push_subscription_sync/";
     private ActionBarDrawerToggle mDrawerToggle;
     private Toolbar toolbar;
     private NavigationView navigationView;
