@@ -45,12 +45,15 @@ public class FCMIDService extends FirebaseInstanceIdService {
                 httpPost.setHeader("CHANNELI_DEVICE", "android");
                 httpPost.setHeader("X-CSRFToken=", csrftoken);
                 List<NameValuePair> params=new ArrayList<>();
-                params.add(new BasicNameValuePair("auth",Config.FCM_WEB_API_KEY));
+                params.add(new BasicNameValuePair("auth",Config.FCM_SERVER_KEY));
                 params.add(new BasicNameValuePair("endpoint","https://fcm.googleapis.com/fcm/send"));
-                params.add(new BasicNameValuePair("p256dh",token));
+                params.add(new BasicNameValuePair("p256dh", token));
                 httpPost.setEntity(new UrlEncodedFormEntity(params));
                 String res=new ConnectTaskHttpPost().execute(httpPost).get();
-                int a=1;
+                if (res.contains("Done") || res.contains("Exists")) {
+                    preferences.edit().putBoolean("FCM_isRegistered", true);
+                    preferences.edit().apply();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

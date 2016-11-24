@@ -251,7 +251,6 @@ public class Login extends AppCompatActivity {
                     editor.apply();
                     getConstants();
                     loginDialog.dismiss();
-                    new FCMIDService().sendRegistrationToServer(settings);
                     //startService(new Intent(this,FCMIDService.class));
                     Intent intent = new Intent(this,MainActivity.class);
                     startActivity(intent);

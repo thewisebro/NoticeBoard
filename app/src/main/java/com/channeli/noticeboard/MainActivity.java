@@ -56,6 +56,7 @@ import java.util.concurrent.TimeoutException;
 import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
+import connections.FCMIDService;
 import connections.ProfilePicService;
 import objects.DrawerItem;
 import objects.NoticeObject;
@@ -119,6 +120,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        settings = getSharedPreferences(PREFS_NAME, 0);
+        if (!settings.getBoolean("FCM_isRegistered",false)){
+            new FCMIDService().sendRegistrationToServer(settings);
+        }
+        editor=settings.edit();
+        parsing = new Parsing();
+        user = new User(settings.getString("name",""), settings.getString("info",""),
+                settings.getString("enrollment_no",""));
+        sqlHelper=new SQLHelper(this);
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
@@ -126,12 +136,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView= (RecyclerView) swipeRefreshLayout.findViewById(R.id.list_view);
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         setSupportActionBar(toolbar);
-        settings = getSharedPreferences(PREFS_NAME, 0);
-        editor=settings.edit();
-        parsing = new Parsing();
-        user = new User(settings.getString("name",""), settings.getString("info",""),
-                settings.getString("enrollment_no",""));
-        sqlHelper=new SQLHelper(this);
         noticelist=new ArrayList<NoticeObject>();
         SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
         csrftoken = settings.getString("csrftoken","");
