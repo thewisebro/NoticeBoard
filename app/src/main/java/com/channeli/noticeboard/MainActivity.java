@@ -71,8 +71,8 @@ import utilities.SQLHelper;
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
-    //public static String UrlOfHost="http://192.168.121.187:7000/";
-    public static String UrlOfHost="http://people.iitr.ernet.in/";
+    public static String UrlOfHost="http://192.168.121.187:7000/";
+    //public static String UrlOfHost="http://people.iitr.ernet.in/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
@@ -355,6 +355,7 @@ public class MainActivity extends AppCompatActivity {
         listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
         drawerList=getConstants();
         drawerList.add(new DrawerItem("Starred", null));
+        drawerList.add(new DrawerItem("Notifications Settings",null));
         drawerList.add(new DrawerItem("Feedback", null));
         drawerList.add(new DrawerItem("Logout", null));
 
@@ -407,10 +408,14 @@ public class MainActivity extends AppCompatActivity {
                 Category = "All";
                 selectItem();
                 break;
+            case "Notifications Settings":
+                Intent intent1=new Intent(MainActivity.this,SubscriptionSettings.class);
+                startActivity(intent1);
+                break;
             case "Feedback": //Feedback
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
-                startActivity(intent);
+                Intent intent2 = new Intent(Intent.ACTION_VIEW);
+                intent2.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
+                startActivity(intent2);
                 break;
             case "Logout": //Logout
                 logout();

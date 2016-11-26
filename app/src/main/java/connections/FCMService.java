@@ -23,12 +23,12 @@ public class FCMService extends FirebaseMessagingService {
         //Displaying data in log
         //It is optional
         Log.d(TAG, "From: " + remoteMessage.getFrom());
-        Log.d(TAG, "Notification Message Body: " + remoteMessage.getNotification().getBody());
+        Log.d(TAG, "Notification Message Body: " + remoteMessage.getData());
 
-        int noticeID= Integer.parseInt(remoteMessage.getData().get("id"));
+        //int noticeID= Integer.parseInt(remoteMessage.getData().get("id"));
 
         //Calling method to generate notification
-        sendNotification(remoteMessage.getNotification().getBody());
+        sendNotification("aaa");
     }
 
     //This method is only generating push notification

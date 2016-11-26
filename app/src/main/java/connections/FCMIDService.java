@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import com.channeli.noticeboard.MainActivity;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -12,7 +13,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FCMIDService extends FirebaseInstanceIdService {
 
@@ -25,38 +28,47 @@ public class FCMIDService extends FirebaseInstanceIdService {
         sendRegistrationToServer(getSharedPreferences(MainActivity.PREFS_NAME,0));
     }
 
+    //Method to store the token on your server
     public void sendRegistrationToServer(SharedPreferences preferences) {
 
         //Getting registration token
         String token = FirebaseInstanceId.getInstance().getToken();
 
-        //You can implement this method to store the token on your server 
-        //Not required for current project
-
         String csrftoken=preferences.getString("csrftoken", "");
         String CHANNELI_SESSID=preferences.getString("CHANNELI_SESSID","");
         //Check user logged in
         if (CHANNELI_SESSID!=""){
+
+            //Subscribe to topics
+            Set<String> subscriptions = preferences.getStringSet("subscriptions",null);
+            if (subscriptions==null){
+                subscriptions=new HashSet<String>();
+                subscriptions.add("Placement Office");
+                subscriptions.add("Authorities");
+                subscriptions.add("Departments");
+                preferences.edit().putStringSet("subscriptions",subscriptions);
+            }
+            for (String s: subscriptions){
+                FirebaseMessaging.getInstance().subscribeToTopic(s.replace(" ","%20"));
+            }
             try {
-                HttpPost httpPost=new HttpPost(Config.GCM_APP_SERVER_URL);
+                HttpPost httpPost=new HttpPost(Config.FCM_APP_SERVER_URL);
                 httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
                 httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                 httpPost.setHeader("CHANNELI_DEVICE", "android");
                 httpPost.setHeader("X-CSRFToken=", csrftoken);
                 List<NameValuePair> params=new ArrayList<>();
-                params.add(new BasicNameValuePair("auth",Config.FCM_SERVER_KEY));
-                params.add(new BasicNameValuePair("endpoint","https://fcm.googleapis.com/fcm/send"));
-                params.add(new BasicNameValuePair("p256dh", token));
+                params.add(new BasicNameValuePair("token",token));
                 httpPost.setEntity(new UrlEncodedFormEntity(params));
                 String res=new ConnectTaskHttpPost().execute(httpPost).get();
-                if (res.contains("Done") || res.contains("Exists")) {
+                if (res.contains("success") || res.contains("exists")) {
                     preferences.edit().putBoolean("FCM_isRegistered", true);
-                    preferences.edit().apply();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            preferences.edit().apply();
         }
     }
 }
