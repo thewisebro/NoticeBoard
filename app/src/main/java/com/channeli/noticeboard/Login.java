@@ -47,7 +47,6 @@ import java.util.concurrent.TimeoutException;
 import connections.ConnectTaskHttpGet;
 import connections.CookiesHttpGet;
 import connections.CookiesHttpPost;
-import connections.FCMIDService;
 import objects.DrawerItem;
 import utilities.Parsing;
 import utilities.SQLHelper;
@@ -251,8 +250,9 @@ public class Login extends AppCompatActivity {
                     editor.apply();
                     getConstants();
                     loginDialog.dismiss();
-                    //startService(new Intent(this,FCMIDService.class));
                     Intent intent = new Intent(this,MainActivity.class);
+                    intent.putExtra("category","All");
+                    intent.putExtra("main_category","All");
                     startActivity(intent);
                     finish();
                 }

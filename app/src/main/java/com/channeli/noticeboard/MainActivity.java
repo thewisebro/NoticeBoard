@@ -120,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        MainCategory=getIntent().getStringExtra("main_category");
+        Category=getIntent().getStringExtra("category");
         settings = getSharedPreferences(PREFS_NAME, 0);
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
@@ -504,10 +506,9 @@ public class MainActivity extends AppCompatActivity {
             httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
         }
         else {
-            MainCategory = MainCategory.replaceAll(" ", "%20");
-            Category = Category.replaceAll(" ","%20");
             bottomBar.setVisibility(View.VISIBLE);
-            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory+"/"+Category+"/0/20/0");
+            httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory.replace(" ", "%20")
+                    +"/"+Category.replace(" ", "%20")+"/0/20/0");
         }
         noticelist.clear();
 
@@ -601,7 +602,6 @@ public class MainActivity extends AppCompatActivity {
         msg=null;
     }
     public void setTitle(String title){
-        //title.replaceAll("%20"," ");
         try {
             getSupportActionBar().setTitle(title.replaceAll("%20"," "));
         }
