@@ -14,7 +14,6 @@
     <color name="red">#ffff491d</color>
     <color name="blue_grey_800">#37474f</color>
     <color name="blue_grey_900">#263238</color>
-    <color name="yellow_700">#f9bf2b</color>
     <color name="blue_grey_300">#8fa4ad</color>
     <color name="blue_grey_500">#607D8B</color>
     <color name="blue_green">#106252</color>
@@ -35,4 +34,5 @@
     <color name="bg_bottomRight">#976583</color>
     <color name="color_alizarin">#e74c3c</color>
     <color name="translucent">#20E0E0E0</color>
+    <color name="yellow_700">#f9bf2b</color>
 </resources>

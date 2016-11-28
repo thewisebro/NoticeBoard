@@ -12,9 +12,11 @@ import android.util.Base64;
 import java.io.ByteArrayOutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.List;
 
 import objects.NoticeInfo;
 import objects.NoticeObject;
+import objects.noticeNotification;
 
 /**
  * Created by Ankush on 27-08-2016.
@@ -25,6 +27,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static int MAX_NOTICES=30;
     private static String TABLE_NOTICES="NOTICES";
     private static String TABLE_PROFILE_PIC="PROFILE_PIC";
+    private static String TABLE_NOTIFICATIONS="NOTIFICATIONS";
     private static String ROW_BITMAP_STRING="BITMAP_STRING";
     private static String ROW_BITMAP_ID="BITMAP_ID";
     private static String ROW_ID="ID";
@@ -59,6 +62,12 @@ public class SQLHelper extends SQLiteOpenHelper{
                     ROW_BITMAP_STRING + " TEXT, "+
                     "PRIMARY KEY("+ROW_BITMAP_ID+") ON CONFLICT REPLACE "+
                     ");";
+    private static String CREATE_TABLE_NOTIFICATIONS=
+            "CREATE TABLE IF NOT EXISTS "+TABLE_NOTIFICATIONS+" ( "+
+                    ROW_MAIN_CATEGORY+" VARCHAR(20),"+
+                    ROW_CATEGORY+" VARCHAR(20),"+
+                    ROW_SUBJECT+" VARCHAR(100)"+
+                    " );";
     private static String DELETE_TABLE_NOTICES=
             "DROP TABLE OF EXISTS "+TABLE_NOTICES;
     public SQLHelper(Context context) {
@@ -67,6 +76,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         //db.execSQL(DELETE_TABLE_NOTICES);
         db.execSQL(CREATE_TABLE_NOTICES);
         db.execSQL(CREATE_TABLE_PROFILE_PIC);
+        db.execSQL(CREATE_TABLE_NOTIFICATIONS);
         db.close();
     }
 
@@ -117,6 +127,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTICES,null,null);
         db.delete(TABLE_PROFILE_PIC,null,null);
+        db.delete(TABLE_NOTIFICATIONS,null,null);
         db.close();
     }
     public ArrayList<NoticeObject> getNotices(){
@@ -308,7 +319,35 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db= this.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put(ROW_STAR_STATUS,b);
-        db.update(TABLE_NOTICES,values,ROW_ID + " = "+ id,null);
+        db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
+        db.close();
+    }
+    public List<noticeNotification> getNotifications(){
+        List<noticeNotification> notifications=new ArrayList<>();
+        SQLiteDatabase db=this.getReadableDatabase();
+        Cursor cursor=db.query(false,TABLE_NOTIFICATIONS,new String[]{ROW_MAIN_CATEGORY,ROW_CATEGORY,ROW_SUBJECT},null,null,null,null,null,null);
+        if (cursor.moveToFirst()){
+            do{
+                noticeNotification notification=
+                        new noticeNotification(cursor.getString(0),cursor.getString(1),cursor.getString(2));
+                notifications.add(notification);
+            }while(cursor.moveToNext());
+        }
+        db.close();
+        return notifications;
+    }
+    public void clearNotifications(){
+        SQLiteDatabase db=this.getWritableDatabase();
+        db.delete(TABLE_NOTIFICATIONS,null,null);
+        db.close();
+    }
+    public void addNotification(noticeNotification notification){
+        SQLiteDatabase db=this.getWritableDatabase();
+        ContentValues values=new ContentValues();
+        values.put(ROW_MAIN_CATEGORY,notification.getMain_category());
+        values.put(ROW_CATEGORY,notification.getCategory());
+        values.put(ROW_SUBJECT,notification.getSubject());
+        db.insert(TABLE_NOTIFICATIONS,null,values);
         db.close();
     }
 }

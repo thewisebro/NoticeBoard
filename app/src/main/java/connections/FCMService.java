@@ -17,24 +17,24 @@ import com.google.firebase.messaging.RemoteMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
+import objects.noticeNotification;
+import utilities.SQLHelper;
+
 public class FCMService extends FirebaseMessagingService {
 
     private static final String TAG = "FCMService";
+    private final int NOTIFICATION_ID=1803;
+    private List<noticeNotification> notifications;
+    private SQLHelper sqlHelper;
+    private static int MAX_LINES=6;
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+        sqlHelper=new SQLHelper(this);
 
         JSONObject data=new JSONObject(remoteMessage.getData());
-        //Calling method to generate notification
-        Notification notification=generateNotification(data);
-
-        //Calling method to send notification
-        sendNotification(notification);
-    }
-
-    private Notification generateNotification(JSONObject data){
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         String category="All";
         String main_category="All";
         String subject="";
@@ -45,10 +45,35 @@ public class FCMService extends FirebaseMessagingService {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        intent.putExtra("category",category);
-        intent.putExtra("main_category",main_category);
+
+        noticeNotification noticeNotification=new noticeNotification(main_category,category,subject);
+        notifications=new SQLHelper(this).getNotifications();
+        sqlHelper.addNotification(noticeNotification);
+        notifications.add(noticeNotification);      //this way to ensure one notification in case of exceptions/sql_errors
+
+        //Calling method to send notification
+        sendNotification(generateNotification());
+    }
+
+    private Notification generateNotification(){
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        //intent.putExtra("category",category);
+        //intent.putExtra("main_category",main_category);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
                 PendingIntent.FLAG_ONE_SHOT);
+
+        NotificationCompat.InboxStyle inboxStyle=new NotificationCompat.InboxStyle();
+        inboxStyle.setBigContentTitle("New Notices : ");
+        int i=0;
+        for(;i<MAX_LINES && i<notifications.size();i++){
+            noticeNotification notification=notifications.get(i);
+            inboxStyle.addLine(notification.getCategory()+" : "+notification.getSubject());
+        }
+        if(i<notifications.size()){
+            inboxStyle.setSummaryText("and "+(notifications.size()-i)+" more");
+        }
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
@@ -56,21 +81,10 @@ public class FCMService extends FirebaseMessagingService {
                 .setContentTitle("Channel i NoticeBoard")
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
+                .setContentText("New Notices have been uploaded!")
+                .setStyle(inboxStyle)
                 .setContentIntent(pendingIntent);
-        String text="";
-        if (subject!="")
-            notificationBuilder.setSubText("Subject : "+subject);
-            //notificationBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText("Subject : "+subject));
-        if (main_category.contains("All"))
-            notificationBuilder.setContentText("New Notice");
-        else{
-            if (main_category.contains("Placement"))
-                notificationBuilder.setContentText("New Notice from "+main_category);
-            else if(main_category.contains("Department"))
-                notificationBuilder.setContentText("New Notice from "+main_category+" : "+category+" Department");
-            else
-                notificationBuilder.setContentText("New Notice from "+main_category+" : "+category);
-        }
+
         return notificationBuilder.build();
     }
     private void sendNotification(Notification notification) {
@@ -78,6 +92,6 @@ public class FCMService extends FirebaseMessagingService {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(0, notification);
+        notificationManager.notify(NOTIFICATION_ID, notification);
     }
 }

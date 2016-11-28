@@ -71,7 +71,7 @@ import utilities.SQLHelper;
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
-    public static String UrlOfHost="http://192.168.121.187:7000/";
+    public static String UrlOfHost="http://people.iitr.ernet.in/";
     //public static String UrlOfHost="http://people.iitr.ernet.in/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
@@ -120,8 +120,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        MainCategory=getIntent().getStringExtra("main_category");
-        Category=getIntent().getStringExtra("category");
+        //MainCategory=getIntent().getStringExtra("main_category");
+        //Category=getIntent().getStringExtra("category");
         settings = getSharedPreferences(PREFS_NAME, 0);
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
         user = new User(settings.getString("name",""), settings.getString("info",""),
                 settings.getString("enrollment_no",""));
         sqlHelper=new SQLHelper(this);
+        sqlHelper.clearNotifications(); //remove all pending notifications
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);

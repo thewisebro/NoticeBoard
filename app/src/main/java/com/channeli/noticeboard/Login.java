@@ -251,8 +251,8 @@ public class Login extends AppCompatActivity {
                     getConstants();
                     loginDialog.dismiss();
                     Intent intent = new Intent(this,MainActivity.class);
-                    intent.putExtra("category","All");
-                    intent.putExtra("main_category","All");
+                    //intent.putExtra("category","All");
+                    //intent.putExtra("main_category","All");
                     startActivity(intent);
                     finish();
                 }

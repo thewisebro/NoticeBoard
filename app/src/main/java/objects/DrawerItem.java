@@ -1,8 +1,8 @@
 package objects;
 
-import java.util.ArrayList;
-
 import com.channeli.noticeboard.R;
+
+import java.util.ArrayList;
 
 /**
  * Created by Ankush on 05-10-2016.
@@ -37,6 +37,9 @@ public class DrawerItem {
         }
         else if(name.contains("Starred")){
             this.logo=R.drawable.ic_star_black_24dp;
+        }
+        else if (name.contains("Notifications")){
+            this.logo=R.drawable.ic_settings_black_24dp;
         }
         else
             logo=0;

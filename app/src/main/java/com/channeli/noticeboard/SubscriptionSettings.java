@@ -26,6 +26,8 @@ import java.util.Set;
 
 public class SubscriptionSettings extends ActionBarActivity {
     SharedPreferences preferences;
+    Set<String> subscriptions;
+    Set<String> constants;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,7 +38,6 @@ public class SubscriptionSettings extends ActionBarActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("Notification Settings");
         preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        Set<String> constants=new HashSet<String>();
         Set<String> constantSet=preferences.getStringSet("constants", new HashSet<String>());
         constants.addAll(constantSet);
         if (constants.size()==0){
@@ -49,7 +50,8 @@ public class SubscriptionSettings extends ActionBarActivity {
         List<String> listConstants=new ArrayList<>(constants);
         Collections.sort(listConstants);
         LinearLayout listview= (LinearLayout) findViewById(R.id.subscriptions);
-        final Set<String> subscriptions=preferences.getStringSet("subscriptions",constants);
+        Set<String> subscriptionSet=preferences.getStringSet("subscriptions",constants);
+        subscriptions.addAll(subscriptionSet);
         for (final String s:listConstants){
             LinearLayout rowView= (LinearLayout) getLayoutInflater().inflate(R.layout.subscription_row, null);
             TextView textView= (TextView) rowView.findViewById(R.id.subsc_row_text);
