@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
@@ -25,6 +26,7 @@ import utilities.SQLHelper;
 public class FCMService extends FirebaseMessagingService {
 
     private static final String TAG = "FCMService";
+    private static final String APP_NAME = "Channel i NoticeBoard";
     private final int NOTIFICATION_ID=1803;
     private List<noticeNotification> notifications;
     private SQLHelper sqlHelper;
@@ -78,13 +80,26 @@ public class FCMService extends FirebaseMessagingService {
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.logo)
-                .setContentTitle("Channel i NoticeBoard")
+                //.setContentTitle("Channel i NoticeBoard")
                 .setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_ALL)
                 .setSound(defaultSoundUri)
-                .setContentText("New Notices have been uploaded!")
+                //.setContentText("New Notices have been uploaded!")
+                .setNumber(notifications.size())
                 .setStyle(inboxStyle)
+                .setColor(getResources().getColor(R.color.yellow_700))
+                .setShowWhen(true)
+                .setTicker("New Notice!")
+                .setLargeIcon(((BitmapDrawable)getResources().getDrawable(R.drawable.logo)).getBitmap())
                 .setContentIntent(pendingIntent);
-
+        if (notifications.size()>1){
+            notificationBuilder.setContentTitle("Channel i NoticeBoard");
+            notificationBuilder.setContentText("New Notices have been uploaded!");
+        }
+        else{
+            notificationBuilder.setContentTitle("New Notice : ");
+            notificationBuilder.setContentText(notifications.get(0).getCategory()+" : "+notifications.get(0).getSubject());
+        }
         return notificationBuilder.build();
     }
     private void sendNotification(Notification notification) {
@@ -92,6 +107,6 @@ public class FCMService extends FirebaseMessagingService {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(NOTIFICATION_ID, notification);
+        notificationManager.notify(APP_NAME,NOTIFICATION_ID, notification);
     }
 }

@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
     public static String UrlOfHost="http://people.iitr.ernet.in/";
-    //public static String UrlOfHost="http://people.iitr.ernet.in/";
+    //public static String UrlOfHost="http://192.168.121.187:7000/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";

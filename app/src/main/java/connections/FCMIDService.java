@@ -20,6 +20,8 @@ import java.util.Set;
 public class FCMIDService extends FirebaseInstanceIdService {
 
     private static final String TAG = "FCMIDService";
+    private static final String FCM_APP_SERVER_URL =
+            MainActivity.UrlOfNotice+"fcm_register/";
 
     @Override
     public void onTokenRefresh() {
@@ -30,6 +32,8 @@ public class FCMIDService extends FirebaseInstanceIdService {
 
     //Method to store the token on your server
     public void sendRegistrationToServer(SharedPreferences preferences) {
+
+        SharedPreferences.Editor editor= preferences.edit();
 
         //Getting registration token
         String token = FirebaseInstanceId.getInstance().getToken();
@@ -46,13 +50,14 @@ public class FCMIDService extends FirebaseInstanceIdService {
                 subscriptions.add("Placement Office");
                 subscriptions.add("Authorities");
                 subscriptions.add("Departments");
-                preferences.edit().putStringSet("subscriptions",subscriptions);
+                editor.putStringSet("subscriptions", subscriptions);
             }
             for (String s: subscriptions){
                 FirebaseMessaging.getInstance().subscribeToTopic(s.replace(" ","%20"));
             }
+            //Code below is not necessary
             try {
-                HttpPost httpPost=new HttpPost(Config.FCM_APP_SERVER_URL);
+                HttpPost httpPost=new HttpPost(FCM_APP_SERVER_URL);
                 httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
                 httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
@@ -63,12 +68,12 @@ public class FCMIDService extends FirebaseInstanceIdService {
                 httpPost.setEntity(new UrlEncodedFormEntity(params));
                 String res=new ConnectTaskHttpPost().execute(httpPost).get();
                 if (res.contains("success") || res.contains("exists")) {
-                    preferences.edit().putBoolean("FCM_isRegistered", true);
+                    editor.putBoolean("FCM_isRegistered", true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            preferences.edit().apply();
+            editor.apply();
         }
     }
 }
