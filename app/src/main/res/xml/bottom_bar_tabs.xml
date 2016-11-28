@@ -4,9 +4,9 @@
         id="@+id/new_items"
         title="Current"
         icon="@drawable/ic_schedule_black_24dp"
-        inActiveColor="@color/colorPrimary"
-        activeColor="@color/white"
-        barColorWhenSelected="@color/colorPrimaryDark"/>
+        inActiveColor="@color/amber_500"
+        activeColor="@color/black"
+        barColorWhenSelected="@color/amber_800"/>
     <tab
         id="@+id/old_items"
         title="Expired"
