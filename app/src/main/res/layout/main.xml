@@ -27,21 +27,29 @@
                 android:layout_weight="1"
                 android:layout_height="0dp">
                 <include
-                    android:id="@+id/swipe_refresh_layout"
                     android:layout_height="match_parent"
                     android:layout_width="match_parent"
                     layout="@layout/list_view"/>
+                <include
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    layout="@layout/no_notice_text"/>
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="5dp"
                     android:background="@drawable/toolbar_dropshadow"/>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="5dp"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/toolbar_dropshadow_reverse"/>
             </FrameLayout>
 
             <com.roughike.bottombar.BottomBar
                 android:layout_width="match_parent"
                 android:id="@+id/bottom_bar"
                 app:bb_tabXmlResource="@xml/bottom_bar_tabs"
-                app:bb_showShadow="true"
+                app:bb_showShadow="false"
                 app:bb_behavior="shifting"
                 app:bb_titleTextAppearance="@style/bottomBarTextStyle"
                 android:layout_height="@dimen/bottomBarHeight" />
@@ -68,6 +76,7 @@
                     android:groupIndicator="@null"
                     android:divider="@android:color/transparent"
                     android:choiceMode="singleChoice"
+                    android:background="@color/colorPrimaryXtraLight"
                     android:layout_height="wrap_content"/>
             </LinearLayout>
 

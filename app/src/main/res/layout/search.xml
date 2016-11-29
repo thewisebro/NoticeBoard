@@ -22,6 +22,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/search_list_view"/>
+            <include
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                layout="@layout/no_notice_text"/>
             <View
                 android:layout_width="match_parent"
                 android:layout_height="5dp"

@@ -20,11 +20,14 @@ import objects.DrawerItem;
 public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
     ArrayList<DrawerItem> drawerItemList;
     Context context;
+    LayoutInflater inflater;
     public int groupPos=0;
     public int childPos=-1;
     public CustomDrawerListViewAdapter(ArrayList<DrawerItem> list,Context context){
         this.drawerItemList=list;
         this.context=context;
+        inflater = (LayoutInflater) context
+                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
     public long totalItemCount(){
         long count=0;
@@ -86,11 +89,20 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
     }
     @Override
     public View getGroupView(final int groupPosition, final boolean isExpanded, View convertView, ViewGroup parent) {
+        //if (drawerItemList.get(groupPosition).getName()=="")
+        //    return inflater.inflate(R.layout.drawer_line,null);
         if (convertView == null) {
-            LayoutInflater inflater = (LayoutInflater) context
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.drawer_group_item,
                     null);
+        }
+        if (drawerItemList.get(groupPosition).getName()==""){
+            convertView.findViewById(R.id.drawer_list_item).setVisibility(View.GONE);
+            convertView.findViewById(R.id.drawer_line).setVisibility(View.VISIBLE);
+            return convertView;
+        }
+        else {
+            convertView.findViewById(R.id.drawer_list_item).setVisibility(View.VISIBLE);
+            convertView.findViewById(R.id.drawer_line).setVisibility(View.GONE);
         }
         TextView tv= (TextView) convertView.findViewById(R.id.drawer_group_text);
         tv.setText(drawerItemList.get(groupPosition).getName());
@@ -122,12 +134,14 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             });
         }
         if (groupPosition==groupPos) {
-            icon.setColorFilter(context.getResources().getColor(R.color.colorAccent));
-            tv.setTextColor(context.getResources().getColor(R.color.colorAccent));
+            icon.setColorFilter(context.getResources().getColor(R.color.colorAccentDark));
+            tv.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
+            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimary));
         }
         else {
             tv.setTextColor(context.getResources().getColor(R.color.blue_grey_900));
             icon.clearColorFilter();
+            convertView.setBackground(null);
         }
         return convertView;
     }
@@ -149,10 +163,12 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             }
         });
         if (childPosition==childPos && groupPosition==groupPos){
-            tv.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
+            tv.setTextColor(context.getResources().getColor(R.color.white));
+            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryDark));
         }
         else{
-            tv.setTextColor(context.getResources().getColor(R.color.white));
+            tv.setTextColor(context.getResources().getColor(R.color.black));
+            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimary));
         }
         return convertView;
     }

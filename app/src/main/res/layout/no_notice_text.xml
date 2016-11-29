@@ -1,0 +1,16 @@
+<TextView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:minLines="3"
+    android:maxLines="3"
+    android:text="NO\n NOTICE\n FOUND"
+    android:textColor="@color/colorPrimaryXtraDark"
+    android:textStyle="bold"
+    android:textSize="50dp"
+    android:textAlignment="center"
+    android:gravity="center_vertical|center_horizontal"
+    android:alpha="0.5"
+    android:autoText="false"
+    android:visibility="gone"
+    android:id="@+id/no_notice"
+    xmlns:android="http://schemas.android.com/apk/res/android" />

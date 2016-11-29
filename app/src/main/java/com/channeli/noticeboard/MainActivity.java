@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                         public void run(){
                             if (isOnline()) {
                                 httpGet = new HttpGet(MainActivity.UrlOfNotice +
-                                        "list_notices/" + NoticeType + "/" + MainCategory +
+                                        "list_notices/" + NoticeType + "/" + MainCategory.replace(" ","%20") +
                                         "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
                                 httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
                                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -365,6 +365,7 @@ public class MainActivity extends AppCompatActivity {
         listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
         drawerList=getConstants();
         drawerList.add(new DrawerItem("Starred", null));
+        drawerList.add(new DrawerItem("",null));
         drawerList.add(new DrawerItem("Notifications Settings",null));
         drawerList.add(new DrawerItem("Feedback", null));
         drawerList.add(new DrawerItem("Logout", null));
@@ -538,28 +539,20 @@ public class MainActivity extends AppCompatActivity {
                 if (readList.size()==0)
                     getReadNotices();
 
-                if (isOnline()){
-                    httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-                    httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                    httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                    httpGet.setHeader("X-CSRFToken", csrftoken);
-                    setContent();
-                }
-                else{
-                    ArrayList<NoticeObject> list=null;
-                    if("All".equals(Category))
-                        list=sqlHelper.getNotices(MainCategory);
-                    else
-                        list=sqlHelper.getNotices(MainCategory,Category);
-                    if(list!=null)
-                        noticelist.addAll(list);
-                    showNetworkError();
-                }
+                httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.setHeader("X-CSRFToken", csrftoken);
+                setContent();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         recyclerView.scrollToPosition(0);
                         customAdapter.notifyDataSetChanged();
+                        if (noticelist.size()>0)
+                            findViewById(R.id.no_notice).setVisibility(View.GONE);
+                        else
+                            findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
                         scrollListener.resetState();
                         pd.dismiss();
                         if (msg!=null)
@@ -572,26 +565,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setContent(){
-        String content = null;
-        try {
-            mTask = new ConnectTaskHttpGet().execute(httpGet);
-            content = mTask.get();
-            mTask.cancel(true);
-            parsing = new Parsing();
-            ArrayList<NoticeObject> list;
-            if (MainCategory.equals("Starred")) {
-                list = parsing.parseStarredNotices(content);
-                starredList.clear();
-                starredList.addAll(list);
+        ArrayList<NoticeObject> list=null;
+        if (isOnline()){
+            String content = null;
+            try {
+                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                content = mTask.get();
+                mTask.cancel(true);
+                parsing = new Parsing();
+                if (MainCategory.equals("Starred")) {
+                    list = parsing.parseStarredNotices(content);
+                    starredList.clear();
+                    starredList.addAll(list);
+                }
+                else
+                    list=parsing.parseNotices(content,starredList,readList);
+                addToDB(list);
+                noticelist.addAll(list);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            else
-                list=parsing.parseNotices(content,starredList,readList);
-            addToDB(list);
-            noticelist.addAll(list);
-        } catch (Exception e) {
-            e.printStackTrace();
-            showNetworkError();
         }
+        if("All".equals(Category))
+            list=sqlHelper.getNotices(MainCategory);
+        else
+            list=sqlHelper.getNotices(MainCategory,Category);
+        if(list!=null)
+            noticelist.addAll(list);
+        showNetworkError();
     }
     private void getStarredNotices(){
         if (isOnline()){

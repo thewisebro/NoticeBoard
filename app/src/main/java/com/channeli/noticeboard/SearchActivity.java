@@ -155,7 +155,7 @@ public class SearchActivity extends AppCompatActivity {
                 query = newText;
                 query = query.replaceAll(" ","%20");
                 onTextSubmit();
-                //searchMenuItem.collapseActionView();
+                searchMenuItem.collapseActionView();
                 searchView.setVisibility(View.INVISIBLE);
                 searchView.setVisibility(View.VISIBLE);
                 return true;
@@ -251,6 +251,11 @@ public class SearchActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 adapter.notifyDataSetChanged();
+                                setTitle("Searched : " + query.replaceAll("%20", " "));
+                                if (noticelist.size()>0)
+                                    findViewById(R.id.no_notice).setVisibility(View.GONE);
+                                else
+                                    findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
                                 pd.dismiss();
                             }
                         });
