@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:id="@+id/login_container"
     android:background="@drawable/gradientbg"
@@ -81,7 +81,7 @@
                                 android:textSize="14sp"
                                 android:background="@null"
                                 android:drawablePadding="16dp"
-                                android:drawableLeft="@drawable/login_username"
+                                android:drawableLeft="@drawable/ic_person_black_24dp"
                                 android:layout_centerHorizontal="true"
                                 android:textCursorDrawable="@null"
                                 android:textColor="#ffffff"
@@ -123,7 +123,7 @@
                                 android:textSize="14sp"
                                 android:background="@null"
                                 android:drawablePadding="16dp"
-                                android:drawableLeft="@drawable/login_password"
+                                android:drawableLeft="@drawable/ic_vpn_key_black_24dp"
                                 android:textCursorDrawable="@null"
                                 android:layout_centerHorizontal="true"
                                 android:textColor="#ffffff"
@@ -151,8 +151,7 @@
                         android:layout_marginTop="5dp"
                         android:layout_marginRight="20dp"
                         android:layout_marginBottom="5dp"
-                        android:enabled="false"
-                        android:elevation="5dp" />
+                        android:enabled="false"/>
                     <View
                         android:layout_width="0dp"
                         android:id="@+id/overSubmit"
@@ -165,7 +164,14 @@
                         android:layout_height="0dp"/>
 
                 </RelativeLayout>
-
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:fontFamily="sans-serif"
+                android:id="@+id/link"
+                android:textColor="@color/white"
+                android:text="@string/contact_img"/>
 
             </LinearLayout>
         </ScrollView>

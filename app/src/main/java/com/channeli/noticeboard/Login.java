@@ -13,6 +13,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -86,8 +87,6 @@ public class Login extends AppCompatActivity {
     public void setViews(){
         Username=(EditText) findViewById(R.id.username);
         Password=(EditText) findViewById(R.id.password);
-        Username.clearFocus();
-        Password.clearFocus();
         final Button button= (Button) findViewById(R.id.submit);
         final View overButton= findViewById(R.id.overSubmit);
         overButton.setOnClickListener(new View.OnClickListener() {
@@ -96,6 +95,8 @@ public class Login extends AppCompatActivity {
                 showMessage("Enter Login Credentials");
             }
         });
+        TextView link= (TextView) findViewById(R.id.link);
+        link.setMovementMethod(LinkMovementMethod.getInstance());
         Username.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {

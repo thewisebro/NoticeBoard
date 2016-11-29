@@ -37,6 +37,7 @@ import android.widget.ExpandableListView;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.roughike.bottombar.BottomBar;
 import com.roughike.bottombar.OnTabSelectListener;
 
@@ -454,6 +455,9 @@ public class MainActivity extends AppCompatActivity {
                                 editor.apply();
                                 editor.commit();
                                 sqlHelper.clear();
+                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
+                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
+                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
                                 startActivity(new Intent(getApplicationContext(), SplashScreen.class));
                                 progressDialog.dismiss();
                                 finish();
