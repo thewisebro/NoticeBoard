@@ -8,9 +8,10 @@ import android.widget.BaseExpandableListAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.channeli.noticeboard.R;
+
 import java.util.ArrayList;
 
-import com.channeli.noticeboard.R;
 import objects.DrawerItem;
 
 /**
@@ -121,11 +122,11 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             });
         }
         if (groupPosition==groupPos) {
-            icon.setColorFilter(context.getResources().getColor(R.color.colorPrimaryDark));
-            tv.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
+            icon.setColorFilter(context.getResources().getColor(R.color.colorAccent));
+            tv.setTextColor(context.getResources().getColor(R.color.colorAccent));
         }
         else {
-            tv.setTextColor(context.getResources().getColor(R.color.dark_gray));
+            tv.setTextColor(context.getResources().getColor(R.color.blue_grey_900));
             icon.clearColorFilter();
         }
         return convertView;
@@ -148,10 +149,10 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             }
         });
         if (childPosition==childPos && groupPosition==groupPos){
-            tv.setTextColor(context.getResources().getColor(R.color.colorAccent));
+            tv.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
         }
         else{
-            tv.setTextColor(context.getResources().getColor(R.color.blue_grey_800));
+            tv.setTextColor(context.getResources().getColor(R.color.white));
         }
         return convertView;
     }

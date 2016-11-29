@@ -210,6 +210,19 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.close();
         return list;
     }
+    public ArrayList<Integer> getReadNotices(){
+        SQLiteDatabase db=this.getReadableDatabase();
+        ArrayList<Integer> list=new ArrayList<Integer>();
+
+        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID}, ROW_READ_STATUS+" = 1 ",null,null,null,ROW_DATETIME + " DESC");
+        if(cursor.moveToFirst()){
+            do{
+                list.add(new Integer(cursor.getInt(0)));
+            }while (cursor.moveToNext());
+        }
+        db.close();
+        return list;
+    }
     public NoticeInfo getNoticeInfo(int id){
         if (!checkNoticeContent(id))
             return null;

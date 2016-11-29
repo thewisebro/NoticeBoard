@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -98,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
     private CustomDrawerListViewAdapter drawerAdapter=null;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ArrayList<NoticeObject> noticelist;
+    private ArrayList<NoticeObject> starredList;
+    private ArrayList<Integer> readList;
     private AsyncTask<HttpGet, Void, String> mTask;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
@@ -106,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
 
     String msg=null;
     boolean refreshScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
+    boolean swiperefresh=false; //to update starred list and read list
 
     private void addToDB(ArrayList<NoticeObject> list){
         try {
@@ -141,11 +145,13 @@ public class MainActivity extends AppCompatActivity {
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         setSupportActionBar(toolbar);
         noticelist=new ArrayList<NoticeObject>();
+        starredList=new ArrayList<NoticeObject>();
+        readList=new ArrayList<Integer>();
         SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
         csrftoken = settings.getString("csrftoken","");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
         customAdapter=new CustomRecyclerViewAdapter(this,
-                R.layout.list_itemview, noticelist);
+                R.layout.list_itemview, noticelist,starredList,readList);
 
         setNavigationView();
         setBottomBar();
@@ -203,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
                                         @Override
                                         public void run() {
                                             int curSize = customAdapter.getItemCount();
-                                            ArrayList<NoticeObject> list = parsing.parseNotices(parseString);
+                                            ArrayList<NoticeObject> list = parsing.parseNotices(parseString,starredList,readList);
                                             addToDB(list);
                                             noticelist.addAll(list);
                                             customAdapter.notifyItemRangeInserted(curSize, list.size());
@@ -440,11 +446,11 @@ public class MainActivity extends AppCompatActivity {
         dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if (isOnline()){
-                    final ProgressDialog progressDialog=ProgressDialog.show(MainActivity.this,null,"Logging out",true,false);
-                    new Thread(){
+                if (isOnline()) {
+                    final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, null, "Logging out", true, false);
+                    new Thread() {
                         @Override
-                        public void run(){
+                        public void run() {
                             httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
                             httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
                             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -468,8 +474,7 @@ public class MainActivity extends AppCompatActivity {
                             progressDialog.dismiss();
                         }
                     }.start();
-                }
-                else
+                } else
                     showNetworkError();
             }
         });
@@ -494,7 +499,7 @@ public class MainActivity extends AppCompatActivity {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                    changeList();
+                changeList();
             }
         };
         handler.postDelayed(runnable, 300);
@@ -505,6 +510,11 @@ public class MainActivity extends AppCompatActivity {
         else
             setTitle(MainCategory + " - " + Category);
 
+        if (swiperefresh){
+            starredList.clear();
+            readList.clear();
+            swiperefresh=false;
+        }
 
         if (MainCategory.equals("Starred")) {
             bottomBar.setVisibility(View.GONE);
@@ -521,7 +531,13 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(){
             @Override
-        public void run(){
+            public void run(){
+
+                if (starredList.size()==0)
+                    getStarredNotices();
+                if (readList.size()==0)
+                    getReadNotices();
+
                 if (isOnline()){
                     httpGet.setHeader("Cookie","csrftoken="+csrftoken);
                     httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -562,13 +578,75 @@ public class MainActivity extends AppCompatActivity {
             content = mTask.get();
             mTask.cancel(true);
             parsing = new Parsing();
-            ArrayList<NoticeObject> list = parsing.parseNotices(content);
+            ArrayList<NoticeObject> list;
+            if (MainCategory.equals("Starred")) {
+                list = parsing.parseStarredNotices(content);
+                starredList.clear();
+                starredList.addAll(list);
+            }
+            else
+                list=parsing.parseNotices(content,starredList,readList);
             addToDB(list);
             noticelist.addAll(list);
         } catch (Exception e) {
             e.printStackTrace();
             showNetworkError();
         }
+    }
+    private void getStarredNotices(){
+        if (isOnline()){
+            HttpGet httpget=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
+            try {
+                httpget.setHeader("Cookie","csrftoken="+csrftoken);
+                httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpget.setHeader("X-CSRFToken", csrftoken);
+                mTask = new ConnectTaskHttpGet().execute(httpget);
+                String content = mTask.get();
+                mTask.cancel(true);
+                if (content != null) {
+                    ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
+                    if (list != null) {
+                        addToDB(list);
+                        starredList.addAll(list);
+                        return;
+                    }
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+                showNetworkError();
+            }
+        }
+        ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All");
+        if (list!=null)
+            starredList.addAll(list);
+    }
+    private void getReadNotices(){
+        if (isOnline()){
+            HttpGet httpget=new HttpGet(MainActivity.UrlOfNotice+"read_notice_list/");
+            try {
+                httpget.setHeader("Cookie","csrftoken="+csrftoken);
+                httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpget.setHeader("X-CSRFToken", csrftoken);
+                mTask = new ConnectTaskHttpGet().execute(httpget);
+                String content = mTask.get();
+                mTask.cancel(true);
+                if (content != null) {
+                    ArrayList<Integer> list = new Parsing().parseReadNotices(content);
+                    if (list != null) {
+                        readList.addAll(list);
+                        return;
+                    }
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+                showNetworkError();
+            }
+        }
+        ArrayList<Integer> list=sqlHelper.getReadNotices();
+        if (list!=null)
+            readList.addAll(list);
     }
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
@@ -578,6 +656,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     swipeRefreshLayout.setRefreshing(false);
+                    swiperefresh=true;
                     changeList();
                 }
             });
@@ -635,10 +714,10 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         final MenuItem searchMenuItem=menu.findItem(R.id.search);
-        final SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        final SearchView searchView = (SearchView) searchMenuItem.getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
         searchView.setIconified(false);
-        searchView.setSubmitButtonEnabled(true);
+        //searchView.setSubmitButtonEnabled(true);
         searchView.setQueryHint("Search notices");
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -670,10 +749,32 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
                 searchView.clearFocus();
-                hideKeyboard();
+                searchView.setQuery("", false);
+                searchView.setIconified(false);
+                //hideKeyboard();
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
                 return true;
             }
         });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchView.setQuery("", false);
+                return true;
+            }
+        });
+        int searchPlateId = searchView.getContext().getResources().getIdentifier("android:id/search_plate", null, null);
+        View searchPlate = searchView.findViewById(searchPlateId);
+        if (searchPlate!=null) {
+            searchPlate.setBackground(getResources().getDrawable(R.drawable.normal));
+            int searchTextId = searchPlate.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+            TextView searchText = (TextView) searchPlate.findViewById(searchTextId);
+            if (searchText!=null) {
+                searchText.setTextColor(Color.BLACK);
+                searchText.setHintTextColor(Color.DKGRAY);
+            }
+        }
         return true;
     }
     public void hideKeyboard(){

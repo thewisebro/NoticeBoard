@@ -4,9 +4,9 @@
         <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
                 <!-- Customize your theme here. -->
                 <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
-                <item name="colorPrimary">@color/amber_500</item>
-                <item name="colorPrimaryDark">@color/amber_700</item>
+                <item name="colorPrimary">@color/colorPrimary</item>
+                <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
                 <item name="colorAccent">@color/colorAccent</item>
-                <item name="android:statusBarColor">@color/amber_700</item>
+                <item name="android:statusBarColor">@color/colorPrimaryDark</item>
         </style>
 </resources>

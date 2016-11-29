@@ -46,15 +46,20 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
     private Context context;
     private int viewLayoutId;
     private ArrayList<NoticeObject> list;
+    private ArrayList<NoticeObject> starredNotices;
+    private ArrayList<Integer> readNotices;
     final String noticeurl = MainActivity.UrlOfNotice+"get_notice/";
     String csrftoken;
     String CHANNELI_SESSID;
     Parsing parsing;
 
-    public CustomRecyclerViewAdapter(Context context,int viewLayoutId, ArrayList<NoticeObject> list){
+    public CustomRecyclerViewAdapter(Context context,int viewLayoutId, ArrayList<NoticeObject> list
+            , ArrayList<NoticeObject> starredNotices, ArrayList<Integer> readNotices){
         this.context=context;
         this.viewLayoutId=viewLayoutId;
         this.list=list;
+        this.starredNotices=starredNotices;
+        this.readNotices=readNotices;
         SharedPreferences settings= context.getSharedPreferences(MainActivity.PREFS_NAME,0);
         csrftoken=settings.getString("csrftoken","");
         CHANNELI_SESSID=settings.getString("CHANNELI_SESSID","");
@@ -162,6 +167,10 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                     if (isOnline()) {
                         setStar(noticeObject.getId(), b);
                         noticeObject.setStar(b);
+                        if (b)
+                            starredNotices.add(noticeObject);
+                        else
+                            starredNotices.remove(noticeObject);
                         checkChangeFlag[0] = false;
                     } else {
                         showNetworkError();
@@ -201,6 +210,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                     });
                                     noticeObject.setRead(true);
                                     setRead(noticeObject.getId());
+                                    readNotices.add(noticeObject.getId());
                                 }
                                 NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
                                 db.addNoticeInfo(noticeInfo);

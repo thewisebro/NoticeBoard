@@ -87,10 +87,11 @@ public class FCMService extends FirebaseMessagingService {
                 //.setContentText("New Notices have been uploaded!")
                 .setNumber(notifications.size())
                 .setStyle(inboxStyle)
-                .setColor(getResources().getColor(R.color.yellow_700))
+                .setColor(getResources().getColor(R.color.colorAccent))
                 .setShowWhen(true)
                 .setTicker("New Notice!")
                 .setLargeIcon(((BitmapDrawable)getResources().getDrawable(R.drawable.logo)).getBitmap())
+                .setPriority(Notification.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent);
         if (notifications.size()>1){
             notificationBuilder.setContentTitle("Channel i NoticeBoard");

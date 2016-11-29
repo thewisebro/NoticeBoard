@@ -3,7 +3,7 @@
     android:layout_height="match_parent"
     android:id="@+id/subsc_coordinateLayout"
     tools:context="com.channeli.noticeboard.SubscriptionSettings"
-    android:background="@color/amber_50">
+    android:background="@color/colorPrimaryXtraLight">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -5,6 +5,7 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -38,12 +39,15 @@ import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
 import objects.NoticeObject;
 import utilities.Parsing;
+import utilities.SQLHelper;
 
 public class SearchActivity extends AppCompatActivity {
     String query;
     String searchUrl;
     Parsing parsing;
     ArrayList<NoticeObject> noticelist;
+    ArrayList<Integer> readList;
+    ArrayList<NoticeObject> starredList;
     CustomRecyclerViewAdapter adapter;
     String noticetype;
     String[] type = {"Current","Expired"};
@@ -55,6 +59,7 @@ public class SearchActivity extends AppCompatActivity {
     BottomBar bottomBar;
     CoordinatorLayout coordinatorLayout;
     String msg=null;
+    SQLHelper sqlHelper;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -65,6 +70,7 @@ public class SearchActivity extends AppCompatActivity {
         Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         parsing = new Parsing();
+        sqlHelper=new SQLHelper(this);
         noticetype = "new";
         searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
         setTitle("Searched Results");
@@ -73,6 +79,8 @@ public class SearchActivity extends AppCompatActivity {
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
         noticelist=new ArrayList<NoticeObject>();
+        starredList=new ArrayList<>();
+        readList=new ArrayList<>();
 
         SharedPreferences preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
         csrftoken=preferences.getString("csrftoken","");
@@ -84,7 +92,7 @@ public class SearchActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(layoutManager);
-        adapter=new CustomRecyclerViewAdapter(this,R.layout.list_itemview,noticelist);
+        adapter=new CustomRecyclerViewAdapter(this,R.layout.list_itemview,noticelist,starredList,readList);
         recyclerView.setAdapter(adapter);
         setBottomBar();
     }
@@ -132,7 +140,7 @@ public class SearchActivity extends AppCompatActivity {
         {
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
             searchView.setIconified(false);
-            searchView.setSubmitButtonEnabled(true);
+            //searchView.setSubmitButtonEnabled(true);
             searchView.clearFocus();
             searchView.setQueryHint("Search notices");
         }
@@ -147,8 +155,7 @@ public class SearchActivity extends AppCompatActivity {
                 query = newText;
                 query = query.replaceAll(" ","%20");
                 onTextSubmit();
-                hideKeyboard();
-                searchMenuItem.collapseActionView();
+                //searchMenuItem.collapseActionView();
                 searchView.setVisibility(View.INVISIBLE);
                 searchView.setVisibility(View.VISIBLE);
                 return true;
@@ -168,10 +175,31 @@ public class SearchActivity extends AppCompatActivity {
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
                 searchView.clearFocus();
-                hideKeyboard();
+                searchView.setQuery("", false);
+                searchView.setIconified(false);
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
                 return true;
             }
         });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchView.setQuery("", false);
+                return true;
+            }
+        });
+        int searchPlateId = searchView.getContext().getResources().getIdentifier("android:id/search_plate", null, null);
+        View searchPlate = searchView.findViewById(searchPlateId);
+        if (searchPlate!=null) {
+            searchPlate.setBackground(getResources().getDrawable(R.drawable.normal));
+            int searchTextId = searchPlate.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+            TextView searchText = (TextView) searchPlate.findViewById(searchTextId);
+            if (searchText!=null) {
+                searchText.setTextColor(Color.BLACK);
+                searchText.setHintTextColor(Color.DKGRAY);
+            }
+        }
         return true;
     }
     public void hideKeyboard(){
@@ -208,6 +236,12 @@ public class SearchActivity extends AppCompatActivity {
             new Thread(){
                 @Override
                 public void run(){
+
+                    if (starredList.size()==0)
+                        getStarredNotices();
+                    if (readList.size()==0)
+                        getReadNotices();
+
                     ArrayList<NoticeObject> list=getSearchedNotices(url);
                     if(list!=null) {
                         int size=noticelist.size();
@@ -239,7 +273,7 @@ public class SearchActivity extends AppCompatActivity {
             task=new ConnectTaskHttpGet().execute(httpGet);
             try {
                 String result=task.get();
-                return parsing.parseSearchNotices(result);
+                return parsing.parseSearchNotices(result,starredList,readList);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -248,6 +282,61 @@ public class SearchActivity extends AppCompatActivity {
         }
         showNetworkError();
         return null;
+    }
+    private void getStarredNotices(){
+        if (isOnline()){
+            httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
+            try {
+                httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.setHeader("X-CSRFToken", csrftoken);
+                task = new ConnectTaskHttpGet().execute(httpGet);
+                String content = task.get();
+                task.cancel(true);
+                if (content != null) {
+                    ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
+                    if (list != null) {
+                        sqlHelper.addNoticesList(list);
+                        starredList.addAll(list);
+                        return;
+                    }
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+                showNetworkError();
+            }
+        }
+        ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All");
+        if (list!=null)
+            starredList.addAll(list);
+    }
+    private void getReadNotices(){
+        if (isOnline()){
+            httpGet=new HttpGet(MainActivity.UrlOfNotice+"read_notice_list/");
+            try {
+                httpGet.setHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.setHeader("X-CSRFToken", csrftoken);
+                task = new ConnectTaskHttpGet().execute(httpGet);
+                String content = task.get();
+                task.cancel(true);
+                if (content != null) {
+                    ArrayList<Integer> list = new Parsing().parseReadNotices(content);
+                    if (list != null) {
+                        readList.addAll(list);
+                        return;
+                    }
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+                showNetworkError();
+            }
+        }
+        ArrayList<Integer> list=sqlHelper.getReadNotices();
+        if (list!=null)
+            readList.addAll(list);
     }
     public boolean isOnline() {
 
