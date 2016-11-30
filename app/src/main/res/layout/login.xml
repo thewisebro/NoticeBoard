@@ -1,6 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/login_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
-</LinearLayout>
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <android.support.percent.PercentRelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/login_logo"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_centerHorizontal="true"
+                    android:src="@drawable/img_name"
+                    app:layout_aspectRatio="450%"
+                    app:layout_widthPercent="75%" />
+
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/username_text_input_layout"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_below="@id/login_logo"
+                    android:layout_centerHorizontal="true"
+                    android:hint="Username"
+                    app:layout_widthPercent="75%">
+
+                    <android.support.design.widget.TextInputEditText
+                        android:id="@+id/username"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_person_black_24dp"
+                        android:inputType="textNoSuggestions" />
+
+                </android.support.design.widget.TextInputLayout>
+
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/password_text_input_layout"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_below="@id/username_text_input_layout"
+                    android:layout_centerHorizontal="true"
+                    android:hint="Password"
+                    app:layout_widthPercent="75%">
+
+                    <android.support.design.widget.TextInputEditText
+                        android:id="@+id/password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_vpn_key_black_24dp"
+                        android:fontFamily="sans-serif"
+                        android:imeOptions="actionDone"
+                        android:inputType="textPassword" />
+
+                </android.support.design.widget.TextInputLayout>
+
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_below="@id/password_text_input_layout"
+                    app:layout_widthPercent="75%"
+                    android:id="@+id/submit_container"
+                    android:layout_centerHorizontal="true"
+                    android:layout_height="wrap_content">
+                    <Button
+                        android:id="@+id/submit"
+                        style="@style/Widget.AppCompat.Button.Colored"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:background="@color/colorAccentDark"
+                        android:elevation="2dp"
+                        android:text="LOGIN" />
+                    <View
+                        android:layout_width="0dp"
+                        android:id="@+id/overSubmit"
+                        android:layout_alignBottom="@+id/submit"
+                        android:layout_alignLeft="@+id/submit"
+                        android:layout_alignStart="@+id/submit"
+                        android:layout_alignRight="@+id/submit"
+                        android:layout_alignEnd="@+id/submit"
+                        android:layout_alignTop="@+id/submit"
+                        android:layout_height="0dp"/>
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/link"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/submit_container"
+                    android:layout_centerHorizontal="true"
+                    android:text="@string/contact_img" />
+
+            </android.support.percent.PercentRelativeLayout>
+
+            <TextView
+                android:id="@+id/made_with_love"
+                android:text="Made with \u2764 by IMG"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true" />
+
+        </RelativeLayout>
+
+    </ScrollView>
+
+</android.support.design.widget.CoordinatorLayout>

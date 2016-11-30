@@ -70,7 +70,7 @@ public class Login extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        setContentView(R.layout.channeli_login);
+        setContentView(R.layout.login);
         sqlHelper=new SQLHelper(this);
         settings=getSharedPreferences(MainActivity.PREFS_NAME, 0);
         editor=settings.edit();
