@@ -130,7 +130,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
         //Set DateTime
         SimpleDateFormat inputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a dd-MMM-yyyy");
+        SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a MMM dd");
         try {
             Date idate= inputDateFormat.parse(noticeObject.getDatetime_modified());
             String odate= outputDateFormat.format(idate);
@@ -146,10 +146,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         if(noticeObject.getRead()) {
             holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_background));
             holder.subject.setTypeface(null, Typeface.NORMAL);
+            //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
+            holder.datetime.setTypeface(null, Typeface.NORMAL);
         }
         else {
             holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.background));
-            holder.subject.setTypeface(null,Typeface.BOLD);
+            holder.subject.setTypeface(null, Typeface.BOLD);
+            //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
+            holder.datetime.setTypeface(null,Typeface.BOLD);
         }
 
         final boolean[] checkChangeFlag = {false};
@@ -205,7 +209,9 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                         public void run() {
                                             holder.view.setBackgroundDrawable(
                                                     context.getResources().getDrawable(R.drawable.read_notice_bg));
-                                            holder.subject.setTypeface(null,Typeface.NORMAL);
+                                            holder.subject.setTypeface(null, Typeface.NORMAL);
+                                            holder.datetime.setTypeface(null,Typeface.NORMAL);
+                                            //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
                                         }
                                     });
                                     noticeObject.setRead(true);

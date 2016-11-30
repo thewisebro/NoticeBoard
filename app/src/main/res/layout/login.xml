@@ -20,7 +20,9 @@
 
             <LinearLayout
                 android:focusable="true"
+                android:orientation="horizontal"
                 android:focusableInTouchMode="true"
+                android:id="@+id/clear_focus"
                 android:layout_width="0px"
                 android:layout_height="0px"/>
 
@@ -47,6 +49,8 @@
                     android:layout_below="@id/login_logo"
                     android:layout_centerHorizontal="true"
                     android:hint="Username"
+                    app:hintTextAppearance="@style/TextAppearence.App.TextInputLayout"
+                    android:textColorHint="#80000000"
                     android:layout_marginBottom="10dp"
                     app:layout_widthPercent="75%">
 
@@ -55,6 +59,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="@color/white"
+                        android:textSize="16sp"
                         android:drawablePadding="10dp"
                         android:drawableLeft="@drawable/ic_person_black_24dp"
                         android:drawableStart="@drawable/ic_person_black_24dp"
@@ -69,6 +74,8 @@
                     android:layout_below="@id/username_text_input_layout"
                     android:layout_centerHorizontal="true"
                     android:hint="Password"
+                    app:hintTextAppearance="@style/TextAppearence.App.TextInputLayout"
+                    android:textColorHint="#80000000"
                     app:layout_widthPercent="75%"
                     android:layout_marginBottom="10dp">
 
@@ -78,6 +85,7 @@
                         android:layout_height="wrap_content"
                         android:drawablePadding="10dp"
                         android:textColor="@color/white"
+                        android:textSize="16sp"
                         android:drawableStart="@drawable/ic_vpn_key_black_24dp"
                         android:drawableLeft="@drawable/ic_vpn_key_black_24dp"
                         android:fontFamily="sans-serif"

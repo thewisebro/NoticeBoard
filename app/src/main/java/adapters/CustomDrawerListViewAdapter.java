@@ -136,7 +136,7 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
         if (groupPosition==groupPos) {
             icon.setColorFilter(context.getResources().getColor(R.color.colorAccentDark));
             tv.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
-            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimary));
+            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryLight));
         }
         else {
             tv.setTextColor(context.getResources().getColor(R.color.blue_grey_900));
@@ -163,12 +163,10 @@ public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
             }
         });
         if (childPosition==childPos && groupPosition==groupPos){
-            tv.setTextColor(context.getResources().getColor(R.color.white));
-            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryDark));
+            tv.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
         }
         else{
             tv.setTextColor(context.getResources().getColor(R.color.black));
-            convertView.setBackgroundColor(context.getResources().getColor(R.color.colorPrimary));
         }
         return convertView;
     }

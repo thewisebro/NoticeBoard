@@ -4,8 +4,11 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
-        <item name="colorPrimary">@color/colorPrimaryLightDark</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorPrimary">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryXtraDark</item>
+        <item name="colorControlNormal">#80000000</item>
+        <item name="colorControlActivated">@color/colorPrimaryXtraDark</item>
+        <item name="colorControlHighlight">@color/colorPrimaryXtraDark</item>
         <item name="colorAccent">@color/black</item>
     </style>
 
@@ -19,5 +22,13 @@
     <style name="bottomBarTextStyle">
         <item name="android:textSize">12sp</item>
     </style>
-
+    <style name="TextAppearence.App.TextInputLayout" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@color/colorPrimaryXtraDark</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+    <style name="ToolBarTheme.ToolBarStyle" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textColorPrimaryInverse">@color/white</item>
+    </style>
 </resources>

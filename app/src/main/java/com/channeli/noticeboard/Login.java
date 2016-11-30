@@ -1,6 +1,5 @@
 package com.channeli.noticeboard;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -62,9 +61,9 @@ public class Login extends AppCompatActivity {
     SharedPreferences.Editor editor;
     CoordinatorLayout coordinatorLayout;
     SQLHelper sqlHelper;
-    ProgressDialog loginDialog;
     EditText Username;
     EditText Password;
+    Button button;
     Boolean flag1=false,flag2=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,9 +84,10 @@ public class Login extends AppCompatActivity {
         });
     }
     public void setViews(){
+        findViewById(R.id.clear_focus).requestFocus();
         Username=(EditText) findViewById(R.id.username);
         Password=(EditText) findViewById(R.id.password);
-        final Button button= (Button) findViewById(R.id.submit);
+        button= (Button) findViewById(R.id.submit);
         final View overButton= findViewById(R.id.overSubmit);
         overButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -252,7 +252,6 @@ public class Login extends AppCompatActivity {
                     editor.putString("CHANNELI_SESSID", cookies.get("CHANNELI_SESSID"));
                     editor.apply();
                     getConstants();
-                    loginDialog.dismiss();
                     Intent intent = new Intent(this,MainActivity.class);
                     //intent.putExtra("category","All");
                     //intent.putExtra("main_category","All");
@@ -284,7 +283,8 @@ public class Login extends AppCompatActivity {
 
     public void login(View view) {
         hideKeyboard();
-        loginDialog= ProgressDialog.show(this,null,"Signing In...",true,false);
+        button.setText("LOGGING IN");
+        button.setClickable(false);
         new Thread(){
             @Override
             public void run(){
@@ -305,7 +305,13 @@ public class Login extends AppCompatActivity {
                 else {
                     showMessage("Check network connection!");
                 }
-                loginDialog.dismiss();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        button.setText("LOGIN");
+                        button.setClickable(true);
+                    }
+                });
             }
         }.start();
     }

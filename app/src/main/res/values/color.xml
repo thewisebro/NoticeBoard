@@ -2,10 +2,10 @@
 <resources>
     <color name="colorPrimary">#e0e0e0</color>
     <color name="colorPrimaryLightDark">#BDBDBD</color>
-    <color name="colorPrimaryDark">#9e9e9e</color>
+    <color name="colorPrimaryDark">#212121</color>
     <color name="colorAccent">#10bdfa</color>
     <color name="colorAccentDark">#03A9F4</color>
-    <color name="colorPrimaryXtraDark">#616161</color>
+    <color name="colorPrimaryXtraDark">#000000</color>
     <color name="colorPrimaryXtraLight">#fafafa</color>
     <color name="colorPrimaryLight">#eeeeee</color>
     <color name="colorPrimaryXtraXtraLight">#fefefe</color>
@@ -24,7 +24,7 @@
     <color name="blue_grey_500">#607D8B</color>
     <color name="blue_green">#106252</color>
     <color name="black">#000000</color>
-    <color name="white">#ffffff</color>
+    <color name="white">#dedede</color>
     <color name="light_green">#ff8acf4b</color>
     <color name="blue_grey_50">#eceff1</color>
     <color name="blue_grey_100">#CFD8DC</color>
