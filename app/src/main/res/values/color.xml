@@ -9,6 +9,7 @@
     <color name="colorPrimaryXtraLight">#fafafa</color>
     <color name="colorPrimaryLight">#eeeeee</color>
     <color name="colorPrimaryXtraXtraLight">#fefefe</color>
+    <color name="pink_a400">#F50057</color>
     <color name="blue">#2d76d8</color>
     <color name="blue_darker">#0E60D0</color>
     <color name="green">#ff43fa0b</color>
