@@ -312,26 +312,25 @@ public class MainActivity extends AppCompatActivity {
 
         nameView.setText(user.getName());
         infoView.setText(user.getInfo());
-        Bitmap bitmap=sqlHelper.getProfilePic();
-        //Bitmap bitmap=null;
-        if(bitmap==null){
-            new Thread(){
-                @Override
-                public void run(){
+        new Thread(){
+            @Override
+            public void run(){
+                final Bitmap bitmap=sqlHelper.getProfilePic();
+                if (bitmap==null){
                     String url="http://people.iitr.ernet.in/photo/"+user.getEnrollmentno();
                     HttpGet get=new HttpGet(url);
                     try {
                         final int dim=(int) getResources().getDimension(R.dimen.profile_pic_diameter);
-                        final Bitmap bitmap=new ProfilePicTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,get).get();
+                        final Bitmap bitm=new ProfilePicTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,get).get();
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                if (bitmap!=null && !(MainActivity.this.isFinishing())) {
-                                    view.setImageBitmap(Bitmap.createScaledBitmap(bitmap
+                                if (bitm!=null && !(MainActivity.this.isFinishing())) {
+                                    view.setImageBitmap(Bitmap.createScaledBitmap(bitm
                                             , dim, dim, false));
                                     view.setVisibility(View.VISIBLE);
                                     view.invalidate();
-                                    sqlHelper.addProfilePic(bitmap);
+                                    sqlHelper.addProfilePic(bitm);
                                 }
                             }
                         });
@@ -339,12 +338,17 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-            }.start();
-        }
-        else{
-            view.setVisibility(View.VISIBLE);
-            view.setImageBitmap(bitmap);
-        }
+                else{
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            view.setVisibility(View.VISIBLE);
+                            view.setImageBitmap(bitmap);
+                        }
+                    });
+                }
+            }
+        }.start();
     }
     ArrayList<DrawerItem> getConstants(){
         ArrayList<DrawerItem> list=new ArrayList<>();

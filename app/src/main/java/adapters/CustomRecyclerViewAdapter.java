@@ -29,7 +29,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 
 import connections.ConnectTaskHttpGet;
 import connections.ConnectTaskHttpPost;
@@ -78,15 +77,8 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         post.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
         post.setHeader("CHANNELI_DEVICE","android");
         post.setHeader("X-CSRFToken",csrftoken);
-        ConnectTaskHttpPost readTask= (ConnectTaskHttpPost) new ConnectTaskHttpPost().execute(post);
-        String result="";
-        try {
-            result=readTask.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
+        new ConnectTaskHttpPost().execute(post);
+        new SQLHelper(context).setRead(id);
     }
     void setStar(int id,boolean b){
         String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
@@ -218,13 +210,13 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                                             holder.view.setBackgroundDrawable(
                                                     context.getResources().getDrawable(R.drawable.read_notice_bg));
                                             holder.subject.setTypeface(null, Typeface.NORMAL);
-                                            holder.datetime.setTypeface(null,Typeface.NORMAL);
+                                            holder.datetime.setTypeface(null, Typeface.NORMAL);
                                             //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
                                         }
                                     });
                                     noticeObject.setRead(true);
-                                    setRead(noticeObject.getId());
                                     readNotices.add(noticeObject.getId());
+                                    setRead(noticeObject.getId());
                                 }
                                 NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
                                 db.addNoticeInfo(noticeInfo);

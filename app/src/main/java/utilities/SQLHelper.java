@@ -337,6 +337,13 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
         //db.close();
     }
+    public void setRead(int id){
+        SQLiteDatabase db= this.getWritableDatabase();
+        ContentValues values=new ContentValues();
+        values.put(ROW_READ_STATUS,true);
+        db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
+        //db.close();
+    }
     public List<noticeNotification> getNotifications(){
         List<noticeNotification> notifications=new ArrayList<>();
         SQLiteDatabase db=this.getReadableDatabase();
