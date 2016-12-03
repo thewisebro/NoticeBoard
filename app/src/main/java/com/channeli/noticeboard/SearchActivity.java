@@ -310,7 +310,7 @@ public class SearchActivity extends AppCompatActivity {
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
-                        sqlHelper.addNoticesList(list);
+                        //sqlHelper.addNoticesList(list);
                         starredList.addAll(list);
                         return;
                     }

@@ -69,6 +69,7 @@ public class Parsing {
         }
         catch(JSONException e){
             e.printStackTrace();
+            return null;
         }
         return noticeslist;
     }
@@ -92,6 +93,7 @@ public class Parsing {
         }
         catch(JSONException e){
             e.printStackTrace();
+            return null;
         }
         return noticeslist;
     }
@@ -115,6 +117,7 @@ public class Parsing {
         }
         catch(JSONException e){
             e.printStackTrace();
+            return null;
         }
         return noticeslist;
     }
