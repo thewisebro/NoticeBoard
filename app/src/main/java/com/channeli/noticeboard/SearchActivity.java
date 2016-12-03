@@ -32,6 +32,7 @@ import com.roughike.bottombar.OnTabSelectListener;
 import org.apache.http.client.methods.HttpGet;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -55,11 +56,11 @@ public class SearchActivity extends AppCompatActivity {
     HttpGet httpGet;
     String csrftoken;
     String CHANNELI_SESSID;
-    AsyncTask<HttpGet, Void, String> task=null;
     BottomBar bottomBar;
     CoordinatorLayout coordinatorLayout;
     String msg=null;
     SQLHelper sqlHelper;
+    ProgressDialog progressDialog=null;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -95,6 +96,14 @@ public class SearchActivity extends AppCompatActivity {
         adapter=new CustomRecyclerViewAdapter(this,R.layout.list_itemview,noticelist,starredList,readList);
         recyclerView.setAdapter(adapter);
         setBottomBar();
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        if ((progressDialog != null) && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+        progressDialog=null;
     }
     private void setBottomBar(){
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
@@ -198,6 +207,11 @@ public class SearchActivity extends AppCompatActivity {
             if (searchText!=null) {
                 searchText.setTextColor(Color.BLACK);
                 searchText.setHintTextColor(Color.DKGRAY);
+                try {
+                    Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+                    mCursorDrawableRes.setAccessible(true);
+                    mCursorDrawableRes.set(searchText, 0); //This sets the cursor resource ID to 0 or @null which will make it visible on white background
+                } catch (Exception e) {}
             }
         }
         return true;
@@ -232,8 +246,8 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setNoticelist(final String url){
         if (isOnline()){
-            final ProgressDialog pd=ProgressDialog.show(this,null,"Fetching Results...",true,false);
-            new Thread(){
+            recyclerView.stopScroll();
+            Thread thread=new Thread(){
                 @Override
                 public void run(){
 
@@ -248,7 +262,11 @@ public class SearchActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             if(list!=null) {
-                                int size=noticelist.size();
+                                try {
+                                    recyclerView.scrollToPosition(0);
+                                }catch (Exception e){}
+
+                                recyclerView.getRecycledViewPool().clear();
                                 noticelist.clear();
                                 noticelist.addAll(list);
                                 adapter.notifyDataSetChanged();
@@ -257,14 +275,22 @@ public class SearchActivity extends AppCompatActivity {
                                     findViewById(R.id.no_notice).setVisibility(View.GONE);
                                 else
                                     findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
+
+                                if ((progressDialog != null) && progressDialog.isShowing()) {
+                                    progressDialog.dismiss();
+                                }
                             }
                             else
                                 showNetworkError();
-                            pd.dismiss();
+
                         }
                     });
                 }
-            }.start();
+            };
+            if (!isFinishing()){
+                progressDialog=ProgressDialog.show(this,null,"Fetching Results...",true,false);
+                thread.start();
+            }
         }
         else
             showNetworkError();
@@ -277,19 +303,18 @@ public class SearchActivity extends AppCompatActivity {
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
             httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
             httpGet.setHeader("X-CSRFToken",csrftoken);
-            if (task!=null)
-                task.cancel(true);
-            task=new ConnectTaskHttpGet().execute(httpGet);
+
+            AsyncTask<HttpGet, Void, String> task=new ConnectTaskHttpGet().execute(httpGet);
             try {
                 String result=task.get();
-                task.cancel(true);
+                //task.cancel(true);
                 return parsing.parseSearchNotices(result,starredList,readList);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
-            task.cancel(true);
+            //task.cancel(true);
         }
         showNetworkError();
         return null;
@@ -302,11 +327,10 @@ public class SearchActivity extends AppCompatActivity {
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpGet.setHeader("X-CSRFToken", csrftoken);
-                if (task!=null)
-                    task.cancel(true);
-                task = new ConnectTaskHttpGet().execute(httpGet);
+
+                AsyncTask<HttpGet, Void, String> task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();
-                task.cancel(true);
+                //task.cancel(true);
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
@@ -332,11 +356,10 @@ public class SearchActivity extends AppCompatActivity {
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpGet.setHeader("X-CSRFToken", csrftoken);
-                if (task!=null)
-                    task.cancel(true);
-                task = new ConnectTaskHttpGet().execute(httpGet);
+
+                AsyncTask<HttpGet, Void, String> task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();
-                task.cancel(true);
+                //task.cancel(true);
                 if (content != null) {
                     ArrayList<Integer> list = new Parsing().parseReadNotices(content);
                     if (list != null) {

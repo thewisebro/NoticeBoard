@@ -46,6 +46,7 @@ import com.roughike.bottombar.OnTabSelectListener;
 import org.apache.http.client.methods.HttpGet;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<NoticeObject> noticelist;
     private ArrayList<NoticeObject> starredList;
     private ArrayList<Integer> readList;
-    private AsyncTask<HttpGet, Void, String> mTask=null;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
     private ExpandableListView listView;
@@ -207,16 +207,14 @@ public class MainActivity extends AppCompatActivity {
                                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                                 httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                                 httpGet.setHeader("X-CSRFToken", csrftoken);
-                                if (mTask!=null)
-                                    mTask.cancel(true);
-                                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                                AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
                                 String result = null;
                                 try {
                                     result = mTask.get();
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-                                mTask.cancel(true);
+                                //mTask.cancel(true);
                                 if (initialTab!=bottomBar.getCurrentTabId()){
                                     scrollListener.resetState();
                                     return;
@@ -376,11 +374,9 @@ public class MainActivity extends AppCompatActivity {
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
             httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
             try {
-                if (mTask!=null)
-                    mTask.cancel(true);
-                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
                 String constant = mTask.get(4000, TimeUnit.MILLISECONDS);
-                mTask.cancel(true);
+                //mTask.cancel(true);
                 list.addAll(parsing.parseConstants(constant));
                 if(list.size()>0){
                     Set<String> constantSet=new HashSet<>(list.size());
@@ -523,8 +519,6 @@ public class MainActivity extends AppCompatActivity {
                             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                             httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
                             try {
-                                if (mTask != null)
-                                    mTask.cancel(true);
                                 new ConnectTaskHttpGet().execute(httpGet);
                                 runOnUiThread(new Runnable() {
                                     @Override
@@ -588,12 +582,6 @@ public class MainActivity extends AppCompatActivity {
         else
             setTitle(MainCategory + " - " + Category);
 
-        /*if (swiperefresh){
-            starredList.clear();
-            readList.clear();
-            swiperefresh=false;
-        }*/
-
         if (MainCategory.equals("Starred")) {
             bottomBar.setVisibility(View.GONE);
             httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
@@ -624,9 +612,10 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        recyclerView.scrollToPosition(0);
-                        //customAdapter.notifyItemRangeRemoved(0,initialSize);
-                        //customAdapter.notifyItemRangeInserted(0,noticelist.size());
+                        try {
+                            recyclerView.scrollToPosition(0);
+                        }catch (Exception e){}
+
                         recyclerView.getRecycledViewPool().clear();
                         customAdapter.notifyDataSetChanged();
                         if (noticelist.size() > 0)
@@ -653,11 +642,9 @@ public class MainActivity extends AppCompatActivity {
         if (isOnline()){
             String content = null;
             try {
-                if (mTask!=null)
-                    mTask.cancel(true);
-                mTask = new ConnectTaskHttpGet().execute(httpGet);
+                AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
                 content = mTask.get();
-                mTask.cancel(true);
+                //mTask.cancel(true);
                 //list=parsing.parseNotices(content,starredList,readList);
                 if (MainCategory.equals("Starred")) {
                     list = parsing.parseStarredNotices(content,readList);
@@ -668,6 +655,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else
                     list=parsing.parseNotices(content,starredList,readList);
+
                 if (list!=null) {
                     addToDB(list);
                     noticelist.clear();
@@ -696,11 +684,10 @@ public class MainActivity extends AppCompatActivity {
                 httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpget.setHeader("X-CSRFToken", csrftoken);
-                if (mTask!=null)
-                    mTask.cancel(true);
-                mTask = new ConnectTaskHttpGet().execute(httpget);
+
+                AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpget);
                 String content = mTask.get();
-                mTask.cancel(true);
+                //mTask.cancel(true);
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
@@ -729,11 +716,10 @@ public class MainActivity extends AppCompatActivity {
                 httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpget.setHeader("X-CSRFToken", csrftoken);
-                if (mTask!=null)
-                    mTask.cancel(true);
-                mTask = new ConnectTaskHttpGet().execute(httpget);
+
+                AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpget);
                 String content = mTask.get();
-                mTask.cancel(true);
+                //mTask.cancel(true);
                 if (content != null) {
                     ArrayList<Integer> list = new Parsing().parseReadNotices(content);
                     if (list != null && list.size()>readList.size()) {
@@ -914,6 +900,11 @@ public class MainActivity extends AppCompatActivity {
             if (searchText!=null) {
                 searchText.setTextColor(Color.BLACK);
                 searchText.setHintTextColor(Color.DKGRAY);
+                try {
+                    Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+                    mCursorDrawableRes.setAccessible(true);
+                    mCursorDrawableRes.set(searchText, 0); //This sets the cursor resource ID to 0 or @null which will make it visible on white background
+                } catch (Exception e) {}
             }
         }
         return true;
