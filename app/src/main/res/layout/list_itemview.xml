@@ -49,15 +49,25 @@
             android:layout_marginRight="10dp"
             android:layout_marginTop="3dp"
             android:textColor="#161616"/>
-        <ToggleButton
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:textOff=""
-            android:textOn=""
-            android:layout_gravity="center_vertical"
-            android:gravity="center_vertical"
-            android:id="@+id/star_button"
-            android:background="@drawable/star_unstar"/>
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/star_container"
+            android:layout_gravity="center_vertical">
+            <ToggleButton
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:textOff=""
+                android:textOn=""
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:id="@+id/star_button"
+                android:background="@drawable/star_unstar"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="5dp" />
+        </FrameLayout>
     </LinearLayout>
 
 

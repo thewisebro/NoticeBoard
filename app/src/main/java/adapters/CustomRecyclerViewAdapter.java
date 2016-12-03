@@ -156,12 +156,20 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             holder.datetime.setTypeface(null,Typeface.BOLD);
         }
 
+
         final boolean[] checkChangeFlag = {false};
         holder.star.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 checkChangeFlag[0] = true;
                 return false;
+            }
+        });
+        holder.view.findViewById(R.id.star_container).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                checkChangeFlag[0]=true;
+                holder.star.performClick();
             }
         });
         holder.star.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
