@@ -86,7 +86,7 @@ public class FCMService extends FirebaseMessagingService {
                 .setSound(defaultSoundUri)
                 //.setContentText("New Notices have been uploaded!")
                 .setNumber(notifications.size())
-                .setStyle(inboxStyle)
+                //.setStyle(inboxStyle)
                 .setColor(getResources().getColor(R.color.colorAccent))
                 .setShowWhen(true)
                 .setTicker("New Notice!")
@@ -96,6 +96,7 @@ public class FCMService extends FirebaseMessagingService {
         if (notifications.size()>1){
             notificationBuilder.setContentTitle("Channel i NoticeBoard");
             notificationBuilder.setContentText("New Notices have been uploaded!");
+            notificationBuilder.setStyle(inboxStyle);
         }
         else{
             notificationBuilder.setContentTitle("New Notice : ");

@@ -11,7 +11,7 @@
         id="@+id/old_items"
         title="Expired"
         icon="@drawable/ic_restore_black_24dp"
-        inActiveColor="@color/white"
+        inActiveColor="@android:color/white"
         activeColor="@color/white"
         barColorWhenSelected="@color/colorPrimaryDark" />
 </tabs>

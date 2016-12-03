@@ -16,7 +16,7 @@ android {
         applicationId "com.channeli.noticeboard"
         minSdkVersion 17
         targetSdkVersion 25
-        versionCode 1
+        versionCode 8
         versionName "1.0"
         signingConfig signingConfigs.config
     }

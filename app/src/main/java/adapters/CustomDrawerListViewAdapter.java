@@ -18,7 +18,7 @@ import objects.DrawerItem;
  * Created by Ankush on 25-10-2016.
  */
 public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
-    ArrayList<DrawerItem> drawerItemList;
+    public ArrayList<DrawerItem> drawerItemList;
     Context context;
     LayoutInflater inflater;
     public int groupPos=0;

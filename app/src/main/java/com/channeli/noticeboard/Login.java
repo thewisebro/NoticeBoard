@@ -11,6 +11,7 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
+import android.text.Html;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
@@ -64,7 +65,9 @@ public class Login extends AppCompatActivity {
     EditText Username;
     EditText Password;
     Button button;
+    View overButton;
     Boolean flag1=false,flag2=false;
+    AsyncTask<HttpGet, Void, String> mTask=null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,7 +91,7 @@ public class Login extends AppCompatActivity {
         Username=(EditText) findViewById(R.id.username);
         Password=(EditText) findViewById(R.id.password);
         button= (Button) findViewById(R.id.submit);
-        final View overButton= findViewById(R.id.overSubmit);
+        overButton= findViewById(R.id.overSubmit);
         overButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -97,6 +100,9 @@ public class Login extends AppCompatActivity {
         });
         TextView link= (TextView) findViewById(R.id.link);
         link.setMovementMethod(LinkMovementMethod.getInstance());
+        TextView img_love= (TextView) findViewById(R.id.made_with_love);
+        String text = "Made with <font color=#F50057>"+String.valueOf(Character.toChars(0x2764))+"</font> by IMG";
+        img_love.setText(Html.fromHtml(text));
         Username.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -181,8 +187,9 @@ public class Login extends AppCompatActivity {
         httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
         httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
         httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
-        AsyncTask<HttpGet, Void, String> mTask;
         try {
+            if (mTask!=null)
+                mTask.cancel(true);
             mTask = new ConnectTaskHttpGet().execute(httpGet);
             constants = mTask.get(4000, TimeUnit.MILLISECONDS);
             mTask.cancel(true);
@@ -242,7 +249,11 @@ public class Login extends AppCompatActivity {
                 httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + cookies.get("CHANNELI_SESSID"));
                 httpGet.setHeader("Accept", "application/xml");
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                JSONObject result = new JSONObject(new ConnectTaskHttpGet().execute(httpGet).get());
+                if (mTask!=null)
+                    mTask.cancel(true);
+                mTask=new ConnectTaskHttpGet().execute(httpGet);
+                JSONObject result = new JSONObject(mTask.get());
+                mTask.cancel(true);
                 String msg=result.getString("msg");
                 if(msg.equals("YES")){
                     editor.putString("name", result.getString("_name"));
@@ -253,8 +264,6 @@ public class Login extends AppCompatActivity {
                     editor.apply();
                     getConstants();
                     Intent intent = new Intent(this,MainActivity.class);
-                    //intent.putExtra("category","All");
-                    //intent.putExtra("main_category","All");
                     startActivity(intent);
                     finish();
                 }
@@ -285,6 +294,7 @@ public class Login extends AppCompatActivity {
         hideKeyboard();
         button.setText("LOGGING IN");
         button.setClickable(false);
+        overButton.setClickable(false);
         new Thread(){
             @Override
             public void run(){
@@ -310,6 +320,7 @@ public class Login extends AppCompatActivity {
                     public void run() {
                         button.setText("LOGIN");
                         button.setClickable(true);
+                        overButton.setClickable(true);
                     }
                 });
             }

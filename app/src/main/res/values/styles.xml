@@ -7,8 +7,8 @@
         <item name="colorPrimary">@color/colorPrimaryDark</item>
         <item name="colorPrimaryDark">@color/colorPrimaryXtraDark</item>
         <item name="colorControlNormal">#80000000</item>
-        <item name="colorControlActivated">@color/colorPrimaryXtraDark</item>
-        <item name="colorControlHighlight">@color/colorPrimaryXtraDark</item>
+        <item name="colorControlActivated">@color/colorAccentXtraDark</item>
+        <item name="colorControlHighlight">@color/colorAccentXtraDark</item>
         <item name="colorAccent">@color/black</item>
     </style>
 
@@ -23,7 +23,7 @@
         <item name="android:textSize">12sp</item>
     </style>
     <style name="TextAppearence.App.TextInputLayout" parent="@android:style/TextAppearance">
-        <item name="android:textColor">@color/colorPrimaryXtraDark</item>
+        <item name="android:textColor">@color/colorAccentXtraDark</item>
         <item name="android:textSize">12sp</item>
     </style>
     <style name="ToolBarTheme.ToolBarStyle" parent="ThemeOverlay.AppCompat.Dark.ActionBar">

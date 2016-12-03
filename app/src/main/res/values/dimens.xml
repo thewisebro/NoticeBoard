@@ -12,4 +12,5 @@
     <dimen name="drawerGroupHt">40dp</dimen>
     <dimen name="drawerChildHt">40dp</dimen>
     <dimen name="drawerWidth">260dp</dimen>
+    <dimen name="profile_pic_diameter">60dp</dimen>
 </resources>

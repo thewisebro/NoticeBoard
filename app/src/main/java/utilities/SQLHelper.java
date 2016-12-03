@@ -77,7 +77,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.execSQL(CREATE_TABLE_NOTICES);
         db.execSQL(CREATE_TABLE_PROFILE_PIC);
         db.execSQL(CREATE_TABLE_NOTIFICATIONS);
-        db.close();
+        //db.close();
     }
 
     @Override
@@ -98,7 +98,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_BITMAP_ID,1);
         values.put(ROW_BITMAP_STRING,bitmapString64);
         db.insert(TABLE_PROFILE_PIC, null, values);
-        db.close();
+        //db.close();
     }
     public Bitmap getProfilePic(){
         SQLiteDatabase db = this.getReadableDatabase();
@@ -110,6 +110,8 @@ public class SQLHelper extends SQLiteOpenHelper{
         if(bitmapString64==null || bitmapString64=="")
             return null;
         byte[] bitmapByte= Base64.decode(bitmapString64, Base64.DEFAULT);
+        if (bitmapByte.length==0)
+            return null;
         Bitmap bitmap= BitmapFactory.decodeByteArray(bitmapByte, 0, bitmapByte.length);
         return bitmap;
     }
@@ -121,14 +123,14 @@ public class SQLHelper extends SQLiteOpenHelper{
     private void deleteLastNotice(){
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTICES,ROW_DATETIME + "= MIN("+ ROW_DATETIME + ")",null);
-        db.close();
+        //db.close();
     }
     public void clear(){
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTICES,null,null);
         db.delete(TABLE_PROFILE_PIC,null,null);
         db.delete(TABLE_NOTIFICATIONS,null,null);
-        db.close();
+        //db.close();
     }
     public ArrayList<NoticeObject> getNotices(){
         SQLiteDatabase db=this.getReadableDatabase();
@@ -148,7 +150,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                 list.add(object);
             }while (cursor.moveToNext());
         }
-        db.close();
+        //db.close();
         return list;
     }
     public ArrayList<NoticeObject> getNotices(String mainCategory, String category){
@@ -177,7 +179,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                 list.add(object);
             }while (cursor.moveToNext());
         }
-        db.close();
+        //db.close();
         return list;
     }
 
@@ -207,7 +209,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                 list.add(object);
             }while (cursor.moveToNext());
         }
-        db.close();
+        //db.close();
         return list;
     }
     public ArrayList<Integer> getReadNotices(){
@@ -220,7 +222,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                 list.add(new Integer(cursor.getInt(0)));
             }while (cursor.moveToNext());
         }
-        db.close();
+        //db.close();
         return list;
     }
     public NoticeInfo getNoticeInfo(int id){
@@ -268,7 +270,7 @@ public class SQLHelper extends SQLiteOpenHelper{
                     " LIMIT "+MAX_NOTICES+
                 " );";
         db.execSQL(query);
-        db.close();
+        //db.close();
     }
     private void addNotice(NoticeObject object) throws ParseException {
         //if (checkNotice(object.getId()))
@@ -283,7 +285,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_READ_STATUS,object.getRead());
         values.put(ROW_STAR_STATUS,object.getStar());
         db.insert(TABLE_NOTICES, null, values);
-        db.close();
+        //db.close();
     }
     public void addNoticesList(ArrayList<NoticeObject> list) throws ParseException {
         for(NoticeObject object: list)
@@ -294,7 +296,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES, null, ROW_ID + "=" + id, null, null, null, null);
         int count=cursor.getCount();
-        db.close();
+        //db.close();
         return (!(count==0));
     }
     public boolean checkNoticeContent(int id){
@@ -304,7 +306,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             return false;
         cursor.moveToFirst();
         String c=cursor.getString(0);
-        db.close();
+        //db.close();
         return (!(c==null || c==""));
     }
     public boolean checkNoticeContent(int id,String date){
@@ -315,7 +317,7 @@ public class SQLHelper extends SQLiteOpenHelper{
             return false;
         cursor.moveToFirst();
         String c=cursor.getString(0);
-        db.close();
+        //db.close();
         return (!(c==null || c==""));
     }
     public void addNoticeInfo(NoticeInfo info){
@@ -326,14 +328,14 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_REFERENCE,info.getReference());
         values.put(ROW_CONTENT,info.getContent());
         db.update(TABLE_NOTICES, values, ROW_ID + "=" + info.getId(), null);
-        db.close();
+        //db.close();
     }
     public void setStar(int id, boolean b){
         SQLiteDatabase db= this.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put(ROW_STAR_STATUS,b);
         db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
-        db.close();
+        //db.close();
     }
     public List<noticeNotification> getNotifications(){
         List<noticeNotification> notifications=new ArrayList<>();
@@ -346,13 +348,13 @@ public class SQLHelper extends SQLiteOpenHelper{
                 notifications.add(notification);
             }while(cursor.moveToNext());
         }
-        db.close();
+        //db.close();
         return notifications;
     }
     public void clearNotifications(){
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTIFICATIONS,null,null);
-        db.close();
+        //db.close();
     }
     public void addNotification(noticeNotification notification){
         SQLiteDatabase db=this.getWritableDatabase();
@@ -361,6 +363,6 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_CATEGORY,notification.getCategory());
         values.put(ROW_SUBJECT,notification.getSubject());
         db.insert(TABLE_NOTIFICATIONS,null,values);
-        db.close();
+        //db.close();
     }
 }

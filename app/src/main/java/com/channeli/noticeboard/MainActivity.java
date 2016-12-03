@@ -27,6 +27,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -59,11 +60,10 @@ import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
 import connections.ConnectTaskHttpGet;
 import connections.FCMIDService;
-import connections.ProfilePicService;
+import connections.ProfilePicTask;
 import objects.DrawerItem;
 import objects.NoticeObject;
 import objects.User;
-import utilities.DownloadResultReceiver;
 import utilities.EndlessRecyclerViewScrollListener;
 import utilities.Parsing;
 import utilities.RoundImageView;
@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences settings;
     SharedPreferences.Editor editor;
     ArrayList<DrawerItem> drawerList;
+    ProgressDialog mDialog=null;
 
     private RecyclerView recyclerView;
     private CustomRecyclerViewAdapter customAdapter=null;
@@ -101,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<NoticeObject> noticelist;
     private ArrayList<NoticeObject> starredList;
     private ArrayList<Integer> readList;
-    private AsyncTask<HttpGet, Void, String> mTask;
+    private AsyncTask<HttpGet, Void, String> mTask=null;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
     private ExpandableListView listView;
@@ -127,16 +128,24 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         //MainCategory=getIntent().getStringExtra("main_category");
         //Category=getIntent().getStringExtra("category");
+        sqlHelper=new SQLHelper(this);
+        sqlHelper.clearNotifications(); //remove all pending notifications
         settings = getSharedPreferences(PREFS_NAME, 0);
+        editor=settings.edit();
+        csrftoken = settings.getString("csrftoken","");
+        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
+        if ("".equals(CHANNELI_SESSID)){
+            cleanLogout();
+            closeDialog();
+            startActivity(new Intent(this,SplashScreen.class));
+            finish();
+        }
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
         }
-        editor=settings.edit();
         parsing = new Parsing();
         user = new User(settings.getString("name",""), settings.getString("info",""),
                 settings.getString("enrollment_no",""));
-        sqlHelper=new SQLHelper(this);
-        sqlHelper.clearNotifications(); //remove all pending notifications
         navigationView= (NavigationView) findViewById(R.id.left_drawer);
         toolbar= (Toolbar) findViewById(R.id.toolbar);
         coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
@@ -148,8 +157,7 @@ public class MainActivity extends AppCompatActivity {
         starredList=new ArrayList<NoticeObject>();
         readList=new ArrayList<Integer>();
         SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        csrftoken = settings.getString("csrftoken","");
-        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
+
         customAdapter=new CustomRecyclerViewAdapter(this,
                 R.layout.list_itemview, noticelist,starredList,readList);
 
@@ -178,16 +186,20 @@ public class MainActivity extends AppCompatActivity {
         //setTitle("All");
 
         recyclerView.setAdapter(customAdapter);
-        LinearLayoutManager layoutManager=new LinearLayoutManager(this);
+        WrapContentLinearLayoutManager layoutManager=new WrapContentLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setLayoutManager(layoutManager);
         scrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
-                if(totalItemsCount>0)
+                if(totalItemsCount>0 && totalItemsCount<=noticelist.size())
                     new Thread(){
                         @Override
                         public void run(){
                             if (isOnline()) {
+                                int initialTab=bottomBar.getCurrentTabId();
+                                if (totalItemsCount<=0 || totalItemsCount>noticelist.size())
+                                    return;
                                 httpGet = new HttpGet(MainActivity.UrlOfNotice +
                                         "list_notices/" + NoticeType + "/" + MainCategory.replace(" ","%20") +
                                         "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
@@ -195,6 +207,8 @@ public class MainActivity extends AppCompatActivity {
                                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                                 httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                                 httpGet.setHeader("X-CSRFToken", csrftoken);
+                                if (mTask!=null)
+                                    mTask.cancel(true);
                                 mTask = new ConnectTaskHttpGet().execute(httpGet);
                                 String result = null;
                                 try {
@@ -203,6 +217,10 @@ public class MainActivity extends AppCompatActivity {
                                     e.printStackTrace();
                                 }
                                 mTask.cancel(true);
+                                if (initialTab!=bottomBar.getCurrentTabId()){
+                                    scrollListener.resetState();
+                                    return;
+                                }
                                 if (result != null && result!="") {
                                     final String parseString=result;
                                     runOnUiThread(new Runnable() {
@@ -212,7 +230,9 @@ public class MainActivity extends AppCompatActivity {
                                             ArrayList<NoticeObject> list = parsing.parseNotices(parseString,starredList,readList);
                                             addToDB(list);
                                             noticelist.addAll(list);
-                                            customAdapter.notifyItemRangeInserted(curSize, list.size());
+                                            recyclerView.getRecycledViewPool().clear();
+                                            customAdapter.notifyDataSetChanged();
+                                            //customAdapter.notifyItemRangeInserted(curSize, list.size());
                                         }
                                     });
                                     return;
@@ -235,8 +255,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        swipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorPrimary));
+        swipeRefreshLayout.setColorSchemeColors(new int[]{getResources().getColor(R.color.colorAccentDark)
+                ,getResources().getColor(R.color.colorPrimaryDark)});
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        closeDialog();
+    }
+    public void closeDialog(){
+        try{
+            if ((mDialog != null) && mDialog.isShowing()) {
+                mDialog.dismiss();
+            }
+        }catch(Exception e){
+        }finally {
+            mDialog=null;
+        }
     }
 
     void setNavigationView(){
@@ -248,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
             public void onTabSelected(int itemId) {
-                refreshScroll=true;
+                refreshScroll = true;
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
@@ -275,34 +311,36 @@ public class MainActivity extends AppCompatActivity {
         nameView.setText(user.getName());
         infoView.setText(user.getInfo());
         Bitmap bitmap=sqlHelper.getProfilePic();
+        //Bitmap bitmap=null;
         if(bitmap==null){
-            try{
-                String url="http://people.iitr.ernet.in/photo/"+user.getEnrollmentno();
-                DownloadResultReceiver resultReceiver = new DownloadResultReceiver(new Handler());
-                resultReceiver.setReceiver(new DownloadResultReceiver.Receiver() {
-                    @Override
-                    public void onReceiveResult(int resultCode, Bundle resultData) {
-                        try{
-                            Bitmap bitmap = resultData.getParcelable("imagebitmap");
-                            view.setImageBitmap(bitmap);
-                            sqlHelper.addProfilePic(bitmap);
-                        }
-                        catch(Exception e){
-                            e.printStackTrace();
-                        }
+            new Thread(){
+                @Override
+                public void run(){
+                    String url="http://people.iitr.ernet.in/photo/"+user.getEnrollmentno();
+                    HttpGet get=new HttpGet(url);
+                    try {
+                        final int dim=(int) getResources().getDimension(R.dimen.profile_pic_diameter);
+                        final Bitmap bitmap=new ProfilePicTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,get).get();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (bitmap!=null && !(MainActivity.this.isFinishing())) {
+                                    view.setImageBitmap(Bitmap.createScaledBitmap(bitmap
+                                            , dim, dim, false));
+                                    view.setVisibility(View.VISIBLE);
+                                    view.invalidate();
+                                    sqlHelper.addProfilePic(bitmap);
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                });
-                Intent intent = new Intent(Intent.ACTION_SYNC, null, getApplicationContext(),
-                        ProfilePicService.class);
-                intent.putExtra("receiver", resultReceiver);
-                intent.putExtra("imageurl", url);
-                getApplicationContext().startService(intent);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+                }
+            }.start();
         }
         else{
+            view.setVisibility(View.VISIBLE);
             view.setImageBitmap(bitmap);
         }
     }
@@ -331,8 +369,9 @@ public class MainActivity extends AppCompatActivity {
             httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
             httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
-            AsyncTask<HttpGet, Void, String> mTask;
             try {
+                if (mTask!=null)
+                    mTask.cancel(true);
                 mTask = new ConnectTaskHttpGet().execute(httpGet);
                 String constant = mTask.get(4000, TimeUnit.MILLISECONDS);
                 mTask.cancel(true);
@@ -365,8 +404,8 @@ public class MainActivity extends AppCompatActivity {
         listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
         drawerList=getConstants();
         drawerList.add(new DrawerItem("Starred", null));
-        drawerList.add(new DrawerItem("",null));
-        drawerList.add(new DrawerItem("Notifications Settings",null));
+        drawerList.add(new DrawerItem("", null));
+        drawerList.add(new DrawerItem("Notifications Settings", null));
         drawerList.add(new DrawerItem("Feedback", null));
         drawerList.add(new DrawerItem("Logout", null));
 
@@ -394,8 +433,10 @@ public class MainActivity extends AppCompatActivity {
                         listView.collapseGroup(lastGroup);
                     lastGroup=position;
                     clickListener(position, -1);
-                    this.groupPos=position;
-                    this.childPos=-1;
+                    if (checkDrawerColorChange(position)) {
+                        this.groupPos = position;
+                        this.childPos = -1;
+                    }
                     notifyDataSetChanged();
                 }
             }
@@ -410,6 +451,16 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         listView.setAdapter(drawerAdapter);
+    }
+    public boolean checkDrawerColorChange(int pos){
+        String gp_name=drawerList.get(pos).getName();
+        if (gp_name.contains("Notification"))
+            return false;
+        if (gp_name.contains("Feedback"))
+            return false;
+        if (gp_name.contains("Logout"))
+            return false;
+        return true;
     }
     private void clickListener(int groupPosition, int childPosition){
         mDrawerLayout.closeDrawers();
@@ -440,6 +491,16 @@ public class MainActivity extends AppCompatActivity {
                 selectItem();
         }
     }
+    void cleanLogout(){
+        editor.clear();
+        editor.apply();
+        sqlHelper.clear();
+        if (FirebaseMessaging.getInstance()!=null) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
+        }
+    }
     void logout(){
         final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
         dialog.setTitle("Logout");
@@ -448,8 +509,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (isOnline()) {
-                    final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, null, "Logging out", true, false);
-                    new Thread() {
+                    Thread thread=new Thread() {
                         @Override
                         public void run() {
                             httpGet = new HttpGet("http://people.iitr.ernet.in/logout/");
@@ -457,24 +517,35 @@ public class MainActivity extends AppCompatActivity {
                             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                             httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
                             try {
+                                if (mTask != null)
+                                    mTask.cancel(true);
                                 new ConnectTaskHttpGet().execute(httpGet);
-                                editor.clear();
-                                editor.apply();
-                                editor.commit();
-                                sqlHelper.clear();
-                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
-                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
-                                FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
-                                startActivity(new Intent(getApplicationContext(), SplashScreen.class));
-                                progressDialog.dismiss();
-                                finish();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        cleanLogout();
+                                        closeDialog();
+                                        startActivity(new Intent(getApplicationContext(), SplashScreen.class));
+                                        finish();
+                                    }
+                                });
+
                             } catch (Exception e) {
                                 e.printStackTrace();
-                                showNetworkError();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        closeDialog();
+                                        showNetworkError();
+                                    }
+                                });
                             }
-                            progressDialog.dismiss();
                         }
-                    }.start();
+                    };
+                    if (!isFinishing()) {
+                        mDialog = ProgressDialog.show(MainActivity.this, null, "Logging out", true, false);
+                        thread.start();
+                    }
                 } else
                     showNetworkError();
             }
@@ -482,7 +553,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
+                closeDialog();
             }
         });
 
@@ -526,18 +597,17 @@ public class MainActivity extends AppCompatActivity {
             httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory.replace(" ", "%20")
                     +"/"+Category.replace(" ", "%20")+"/0/20/0");
         }
-        noticelist.clear();
-
-        final ProgressDialog pd=ProgressDialog.show(this,null,"Loading...",true,false);
-
-        new Thread(){
+        //noticelist.clear();
+        recyclerView.stopScroll();
+        Thread thread=new Thread(){
             @Override
             public void run(){
+                final int initialSize=noticelist.size();
 
-                if (starredList.size()==0)
-                    getStarredNotices();
                 if (readList.size()==0)
                     getReadNotices();
+                if (starredList.size()==0)
+                    getStarredNotices();
 
                 httpGet.setHeader("Cookie","csrftoken="+csrftoken);
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -548,20 +618,27 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         recyclerView.scrollToPosition(0);
+                        //customAdapter.notifyItemRangeRemoved(0,initialSize);
+                        //customAdapter.notifyItemRangeInserted(0,noticelist.size());
+                        recyclerView.getRecycledViewPool().clear();
                         customAdapter.notifyDataSetChanged();
                         if (noticelist.size()>0)
                             findViewById(R.id.no_notice).setVisibility(View.GONE);
                         else
                             findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
                         scrollListener.resetState();
-                        pd.dismiss();
+                        closeDialog();
                         if (msg!=null)
                             showMessage();
                     }
                 });
 
             }
-        }.start();
+        };
+        if (!isFinishing()) {
+            mDialog = ProgressDialog.show(this, null, "Loading...", true, false);
+            thread.start();
+        }
     }
 
     private void setContent(){
@@ -569,18 +646,22 @@ public class MainActivity extends AppCompatActivity {
         if (isOnline()){
             String content = null;
             try {
+                if (mTask!=null)
+                    mTask.cancel(true);
                 mTask = new ConnectTaskHttpGet().execute(httpGet);
                 content = mTask.get();
                 mTask.cancel(true);
                 parsing = new Parsing();
+                //list=parsing.parseNotices(content,starredList,readList);
                 if (MainCategory.equals("Starred")) {
-                    list = parsing.parseStarredNotices(content);
+                    list = parsing.parseStarredNotices(content,readList);
                     starredList.clear();
                     starredList.addAll(list);
                 }
                 else
                     list=parsing.parseNotices(content,starredList,readList);
                 addToDB(list);
+                noticelist.clear();
                 noticelist.addAll(list);
                 return;
             } catch (Exception e) {
@@ -591,8 +672,10 @@ public class MainActivity extends AppCompatActivity {
             list=sqlHelper.getNotices(MainCategory);
         else
             list=sqlHelper.getNotices(MainCategory,Category);
-        if(list!=null)
+        if(list!=null) {
+            noticelist.clear();
             noticelist.addAll(list);
+        }
         showNetworkError();
     }
     private void getStarredNotices(){
@@ -603,6 +686,8 @@ public class MainActivity extends AppCompatActivity {
                 httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpget.setHeader("X-CSRFToken", csrftoken);
+                if (mTask!=null)
+                    mTask.cancel(true);
                 mTask = new ConnectTaskHttpGet().execute(httpget);
                 String content = mTask.get();
                 mTask.cancel(true);
@@ -616,7 +701,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                showNetworkError();
+                //showNetworkError();
             }
         }
         ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All");
@@ -631,6 +716,8 @@ public class MainActivity extends AppCompatActivity {
                 httpget.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpget.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpget.setHeader("X-CSRFToken", csrftoken);
+                if (mTask!=null)
+                    mTask.cancel(true);
                 mTask = new ConnectTaskHttpGet().execute(httpget);
                 String content = mTask.get();
                 mTask.cancel(true);
@@ -643,7 +730,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                showNetworkError();
+                //showNetworkError();
             }
         }
         ArrayList<Integer> list=sqlHelper.getReadNotices();
@@ -659,9 +746,45 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     swipeRefreshLayout.setRefreshing(false);
                     swiperefresh=true;
+                    //int groupPos=getGroupPosition();
+                    //int childPos=getChildPosition(groupPos);
+                    //drawerAdapter.groupPos=groupPos;
+                    //drawerAdapter.childPos=childPos;
+                    //drawerAdapter.notifyDataSetChanged();
                     changeList();
                 }
             });
+        }
+    }
+    private int getGroupPosition(){
+        for (int pos=0;pos<drawerList.size();pos++)
+            if (MainCategory.equals(drawerList.get(pos).getName()))
+                return pos;
+        return 0;
+    }
+    private int getChildPosition(int gp){
+        if (Category.contains("All"))
+            return -1;
+        int size=drawerList.get(gp).getCategories().size();
+        ArrayList<String> list=drawerList.get(gp).getCategories();
+        for (int pos=0;pos<size;pos++){
+            if (Category.equals(list.get(pos)))
+                return pos;
+        }
+        return -1;
+    }
+    public class WrapContentLinearLayoutManager extends LinearLayoutManager {
+        public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
+            super(context, orientation, reverseLayout);
+        }
+
+        @Override
+        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+            try {
+                super.onLayoutChildren(recycler, state);
+            } catch (IndexOutOfBoundsException e) {
+                Log.e("probe", "meet a IOOBE in RecyclerView");
+            }
         }
     }
 
@@ -799,7 +922,6 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public void onBackPressed(){
-
         if (MainCategory.contains("All")){
             AlertDialog.Builder dialog=new AlertDialog.Builder(this);
             dialog.setTitle("Exit");
@@ -807,6 +929,7 @@ public class MainActivity extends AppCompatActivity {
             dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
+                    closeDialog();
                     finish();
                 }
             });

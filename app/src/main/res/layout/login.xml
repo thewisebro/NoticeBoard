@@ -5,11 +5,11 @@
     android:id="@+id/login_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/gradient1"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="@android:color/white">
 
     <ScrollView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
 
@@ -30,6 +30,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:padding="16dp"
                 android:orientation="vertical">
 
                 <ImageView
@@ -37,9 +38,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_centerHorizontal="true"
-                    android:src="@drawable/img_name"
+                    android:src="@drawable/channeli_logo"
                     app:layout_aspectRatio="450%"
-                    android:layout_marginBottom="25dp"
+                    android:layout_marginBottom="32dp"
                     app:layout_widthPercent="75%" />
 
                 <android.support.design.widget.TextInputLayout
@@ -51,18 +52,18 @@
                     android:hint="Username"
                     app:hintTextAppearance="@style/TextAppearence.App.TextInputLayout"
                     android:textColorHint="#80000000"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginBottom="8dp"
                     app:layout_widthPercent="75%">
 
                     <android.support.design.widget.TextInputEditText
                         android:id="@+id/username"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/white"
+                        android:textColor="@color/black"
                         android:textSize="16sp"
-                        android:drawablePadding="10dp"
-                        android:drawableLeft="@drawable/ic_person_black_24dp"
-                        android:drawableStart="@drawable/ic_person_black_24dp"
+                        android:drawablePadding="16dp"
+                        android:drawableLeft="@drawable/login_username"
+                        android:drawableStart="@drawable/login_username"
                         android:inputType="textNoSuggestions" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -77,17 +78,17 @@
                     app:hintTextAppearance="@style/TextAppearence.App.TextInputLayout"
                     android:textColorHint="#80000000"
                     app:layout_widthPercent="75%"
-                    android:layout_marginBottom="10dp">
+                    android:layout_marginBottom="32dp">
 
                     <android.support.design.widget.TextInputEditText
                         android:id="@+id/password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:drawablePadding="10dp"
-                        android:textColor="@color/white"
+                        android:drawablePadding="16dp"
+                        android:textColor="@color/black"
                         android:textSize="16sp"
-                        android:drawableStart="@drawable/ic_vpn_key_black_24dp"
-                        android:drawableLeft="@drawable/ic_vpn_key_black_24dp"
+                        android:drawableStart="@drawable/login_password"
+                        android:drawableLeft="@drawable/login_password"
                         android:fontFamily="sans-serif"
                         android:imeOptions="actionDone"
                         android:inputType="textPassword" />
@@ -100,7 +101,7 @@
                     android:layout_below="@id/password_text_input_layout"
                     app:layout_widthPercent="75%"
                     android:id="@+id/submit_container"
-                    android:layout_margin="10dp"
+                    android:layout_margin="16dp"
                     android:layout_centerHorizontal="true"
                     android:layout_height="wrap_content">
                     <Button
@@ -110,7 +111,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:elevation="2dp"
-                        android:background="@drawable/background"
+                        android:background="@drawable/login_button_bg"
                         android:textStyle="bold"
                         android:onClick="login"
                         android:textColor="@color/buttoncolor"
@@ -126,14 +127,23 @@
                         android:layout_alignEnd="@+id/submit"
                         android:layout_alignTop="@+id/submit"
                         android:layout_height="0dp"/>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="3dp"
+                        android:layout_below="@+id/submit"
+                        android:background="@drawable/toolbar_dropshadow"/>
                 </RelativeLayout>
 
                 <TextView
                     android:id="@+id/link"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/submit_container"
                     android:layout_centerHorizontal="true"
+                    android:layout_marginBottom="16dp"
+                    android:textSize="12sp"
+                    android:gravity="center_horizontal"
                     android:text="@string/contact_img"/>
 
             </android.support.percent.PercentRelativeLayout>
@@ -145,7 +155,8 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_centerHorizontal="true"
-                android:textSize="14sp" />
+                android:layout_margin="8dp"
+                android:textSize="13sp" />
 
         </RelativeLayout>
 

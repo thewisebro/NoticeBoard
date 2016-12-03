@@ -2,6 +2,7 @@ package connections;
 
 import android.os.AsyncTask;
 import android.util.Log;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -48,6 +49,8 @@ public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
         catch(Exception e){
             Log.e("log_tag", "Error converting result " + e.toString());
         }
+        if (isCancelled())
+            return null;
         return result;
     }
 }

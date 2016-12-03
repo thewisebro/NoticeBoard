@@ -5,6 +5,8 @@
     <color name="colorPrimaryDark">#212121</color>
     <color name="colorAccent">#10bdfa</color>
     <color name="colorAccentDark">#03A9F4</color>
+    <color name="colorAccentXtraLight">#B3E5FC</color>
+    <color name="colorAccentXtraDark">#0288D1</color>
     <color name="colorPrimaryXtraDark">#000000</color>
     <color name="colorPrimaryXtraLight">#fafafa</color>
     <color name="colorPrimaryLight">#eeeeee</color>

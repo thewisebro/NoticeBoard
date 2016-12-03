@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android" android:exitFadeDuration="500" android:enterFadeDuration="500">
+<selector xmlns:android="http://schemas.android.com/apk/res/android" android:exitFadeDuration="200" android:enterFadeDuration="200">
     <item android:state_enabled="false" android:drawable="@drawable/bg_notenabled"/>
     <item android:state_pressed="true" android:drawable="@drawable/bg_pressed"></item>
     <item android:drawable="@drawable/normal"></item>

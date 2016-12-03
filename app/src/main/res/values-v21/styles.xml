@@ -8,8 +8,8 @@
                 <item name="colorPrimaryDark">@color/colorPrimaryXtraDark</item>
                 <item name="android:statusBarColor">@color/colorPrimaryXtraDark</item>
                 <item name="colorControlNormal">#80000000</item>
-                <item name="colorControlActivated">@color/colorPrimaryXtraDark</item>
-                <item name="colorControlHighlight">@color/colorPrimaryXtraDark</item>
+                <item name="colorControlActivated">@color/colorAccentXtraDark</item>
+                <item name="colorControlHighlight">@color/colorAccentXtraDark</item>
                 <item name="colorAccent">@color/black</item>
         </style>
 </resources>

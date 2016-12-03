@@ -55,7 +55,7 @@ public class SearchActivity extends AppCompatActivity {
     HttpGet httpGet;
     String csrftoken;
     String CHANNELI_SESSID;
-    AsyncTask<HttpGet, Void, String> task;
+    AsyncTask<HttpGet, Void, String> task=null;
     BottomBar bottomBar;
     CoordinatorLayout coordinatorLayout;
     String msg=null;
@@ -237,29 +237,32 @@ public class SearchActivity extends AppCompatActivity {
                 @Override
                 public void run(){
 
-                    if (starredList.size()==0)
-                        getStarredNotices();
                     if (readList.size()==0)
                         getReadNotices();
+                    if (starredList.size()==0)
+                        getStarredNotices();
 
-                    ArrayList<NoticeObject> list=getSearchedNotices(url);
-                    if(list!=null) {
-                        int size=noticelist.size();
-                        noticelist.clear();
-                        noticelist.addAll(list);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
+                    final ArrayList<NoticeObject> list=getSearchedNotices(url);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if(list!=null) {
+                                int size=noticelist.size();
+                                noticelist.clear();
+                                noticelist.addAll(list);
                                 adapter.notifyDataSetChanged();
                                 setTitle("Searched : " + query.replaceAll("%20", " "));
                                 if (noticelist.size()>0)
                                     findViewById(R.id.no_notice).setVisibility(View.GONE);
                                 else
                                     findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
-                                pd.dismiss();
                             }
-                        });
-                    }
+                            else
+                                showNetworkError();
+                            pd.dismiss();
+                        }
+                    });
                 }
             }.start();
         }
@@ -274,16 +277,19 @@ public class SearchActivity extends AppCompatActivity {
             httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
             httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
             httpGet.setHeader("X-CSRFToken",csrftoken);
-
+            if (task!=null)
+                task.cancel(true);
             task=new ConnectTaskHttpGet().execute(httpGet);
             try {
                 String result=task.get();
+                task.cancel(true);
                 return parsing.parseSearchNotices(result,starredList,readList);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
+            task.cancel(true);
         }
         showNetworkError();
         return null;
@@ -296,6 +302,8 @@ public class SearchActivity extends AppCompatActivity {
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpGet.setHeader("X-CSRFToken", csrftoken);
+                if (task!=null)
+                    task.cancel(true);
                 task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();
                 task.cancel(true);
@@ -324,6 +332,8 @@ public class SearchActivity extends AppCompatActivity {
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
                 httpGet.setHeader("X-CSRFToken", csrftoken);
+                if (task!=null)
+                    task.cancel(true);
                 task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();
                 task.cancel(true);

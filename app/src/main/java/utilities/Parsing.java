@@ -95,6 +95,29 @@ public class Parsing {
         }
         return noticeslist;
     }
+    public ArrayList<NoticeObject> parseStarredNotices(String notices,ArrayList<Integer> readNotices){
+        ArrayList<NoticeObject> noticeslist = new ArrayList<>();
+        try{
+            JSONArray jsonArray = new JSONArray(notices);
+            NoticeObject notice=null;
+            for(int i=0;i< jsonArray.length();i++){
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                notice = new NoticeObject();
+                notice.setId(jsonObject.getInt("id"));
+                notice.setSubject(jsonObject.getString("subject"));
+                notice.setDatetime_modified(jsonObject.getString("datetime_modified"));
+                notice.setCategory(jsonObject.getString("category"));
+                notice.setMain_category(jsonObject.getString("main_category"));
+                notice.setStar(true);
+                notice.setRead(checkRead(notice.getId(),readNotices));
+                noticeslist.add(notice);
+            }
+        }
+        catch(JSONException e){
+            e.printStackTrace();
+        }
+        return noticeslist;
+    }
     public ArrayList<Integer> parseReadNotices(String ids){
         ArrayList<Integer> list = new ArrayList<>();
         try{
