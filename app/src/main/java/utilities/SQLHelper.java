@@ -44,7 +44,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static String ROW_MAIN_CATEGORY="MAIN_CATEGORY";
     private static String CREATE_TABLE_NOTICES=
             "CREATE TABLE IF NOT EXISTS "+TABLE_NOTICES+" ( "+
-                    ROW_ID+" INT,"+
+                    ROW_ID+" INT PRIMARY KEY,"+
                     ROW_SUBJECT+" VARCHAR(100),"+
                     ROW_CATEGORY+" VARCHAR(20),"+
                     ROW_MAIN_CATEGORY+" VARCHAR(20),"+
@@ -54,8 +54,8 @@ public class SQLHelper extends SQLiteOpenHelper{
                     ROW_UPLOADER+" VARCHAR(100),"+
                     ROW_DATETIME+" DATETIME,"+
                     ROW_READ_STATUS+" BOOLEAN,"+
-                    ROW_STAR_STATUS+" BOOLEAN, "+
-                    "PRIMARY KEY("+ROW_ID+") ON CONFLICT REPLACE "+
+                    ROW_STAR_STATUS+" BOOLEAN "+
+                    //"PRIMARY KEY("+ROW_ID+") ON CONFLICT REPLACE "+
                     ");";
     private static String CREATE_TABLE_PROFILE_PIC=
             "CREATE TABLE IF NOT EXISTS "+TABLE_PROFILE_PIC+" ( "+
@@ -290,7 +290,12 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_DATETIME, object.getDatetime_modified());
         values.put(ROW_READ_STATUS,object.getRead());
         values.put(ROW_STAR_STATUS,object.getStar());
-        db.insert(TABLE_NOTICES, null, values);
+        /*int rows_affected=db.update(TABLE_NOTICES,values,ROW_ID+"="+object.getId(),null);
+        if (rows_affected==0)
+            db.insertWithOnConflict(TABLE_NOTICES, null, values,SQLiteDatabase.CONFLICT_IGNORE);*/
+        int id= (int) db.insertWithOnConflict(TABLE_NOTICES,null,values,SQLiteDatabase.CONFLICT_IGNORE);
+        if (id==-1)
+            db.update(TABLE_NOTICES,values,ROW_ID+"="+object.getId(),null);
         //db.close();
     }
     public void addNoticesList(ArrayList<NoticeObject> list) throws ParseException {

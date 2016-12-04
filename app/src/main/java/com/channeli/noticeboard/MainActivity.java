@@ -628,7 +628,13 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         if (!isFinishing()) {
-            mDialog = ProgressDialog.show(this, null, "Loading...", true, false);
+            //mDialog = ProgressDialog.show(this, null, "Loading...", true, false);
+            mDialog=new ProgressDialog(this);
+            mDialog.setMessage("Loading...");
+            mDialog.setIndeterminate(true);
+            mDialog.setCancelable(false);
+            if (isOnline())
+                mDialog.show();
             thread.start();
         }
     }
@@ -636,6 +642,12 @@ public class MainActivity extends AppCompatActivity {
     private void setContent(){
         ArrayList<NoticeObject> list=null;
         if (isOnline()){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mDialog.show();
+                }
+            });
             String content = null;
             try {
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
@@ -687,6 +699,7 @@ public class MainActivity extends AppCompatActivity {
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
+                        //addToDB(list);
                         //addToDB(list);
                         starredList.clear();
                         starredList.addAll(list);
