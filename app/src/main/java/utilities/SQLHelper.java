@@ -42,6 +42,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static String ROW_STAR_STATUS="STAR_STATUS";
     private static String ROW_CATEGORY="CATEGORY";
     private static String ROW_MAIN_CATEGORY="MAIN_CATEGORY";
+    private static String ROW_NOTICE_TYPE="NOTICE_TYPE";
     private static String CREATE_TABLE_NOTICES=
             "CREATE TABLE IF NOT EXISTS "+TABLE_NOTICES+" ( "+
                     ROW_ID+" INT PRIMARY KEY,"+
@@ -54,7 +55,8 @@ public class SQLHelper extends SQLiteOpenHelper{
                     ROW_UPLOADER+" VARCHAR(100),"+
                     ROW_DATETIME+" DATETIME,"+
                     ROW_READ_STATUS+" BOOLEAN,"+
-                    ROW_STAR_STATUS+" BOOLEAN "+
+                    ROW_STAR_STATUS+" BOOLEAN, "+
+                    ROW_NOTICE_TYPE+" VARCHAR(5) "+
                     //"PRIMARY KEY("+ROW_ID+") ON CONFLICT REPLACE "+
                     ");";
     private static String CREATE_TABLE_PROFILE_PIC=
@@ -154,7 +156,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         //db.close();
         return list;
     }
-    public ArrayList<NoticeObject> getNotices(String mainCategory, String category){
+    public ArrayList<NoticeObject> getNotices(String mainCategory, String category,String type){
         SQLiteDatabase db=this.getReadableDatabase();
         ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
         String CONDITION=null;
@@ -163,7 +165,10 @@ public class SQLHelper extends SQLiteOpenHelper{
         if (mainCategory.matches("Starred"))
             CONDITION=ROW_STAR_STATUS+"= 1";
         else if (!mainCategory.matches("All"))
-            CONDITION=ROW_MAIN_CATEGORY+" = '"+mainCategory+"' AND "+ROW_CATEGORY+" = '"+category+"'";
+            CONDITION=ROW_MAIN_CATEGORY+" = '"+mainCategory+"' AND "+ROW_CATEGORY+" = '"+category
+                    +"' AND "+ROW_NOTICE_TYPE+" = '"+type+"'";
+        else
+            CONDITION=ROW_NOTICE_TYPE+" = '"+type+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
                 ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_STAR_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
@@ -184,7 +189,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         return list;
     }
 
-    public ArrayList<NoticeObject> getNotices(String category){
+    public ArrayList<NoticeObject> getNotices(String category,String type){
         SQLiteDatabase db=this.getReadableDatabase();
         ArrayList<NoticeObject> list=new ArrayList<NoticeObject>();
         String CONDITION=null;
@@ -192,7 +197,9 @@ public class SQLHelper extends SQLiteOpenHelper{
         if (category.matches("Starred"))
             CONDITION=ROW_STAR_STATUS+"= 1";
         else if (!category.matches("All"))
-            CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"'";
+            CONDITION=ROW_MAIN_CATEGORY+" = '"+category+"' AND "+ROW_NOTICE_TYPE+" = '"+type+"'";
+        else
+            CONDITION=ROW_NOTICE_TYPE+" = '"+type+"'";
 
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY
                 ,ROW_MAIN_CATEGORY,ROW_READ_STATUS,ROW_STAR_STATUS}, CONDITION,null,null,null,ROW_DATETIME + " DESC");
@@ -278,7 +285,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.execSQL(query);
         //db.close();
     }
-    private void addNotice(NoticeObject object) throws ParseException {
+    private void addNotice(NoticeObject object,String type) throws ParseException {
         //if (checkNotice(object.getId()))
         //    return;
         SQLiteDatabase db=this.getWritableDatabase();
@@ -290,17 +297,21 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_DATETIME, object.getDatetime_modified());
         values.put(ROW_READ_STATUS,object.getRead());
         values.put(ROW_STAR_STATUS,object.getStar());
+        values.put(ROW_NOTICE_TYPE,type);
         /*int rows_affected=db.update(TABLE_NOTICES,values,ROW_ID+"="+object.getId(),null);
         if (rows_affected==0)
             db.insertWithOnConflict(TABLE_NOTICES, null, values,SQLiteDatabase.CONFLICT_IGNORE);*/
         int id= (int) db.insertWithOnConflict(TABLE_NOTICES,null,values,SQLiteDatabase.CONFLICT_IGNORE);
-        if (id==-1)
-            db.update(TABLE_NOTICES,values,ROW_ID+"="+object.getId(),null);
+        if (id==-1) {
+            if (type=="")
+                values.remove(ROW_NOTICE_TYPE);
+            db.update(TABLE_NOTICES, values, ROW_ID + "=" + object.getId(), null);
+        }
         //db.close();
     }
-    public void addNoticesList(ArrayList<NoticeObject> list) throws ParseException {
+    public void addNoticesList(ArrayList<NoticeObject> list,String type) throws ParseException {
         for(NoticeObject object: list)
-            addNotice(object);
+            addNotice(object,type);
         limit();
     }
     private boolean checkNotice(int id){

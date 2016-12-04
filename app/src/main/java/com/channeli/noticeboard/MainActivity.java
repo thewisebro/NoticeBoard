@@ -113,7 +113,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void addToDB(ArrayList<NoticeObject> list){
         try {
-            sqlHelper.addNoticesList(list);
+            if (MainCategory.equals("Starred"))
+                sqlHelper.addNoticesList(list,"");
+            else
+                sqlHelper.addNoticesList(list,NoticeType);
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -675,9 +678,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if("All".equals(Category))
-            list=sqlHelper.getNotices(MainCategory);
+            list=sqlHelper.getNotices(MainCategory,NoticeType);
         else
-            list=sqlHelper.getNotices(MainCategory,Category);
+            list=sqlHelper.getNotices(MainCategory,Category,NoticeType);
         if(list!=null) {
             noticelist.clear();
             noticelist.addAll(list);
@@ -699,8 +702,6 @@ public class MainActivity extends AppCompatActivity {
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
-                        //addToDB(list);
-                        //addToDB(list);
                         starredList.clear();
                         starredList.addAll(list);
                         return;
@@ -711,7 +712,7 @@ public class MainActivity extends AppCompatActivity {
                 //showNetworkError();
             }
         }
-        ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All");
+        ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All","");
         if (list!=null) {
             starredList.clear();
             starredList.addAll(list);
