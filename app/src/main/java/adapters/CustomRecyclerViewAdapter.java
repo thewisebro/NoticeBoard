@@ -189,7 +189,11 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final ProgressDialog progressDialog= ProgressDialog.show(context,null,"Opening...",true,false);
+                //final ProgressDialog progressDialog= ProgressDialog.show(context,null,"Opening...",true,false);
+                final ProgressDialog progressDialog= new ProgressDialog(context);
+                progressDialog.setMessage("Opening...");
+                progressDialog.setIndeterminate(true);
+                progressDialog.setCancelable(false);
                 new Thread(){
                     @Override
                     public void run(){
@@ -197,10 +201,16 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                         if (db.checkNoticeContent(noticeObject.getId(),noticeObject.getDatetime_modified())) {
                             NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId(),noticeObject.getDatetime_modified());
                             openNotice(noticeInfo);
-                            progressDialog.dismiss();
+                            //progressDialog.dismiss();
                             return;
                         }
                         if (isOnline()) {
+                            ((Activity) context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.show();
+                                }
+                            });
                             try {               //For some server error, getting different result
                                 String result = getNoticeInfoResult(noticeObject.getId());
                                 if (!result.equals("")) {

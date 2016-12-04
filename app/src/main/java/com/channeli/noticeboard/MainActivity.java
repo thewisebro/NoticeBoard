@@ -219,21 +219,18 @@ public class MainActivity extends AppCompatActivity {
                                     return;
                                 }
                                 if (result != null && result!="") {
-                                    final String parseString=result;
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            int curSize = customAdapter.getItemCount();
-                                            ArrayList<NoticeObject> list = parsing.parseNotices(parseString,starredList,readList);
-                                            if (list!=null) {
-                                                addToDB(list);
-                                                noticelist.addAll(list);
+                                    ArrayList<NoticeObject> list = parsing.parseNotices(result,starredList,readList);
+                                    if (list!= null) {
+                                        addToDB(list);
+                                        noticelist.addAll(list);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
                                                 recyclerView.getRecycledViewPool().clear();
                                                 customAdapter.notifyDataSetChanged();
-                                                //customAdapter.notifyItemRangeInserted(curSize, list.size());
                                             }
-                                        }
-                                    });
+                                        });
+                                    }
                                     return;
                                 }
                                 showNetworkError();

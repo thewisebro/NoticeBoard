@@ -25,6 +25,7 @@ public class SQLHelper extends SQLiteOpenHelper{
     private static String NAME="NOTICE_BOARD";
     private static int VERSION=1;
     private static int MAX_NOTICES=30;
+    private static int MAX_ONLY_STARRED_NOTICES=15;
     private static String TABLE_NOTICES="NOTICES";
     private static String TABLE_PROFILE_PIC="PROFILE_PIC";
     private static String TABLE_NOTIFICATIONS="NOTIFICATIONS";
@@ -268,6 +269,11 @@ public class SQLHelper extends SQLiteOpenHelper{
                     " SELECT "+ROW_ID+" FROM "+TABLE_NOTICES+
                     " ORDER BY "+ROW_DATETIME+" DESC "+
                     " LIMIT "+MAX_NOTICES+
+                " ) AND "+ROW_ID+" NOT IN ( "+
+                " SELECT "+ROW_ID+" FROM "+TABLE_NOTICES+
+                " WHERE "+ROW_STAR_STATUS+" = 1 "+
+                " ORDER BY "+ROW_DATETIME+" DESC "+
+                " LIMIT "+MAX_ONLY_STARRED_NOTICES+
                 " );";
         db.execSQL(query);
         //db.close();
