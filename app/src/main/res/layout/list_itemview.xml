@@ -37,7 +37,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginRight="5dp"
         android:layout_marginLeft="5dp">
         <TextView
             android:id="@+id/subject"
@@ -46,8 +45,8 @@
             android:layout_height="wrap_content"
             android:textSize="15sp"
             android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
             android:layout_marginTop="3dp"
+            android:layout_marginBottom="10dp"
             android:textColor="#161616"/>
         <FrameLayout
             android:layout_width="wrap_content"
@@ -64,15 +63,11 @@
                 android:id="@+id/star_button"
                 android:background="@drawable/star_unstar"
                 android:layout_marginTop="5dp"
-                android:layout_marginBottom="5dp"
+                android:layout_marginBottom="10dp"
                 android:layout_marginLeft="10dp"
-                android:layout_marginRight="5dp" />
+                android:layout_marginRight="10dp"
+                android:checked="false" />
         </FrameLayout>
     </LinearLayout>
-
-
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="10dp"/>
 
 </LinearLayout>

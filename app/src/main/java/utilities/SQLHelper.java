@@ -321,11 +321,8 @@ public class SQLHelper extends SQLiteOpenHelper{
         return (!(c==null || c==""));
     }
     public void addNoticeInfo(NoticeInfo info){
-        if(checkNoticeContent(info.getId()))
-            return;
         SQLiteDatabase db=this.getWritableDatabase();
         ContentValues values=new ContentValues();
-        values.put(ROW_REFERENCE,info.getReference());
         values.put(ROW_CONTENT,info.getContent());
         db.update(TABLE_NOTICES, values, ROW_ID + "=" + info.getId(), null);
         //db.close();

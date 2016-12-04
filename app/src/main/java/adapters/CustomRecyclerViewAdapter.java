@@ -201,29 +201,33 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                             return;
                         }
                         if (isOnline()) {
-                            String result = getNoticeInfoResult(noticeObject.getId());
-                            if (!result.equals("")) {
-                                if (!noticeObject.getRead()) {
-                                    ((Activity)context).runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            holder.view.setBackgroundDrawable(
-                                                    context.getResources().getDrawable(R.drawable.read_notice_bg));
-                                            holder.subject.setTypeface(null, Typeface.NORMAL);
-                                            holder.datetime.setTypeface(null, Typeface.NORMAL);
-                                            //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
-                                        }
-                                    });
-                                    noticeObject.setRead(true);
-                                    readNotices.add(noticeObject.getId());
-                                    setRead(noticeObject.getId());
+                            try {               //For some server error, getting different result
+                                String result = getNoticeInfoResult(noticeObject.getId());
+                                if (!result.equals("")) {
+                                    if (!noticeObject.getRead()) {
+                                        ((Activity)context).runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                holder.view.setBackgroundDrawable(
+                                                        context.getResources().getDrawable(R.drawable.read_notice_bg));
+                                                holder.subject.setTypeface(null, Typeface.NORMAL);
+                                                holder.datetime.setTypeface(null, Typeface.NORMAL);
+                                                //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
+                                            }
+                                        });
+                                        noticeObject.setRead(true);
+                                        readNotices.add(noticeObject.getId());
+                                        setRead(noticeObject.getId());
+                                    }
+                                    NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
+                                    if (noticeInfo!=null) {
+                                        db.addNoticeInfo(noticeInfo);
+                                        openNotice(noticeInfo);
+                                        progressDialog.dismiss();
+                                        return;
+                                    }
                                 }
-                                NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
-                                db.addNoticeInfo(noticeInfo);
-                                openNotice(noticeInfo);
-                                progressDialog.dismiss();
-                                return;
-                            }
+                            }catch (Exception e){}
                         }
                         if (db.checkNoticeContent(noticeObject.getId())) {
                             NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());

@@ -170,11 +170,12 @@ public class Parsing {
             noticeInfo.setSubject(jsonObject.getString("subject"));
             noticeInfo.setDatetime_modified(jsonObject.getString("datetime_modified"));
             noticeInfo.setCategory(jsonObject.getString("category"));
+            return noticeInfo;
             }
         catch(JSONException e){
             e.printStackTrace();
+            return null;
         }
-        return noticeInfo;
     }
 
 }

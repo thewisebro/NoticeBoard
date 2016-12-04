@@ -113,7 +113,9 @@ public class Notice extends AppCompatActivity {
         webView.getSettings().setUseWideViewPort(true);
         webView.getSettings().setLoadWithOverviewMode(true);
         webView.getSettings().setSupportZoom(true);
-        webView.loadData(result, "text/html", "utf-8");
+        try {
+            webView.loadData(result, "text/html", "utf-8");
+        }catch(Exception e){}
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

@@ -49,8 +49,6 @@ public class ConnectTaskHttpGet extends AsyncTask<HttpGet, Void, String> {
         catch(Exception e){
             Log.e("log_tag", "Error converting result " + e.toString());
         }
-        if (isCancelled())
-            return null;
         return result;
     }
 }
