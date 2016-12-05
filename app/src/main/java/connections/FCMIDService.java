@@ -7,14 +7,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.message.BasicNameValuePair;
-
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class FCMIDService extends FirebaseInstanceIdService {
@@ -55,7 +48,10 @@ public class FCMIDService extends FirebaseInstanceIdService {
             for (String s: subscriptions){
                 FirebaseMessaging.getInstance().subscribeToTopic(s.replace(" ","%20"));
             }
+            editor.putBoolean("FCM_isRegistered", true);
+            /*
             //Code below is not necessary
+            //Code to register token with app server
             try {
                 HttpPost httpPost=new HttpPost(FCM_APP_SERVER_URL);
                 httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -72,7 +68,7 @@ public class FCMIDService extends FirebaseInstanceIdService {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }*/
             editor.apply();
         }
     }
