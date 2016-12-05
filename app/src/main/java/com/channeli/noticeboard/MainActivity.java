@@ -504,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case "Feedback": //Feedback
                 Intent intent2 = new Intent(Intent.ACTION_VIEW);
-                intent2.setData(Uri.parse("market://details?id=in.channeli.noticeboard"));
+                intent2.setData(Uri.parse("market://details?id=com.channeli.noticeboard"));
                 startActivity(intent2);
                 break;
             case "Logout": //Logout
