@@ -118,6 +118,11 @@ public class Notice extends AppCompatActivity {
         }catch(Exception e){}
     }
     @Override
+    protected void onNewIntent(Intent intent){
+        super.onNewIntent(intent);
+        Notice.this.recreate();
+    }
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:

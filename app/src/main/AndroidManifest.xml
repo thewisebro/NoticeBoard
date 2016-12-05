@@ -41,7 +41,7 @@
         <activity
             android:name=".Notice"
             android:label="NoticeBoard"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateHidden" >
         </activity>
@@ -53,7 +53,7 @@
 
         <activity
             android:name=".SearchActivity"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateHidden" >
             <intent-filter>

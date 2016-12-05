@@ -265,6 +265,16 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         closeDialog();
     }
+    /*@Override
+    public void onResume(){
+        sqlHelper.clearNotifications();
+        super.onResume();
+    }*/
+    @Override
+    protected void onNewIntent(Intent intent){
+        super.onNewIntent(intent);
+        MainActivity.this.recreate();
+    }
     public void closeDialog(){
         try{
             if ((mDialog != null) && mDialog.isShowing()) {
