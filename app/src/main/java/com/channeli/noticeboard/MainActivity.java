@@ -1,6 +1,7 @@
 package com.channeli.noticeboard;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
@@ -12,6 +13,8 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -44,7 +47,6 @@ import com.roughike.bottombar.OnTabSelectListener;
 
 import org.apache.http.client.methods.HttpGet;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -595,6 +597,13 @@ public class MainActivity extends AppCompatActivity {
         Thread thread=new Thread(){
             @Override
             public void run(){
+                if (isOnline())
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDialog.show();
+                        }
+                    });
 
                 if (swiperefresh || readList.size()==0)
                     getReadNotices();
@@ -636,8 +645,8 @@ public class MainActivity extends AppCompatActivity {
             mDialog.setMessage("Loading...");
             mDialog.setIndeterminate(true);
             mDialog.setCancelable(false);
-            if (isOnline())
-                mDialog.show();
+            //if (isOnline())
+            //    mDialog.show();
             thread.start();
         }
     }
@@ -832,17 +841,12 @@ public class MainActivity extends AppCompatActivity {
     }
     public boolean isOnline() {
 
-        Runtime runtime = Runtime.getRuntime();
-        try {
-
-            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
-            int     exitValue = ipProcess.waitFor();
-            return (exitValue == 0);
-
-        } catch (IOException e)          { e.printStackTrace(); }
-        catch (InterruptedException e) { e.printStackTrace(); }
-
-        return false;
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected())
+            return true;
+        else
+            return false;
     }
 
     @Override

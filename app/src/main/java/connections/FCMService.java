@@ -49,7 +49,7 @@ public class FCMService extends FirebaseMessagingService {
         }
 
         noticeNotification noticeNotification=new noticeNotification(main_category,category,subject);
-        notifications=new SQLHelper(this).getNotifications();
+        notifications=sqlHelper.getNotifications();
         sqlHelper.addNotification(noticeNotification);
         notifications.add(noticeNotification);      //this way to ensure one notification in case of exceptions/sql_errors
 
@@ -60,6 +60,7 @@ public class FCMService extends FirebaseMessagingService {
     private Notification generateNotification(){
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         //intent.putExtra("category",category);
         //intent.putExtra("main_category",main_category);
