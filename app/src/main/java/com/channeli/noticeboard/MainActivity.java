@@ -106,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Integer> readList;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
+    private long expiry_date;
     private ExpandableListView listView;
     private EndlessRecyclerViewScrollListener scrollListener;
 
@@ -136,9 +137,10 @@ public class MainActivity extends AppCompatActivity {
         sqlHelper.clearNotifications(); //remove all pending notifications
         settings = getSharedPreferences(PREFS_NAME, 0);
         editor=settings.edit();
-        csrftoken = settings.getString("csrftoken","");
+        csrftoken = settings.getString("csrftoken", "");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
-        if ("".equals(CHANNELI_SESSID)){
+        expiry_date=settings.getLong("expiry_date",0);
+        if ("".equals(CHANNELI_SESSID) || System.currentTimeMillis()>expiry_date){
             cleanLogout();
             closeDialog();
             startActivity(new Intent(this,SplashScreen.class));
@@ -273,7 +275,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent){
         super.onNewIntent(intent);
-        MainActivity.this.recreate();
+        NoticeType = "new";
+        MainCategory = "All";
+        Category="All";
+        //MainActivity.this.recreate();
+        sqlHelper.clearNotifications();
+        //NoticeType = "new";
+        //MainCategory = "All";
+        //Category="All";
+        //setTitle("All");
+        //bottomBar.setVisibility(View.VISIBLE);  //case of starred notices
+        setDrawerMenu();
+        setBottomBar();
+        //bottomBar.getTabWithId(R.id.new_items).performClick();
+        //bottomBar.selectTabWithId(R.id.new_items);
     }
     public void closeDialog(){
         try{
@@ -607,13 +622,6 @@ public class MainActivity extends AppCompatActivity {
         Thread thread=new Thread(){
             @Override
             public void run(){
-                if (isOnline())
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mDialog.show();
-                        }
-                    });
 
                 if (swiperefresh || readList.size()==0)
                     getReadNotices();
@@ -655,8 +663,8 @@ public class MainActivity extends AppCompatActivity {
             mDialog.setMessage("Loading...");
             mDialog.setIndeterminate(true);
             mDialog.setCancelable(false);
-            //if (isOnline())
-            //    mDialog.show();
+            if (isOnline())
+                mDialog.show();
             thread.start();
         }
     }
@@ -777,32 +785,10 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     swipeRefreshLayout.setRefreshing(false);
                     swiperefresh=true;
-                    //int groupPos=getGroupPosition();
-                    //int childPos=getChildPosition(groupPos);
-                    //drawerAdapter.groupPos=groupPos;
-                    //drawerAdapter.childPos=childPos;
-                    //drawerAdapter.notifyDataSetChanged();
                     changeList();
                 }
             });
         }
-    }
-    private int getGroupPosition(){
-        for (int pos=0;pos<drawerList.size();pos++)
-            if (MainCategory.equals(drawerList.get(pos).getName()))
-                return pos;
-        return 0;
-    }
-    private int getChildPosition(int gp){
-        if (Category.contains("All"))
-            return -1;
-        int size=drawerList.get(gp).getCategories().size();
-        ArrayList<String> list=drawerList.get(gp).getCategories();
-        for (int pos=0;pos<size;pos++){
-            if (Category.equals(list.get(pos)))
-                return pos;
-        }
-        return -1;
     }
     public class WrapContentLinearLayoutManager extends LinearLayoutManager {
         public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
@@ -843,7 +829,7 @@ public class MainActivity extends AppCompatActivity {
     }
     public void setTitle(String title){
         try {
-            getSupportActionBar().setTitle(title.replaceAll("%20"," "));
+            getSupportActionBar().setTitle(title.replaceAll("%20", " "));
         }
         catch(Exception e){
             e.printStackTrace();

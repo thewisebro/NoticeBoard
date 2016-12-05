@@ -39,6 +39,8 @@ import org.apache.http.protocol.HttpContext;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -146,14 +148,13 @@ public class Login extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 if (Password.getText().toString().trim().isEmpty())
-                    flag2=false;
+                    flag2 = false;
                 else
-                    flag2=true;
-                if (flag1 && flag2){
+                    flag2 = true;
+                if (flag1 && flag2) {
                     button.setEnabled(true);
                     overButton.setVisibility(View.GONE);
-                }
-                else {
+                } else {
                     button.setEnabled(false);
                     overButton.setVisibility(View.VISIBLE);
                 }
@@ -181,12 +182,10 @@ public class Login extends AppCompatActivity {
     public void getConstants(){
         String constants=null;
         httpGet = new HttpGet(MainActivity.UrlOfNotice+"get_constants/");
-        httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+        httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
         httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
         httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
         try {
-            if (mTask!=null)
-                mTask.cancel(true);
             mTask = new ConnectTaskHttpGet().execute(httpGet);
             constants = mTask.get(4000, TimeUnit.MILLISECONDS);
             mTask.cancel(true);
@@ -246,8 +245,7 @@ public class Login extends AppCompatActivity {
                 httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + cookies.get("CHANNELI_SESSID"));
                 httpGet.setHeader("Accept", "application/xml");
                 httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                if (mTask!=null)
-                    mTask.cancel(true);
+
                 mTask=new ConnectTaskHttpGet().execute(httpGet);
                 JSONObject result = new JSONObject(mTask.get());
                 mTask.cancel(true);
@@ -258,6 +256,7 @@ public class Login extends AppCompatActivity {
                     editor.putString("enrollment_no", result.getString("enrollment_no"));
                     editor.putString("csrftoken",cookies.get("csrftoken"));
                     editor.putString("CHANNELI_SESSID", cookies.get("CHANNELI_SESSID"));
+                    editor.putLong("expiry_date",getExpiryDate());
                     editor.apply();
                     getConstants();
                     Intent intent = new Intent(this,MainActivity.class);
@@ -322,6 +321,12 @@ public class Login extends AppCompatActivity {
                 });
             }
         }.start();
+    }
+    public long getExpiryDate(){
+        Calendar c=Calendar.getInstance();
+        c.add(Calendar.DATE,25);
+        Date date=c.getTime();
+        return date.getTime();
     }
     public void hideKeyboard(){
         // Check if no view has focus:
