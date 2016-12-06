@@ -100,12 +100,12 @@ public class SearchActivity extends AppCompatActivity {
         setBottomBar();
     }
     @Override
-    public void onPause() {
-        super.onPause();
+    protected void onDestroy() {
         if ((progressDialog != null) && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
         progressDialog=null;
+        super.onDestroy();
     }
     private void setBottomBar(){
         bottomBar.setOnTabSelectListener(new OnTabSelectListener() {
@@ -343,7 +343,7 @@ public class SearchActivity extends AppCompatActivity {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                showNetworkError();
+                //showNetworkError();
             }
         }
         ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All");
@@ -371,7 +371,7 @@ public class SearchActivity extends AppCompatActivity {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                showNetworkError();
+                //showNetworkError();
             }
         }
         ArrayList<Integer> list=sqlHelper.getReadNotices();

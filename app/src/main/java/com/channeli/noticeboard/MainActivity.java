@@ -263,15 +263,10 @@ public class MainActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
     }
     @Override
-    public void onPause() {
-        super.onPause();
+    protected void onDestroy() {
         closeDialog();
+        super.onDestroy();
     }
-    /*@Override
-    public void onResume(){
-        sqlHelper.clearNotifications();
-        super.onResume();
-    }*/
     @Override
     protected void onNewIntent(Intent intent){
         super.onNewIntent(intent);
@@ -280,15 +275,9 @@ public class MainActivity extends AppCompatActivity {
         Category="All";
         //MainActivity.this.recreate();
         sqlHelper.clearNotifications();
-        //NoticeType = "new";
-        //MainCategory = "All";
-        //Category="All";
-        //setTitle("All");
-        //bottomBar.setVisibility(View.VISIBLE);  //case of starred notices
+        closeDialog();
         setDrawerMenu();
         setBottomBar();
-        //bottomBar.getTabWithId(R.id.new_items).performClick();
-        //bottomBar.selectTabWithId(R.id.new_items);
     }
     public void closeDialog(){
         try{
@@ -672,12 +661,6 @@ public class MainActivity extends AppCompatActivity {
     private void setContent(){
         ArrayList<NoticeObject> list=null;
         if (isOnline()){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mDialog.show();
-                }
-            });
             String content = null;
             try {
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
