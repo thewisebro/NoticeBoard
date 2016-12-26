@@ -9,13 +9,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.WindowManager;
 
-/*
- Created by manohar on 12/8/15.
- */
+import org.apache.http.client.methods.HttpGet;
+
+import java.util.concurrent.TimeUnit;
+
+import connections.SessIDGet;
 
 public class SplashScreen  extends Activity{
-    private static int SPLASH_TIME_OUT = 2000;
-    public String msg="YES", CHANNELI_SESSID;
+    private static int SPLASH_TIME_OUT = 1000;
+    public String CHANNELI_SESSID, csrftoken;
 
     SharedPreferences settings;
 
@@ -28,27 +30,68 @@ public class SplashScreen  extends Activity{
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //}
-        settings = getSharedPreferences(MainActivity.PREFS_NAME,0);
-        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID","");
+        settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
+        csrftoken=settings.getString("csrftoken","");
 
-        if(!CHANNELI_SESSID.equals("")){
+        long expiry_date=settings.getLong("expiry_date",0);
+        if(!CHANNELI_SESSID.equals("") && System.currentTimeMillis()<expiry_date){
+            if (isOnline()){
+                new Thread(){
+                    @Override
+                    public void run(){
+                        HttpGet httpGet = new HttpGet(MainActivity.UrlOfLogin);
+                        //httpGet.setHeader("Cookie","CHANNELI_SESSID="+csrftoken);
+                        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+                        httpGet.setHeader("Accept", "application/xml");
+                        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
+                        try {
+                            String sessID=new SessIDGet().execute(httpGet).get(5000, TimeUnit.MILLISECONDS);
+                            //If logged in no 'set-cookie' is received, thus sessID should be empty if logged in
+                            if ("".equals(sessID)){
+                                goToMain();
+                            }
+                            else
+                                goToLogin();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            goToMain();
+                        }
+                    }
+                }.start();
+            }
+            else
+                goToMain();
+        }
+        else
+            goToLogin();
+    }
+    public void goToLogin(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Intent intent = new Intent(SplashScreen.this, Login.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+    }
+    public void goToMain(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         Intent intent = new Intent(SplashScreen.this, MainActivity.class);
-                        //intent.putExtra("category","All");
-                        //intent.putExtra("main_category","All");
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
                         finish();
                     }
                 }, SPLASH_TIME_OUT);
-        }
-        else {
-            Intent intent = new Intent(this, Login.class);
-            startActivity(intent);
-            finish();
-        }
+            }
+        });
     }
     public boolean isOnline() {
 

@@ -665,8 +665,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
                 content = mTask.get();
-                //mTask.cancel(true);
-                //list=parsing.parseNotices(content,starredList,readList);
                 if (MainCategory.equals("Starred")) {
                     list = parsing.parseStarredNotices(content,readList);
                     if (list!=null) {

@@ -10,8 +10,8 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
-import com.channeli.noticeboard.MainActivity;
 import com.channeli.noticeboard.R;
+import com.channeli.noticeboard.SplashScreen;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -58,7 +58,7 @@ public class FCMService extends FirebaseMessagingService {
     }
 
     private Notification generateNotification(){
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, SplashScreen.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
 

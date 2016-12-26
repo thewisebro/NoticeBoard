@@ -324,7 +324,7 @@ public class Login extends AppCompatActivity {
     }
     public long getExpiryDate(){
         Calendar c=Calendar.getInstance();
-        c.add(Calendar.DATE,25);
+        c.add(Calendar.DATE,20);
         Date date=c.getTime();
         return date.getTime();
     }
