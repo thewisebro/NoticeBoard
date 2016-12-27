@@ -11,9 +11,12 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import org.apache.http.client.methods.HttpGet;
 
 import connections.SessIDGet;
+import utilities.SQLHelper;
 
 public class SplashScreen  extends Activity{
     private static int SPLASH_TIME_OUT = 1000;
@@ -21,6 +24,7 @@ public class SplashScreen  extends Activity{
     long expiry_date;
 
     SharedPreferences settings;
+    SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +36,7 @@ public class SplashScreen  extends Activity{
                     WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //}
         settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        editor=settings.edit();
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
         csrftoken=settings.getString("csrftoken", "");
         expiry_date=settings.getLong("expiry_date", 0);
@@ -54,11 +59,10 @@ public class SplashScreen  extends Activity{
                                         httpGet.addHeader("Accept", "application/xml");
                                         httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
                                         try {
-                                            String sessID=new SessIDGet().execute(httpGet).get();
-                                            //If logged in no 'set-cookie' is received, thus sessID should be empty if logged in
-                                            if ("".equals(sessID)){
+                                            Boolean valid=new SessIDGet().execute(httpGet).get();
+                                            //True if logged in else False
+                                            if (valid)
                                                 goToMain();
-                                            }
                                             else
                                                 goToLogin();
                                         } catch (Exception e) {
@@ -79,6 +83,14 @@ public class SplashScreen  extends Activity{
         });
     }
     public void goToLogin(){
+        editor.clear();
+        editor.apply();
+        new SQLHelper(this).clear();
+        if (FirebaseMessaging.getInstance()!=null) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
+        }
         Intent intent = new Intent(SplashScreen.this, Login.class);
         startActivity(intent);
         finish();

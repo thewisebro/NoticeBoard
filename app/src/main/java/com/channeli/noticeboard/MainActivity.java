@@ -50,7 +50,9 @@ import org.apache.http.client.methods.HttpGet;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -106,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Integer> readList;
     private SQLHelper sqlHelper;
     private String csrftoken, CHANNELI_SESSID;
-    private long expiry_date;
     private ExpandableListView listView;
     private EndlessRecyclerViewScrollListener scrollListener;
 
@@ -139,8 +140,7 @@ public class MainActivity extends AppCompatActivity {
         editor=settings.edit();
         csrftoken = settings.getString("csrftoken", "");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
-        expiry_date=settings.getLong("expiry_date",0);
-        if ("".equals(CHANNELI_SESSID) || System.currentTimeMillis()>expiry_date){
+        if ("".equals(CHANNELI_SESSID) || System.currentTimeMillis()>settings.getLong("expiry_date",0)){
             cleanLogout();
             closeDialog();
             startActivity(new Intent(this,SplashScreen.class));
@@ -149,6 +149,8 @@ public class MainActivity extends AppCompatActivity {
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
         }
+        editor.putLong("expiry_date",getExpiryDate());
+        editor.apply();
         parsing = new Parsing();
         user = new User(settings.getString("name",""), settings.getString("info",""),
                 settings.getString("enrollment_no",""));
@@ -266,6 +268,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         closeDialog();
         super.onDestroy();
+    }
+    public long getExpiryDate(){
+        Calendar c=Calendar.getInstance();
+        c.add(Calendar.DATE, 15);
+        Date date=c.getTime();
+        return date.getTime();
     }
     @Override
     protected void onNewIntent(Intent intent){
@@ -385,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (isOnline()){
             httpGet = new HttpGet(UrlOfNotice+"get_constants/");
-            httpGet.addHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+            httpGet.addHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
             httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
             httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
             try {
@@ -619,9 +627,9 @@ public class MainActivity extends AppCompatActivity {
 
                 swiperefresh=false;
 
-                httpGet.addHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.addHeader("Cookie", "csrftoken=" + csrftoken);
                 httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpGet.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                 httpGet.addHeader("X-CSRFToken", csrftoken);
                 setContent();
                 runOnUiThread(new Runnable() {
@@ -699,9 +707,9 @@ public class MainActivity extends AppCompatActivity {
         if (isOnline()){
             HttpGet httpget=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
             try {
-                httpget.addHeader("Cookie","csrftoken="+csrftoken);
+                httpget.addHeader("Cookie", "csrftoken=" + csrftoken);
                 httpget.addHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpget.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpget.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                 httpget.addHeader("X-CSRFToken", csrftoken);
 
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpget);
@@ -730,9 +738,9 @@ public class MainActivity extends AppCompatActivity {
         if (isOnline()){
             HttpGet httpget=new HttpGet(MainActivity.UrlOfNotice+"read_notice_list/");
             try {
-                httpget.addHeader("Cookie","csrftoken="+csrftoken);
+                httpget.addHeader("Cookie", "csrftoken=" + csrftoken);
                 httpget.addHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpget.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpget.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
                 httpget.addHeader("X-CSRFToken", csrftoken);
 
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpget);
