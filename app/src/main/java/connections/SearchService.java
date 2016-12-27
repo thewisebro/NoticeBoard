@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
 
+import com.channeli.noticeboard.MainActivity;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -16,8 +18,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
-import com.channeli.noticeboard.MainActivity;
 
 
 public class SearchService extends IntentService {
@@ -38,9 +38,9 @@ public class SearchService extends IntentService {
         HttpGet httpGet = new HttpGet(intent.getStringExtra("url"));
         SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME,0);
 
-        httpGet.setHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
-        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.setHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
+        httpGet.addHeader("Cookie","csrftoken="+settings.getString("csrftoken",""));
+        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.addHeader("Cookie","CHANNELI_SESSID="+settings.getString("CHANNELI_SESSID",""));
         InputStream isr = null;
         String result="";
         try{

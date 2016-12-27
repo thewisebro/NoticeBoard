@@ -182,9 +182,9 @@ public class Login extends AppCompatActivity {
     public void getConstants(){
         String constants=null;
         httpGet = new HttpGet(MainActivity.UrlOfNotice+"get_constants/");
-        httpGet.setHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
-        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
+        httpGet.addHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
+        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
         try {
             mTask = new ConnectTaskHttpGet().execute(httpGet);
             constants = mTask.get(4000, TimeUnit.MILLISECONDS);
@@ -224,9 +224,9 @@ public class Login extends AppCompatActivity {
             params.add(new BasicNameValuePair("remember_me","on"));
 
             httpPost=new HttpPost(MainActivity.UrlOfLogin);
-            httpPost.setHeader("Cookie","csrftoken="+csrfToken);
-            httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpPost.setHeader("Accept", "application/xml");
+            httpPost.addHeader("Cookie","csrftoken="+csrfToken);
+            httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            httpPost.addHeader("Accept", "application/xml");
             httpPost.setEntity(new UrlEncodedFormEntity(params));
 
             HashMap<String, String> cookies =new CookiesHttpPost().execute(httpPost).get();
@@ -241,10 +241,10 @@ public class Login extends AppCompatActivity {
 
             if(cookies.containsKey("CHANNELI_SESSID") ){
                 httpGet = new HttpGet(MainActivity.UrlOfPeopleSearch+"return_details/?username="+username);
-                httpGet.setHeader("Cookie","csrftoken="+cookies.get("csrftoken"));
-                httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + cookies.get("CHANNELI_SESSID"));
-                httpGet.setHeader("Accept", "application/xml");
-                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.addHeader("Cookie","csrftoken="+cookies.get("csrftoken"));
+                httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + cookies.get("CHANNELI_SESSID"));
+                httpGet.addHeader("Accept", "application/xml");
+                httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
                 mTask=new ConnectTaskHttpGet().execute(httpGet);
                 JSONObject result = new JSONObject(mTask.get());
@@ -324,7 +324,7 @@ public class Login extends AppCompatActivity {
     }
     public long getExpiryDate(){
         Calendar c=Calendar.getInstance();
-        c.add(Calendar.DATE,20);
+        c.add(Calendar.DATE,15);
         Date date=c.getTime();
         return date.getTime();
     }

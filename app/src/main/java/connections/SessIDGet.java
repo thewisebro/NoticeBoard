@@ -2,6 +2,7 @@ package connections;
 
 import android.os.AsyncTask;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.cookie.Cookie;
@@ -25,6 +26,8 @@ public class SessIDGet extends AsyncTask<HttpGet, Void, String> {
         HttpConnectionParams.setSoTimeout(httpParams,5000);
         DefaultHttpClient httpClient = new DefaultHttpClient(httpParams);
         try {
+            HttpResponse response=httpClient.execute(params[0]);
+            int code=response.getStatusLine().getStatusCode();
             CookieStore cookieStore = httpClient.getCookieStore();
             List<Cookie> cookies =  cookieStore.getCookies();
             for (Cookie cookie: cookies) {

@@ -301,10 +301,10 @@ public class SearchActivity extends AppCompatActivity {
     private ArrayList<NoticeObject> getSearchedNotices(String url){
         if (isOnline()){
             httpGet=new HttpGet(url);
-            httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-            httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-            httpGet.setHeader("X-CSRFToken",csrftoken);
+            httpGet.addHeader("Cookie","csrftoken="+csrftoken);
+            httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            httpGet.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+            httpGet.addHeader("X-CSRFToken",csrftoken);
 
             AsyncTask<HttpGet, Void, String> task=new ConnectTaskHttpGet().execute(httpGet);
             try {
@@ -325,10 +325,10 @@ public class SearchActivity extends AppCompatActivity {
         if (isOnline()){
             httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
             try {
-                httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                httpGet.setHeader("X-CSRFToken", csrftoken);
+                httpGet.addHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.addHeader("X-CSRFToken", csrftoken);
 
                 AsyncTask<HttpGet, Void, String> task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();
@@ -354,10 +354,10 @@ public class SearchActivity extends AppCompatActivity {
         if (isOnline()){
             httpGet=new HttpGet(MainActivity.UrlOfNotice+"read_notice_list/");
             try {
-                httpGet.setHeader("Cookie","csrftoken="+csrftoken);
-                httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpGet.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-                httpGet.setHeader("X-CSRFToken", csrftoken);
+                httpGet.addHeader("Cookie","csrftoken="+csrftoken);
+                httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                httpGet.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+                httpGet.addHeader("X-CSRFToken", csrftoken);
 
                 AsyncTask<HttpGet, Void, String> task = new ConnectTaskHttpGet().execute(httpGet);
                 String content = task.get();

@@ -73,11 +73,11 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
     void setRead(int id){
         HttpPost post=new HttpPost(MainActivity.UrlOfNotice+"read_star_notice/"+
                 id+"/add_read/");
-        post.setHeader("Cookie","csrftoken="+csrftoken);
-        post.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        post.setHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-        post.setHeader("CHANNELI_DEVICE","android");
-        post.setHeader("X-CSRFToken",csrftoken);
+        post.addHeader("Cookie","csrftoken="+csrftoken);
+        post.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        post.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
+        post.addHeader("CHANNELI_DEVICE","android");
+        post.addHeader("X-CSRFToken",csrftoken);
         new ConnectTaskHttpPost().execute(post);
         new SQLHelper(context).setRead(id);
     }
@@ -88,11 +88,11 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         else
             uri += "/remove_starred/";
         HttpPost httpPost = new HttpPost(uri);
-        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
-        httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-        httpPost.setHeader("CHANNELI_DEVICE", "android");
-        httpPost.setHeader("X-CSRFToken=", csrftoken);
+        httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpPost.addHeader("Cookie", "csrftoken=" + csrftoken);
+        httpPost.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+        httpPost.addHeader("CHANNELI_DEVICE", "android");
+        httpPost.addHeader("X-CSRFToken=", csrftoken);
         new ConnectTaskHttpPost().execute(httpPost);
         new SQLHelper(context).setStar(id,b);
     }
@@ -102,10 +102,10 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         stringBuilder.append(noticeurl + id);
         String url = stringBuilder.toString();
         HttpGet httpGet = new HttpGet(url);
-        httpGet.setHeader("Cookie", "csrftoken=" + csrftoken);
-        httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-        httpGet.setHeader("X-CSRFToken", csrftoken);
+        httpGet.addHeader("Cookie", "csrftoken=" + csrftoken);
+        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
+        httpGet.addHeader("X-CSRFToken", csrftoken);
         String result = "";
         try {
             result = new ConnectTaskHttpGet().execute(httpGet).get();
