@@ -100,7 +100,10 @@ public class SplashScreen  extends Activity{
             @Override
             public void run() {
                 Intent intent = new Intent(SplashScreen.this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                if (getIntent().getBooleanExtra("notification",false))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                else
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 finish();
             }

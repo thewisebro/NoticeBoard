@@ -59,8 +59,9 @@ public class FCMService extends FirebaseMessagingService {
 
     private Notification generateNotification(){
         Intent intent = new Intent(this, SplashScreen.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("notification",true);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
         //intent.putExtra("category",category);
         //intent.putExtra("main_category",main_category);

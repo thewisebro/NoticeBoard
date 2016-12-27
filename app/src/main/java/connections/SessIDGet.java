@@ -2,6 +2,8 @@ package connections;
 
 import android.os.AsyncTask;
 
+import com.channeli.noticeboard.MainActivity;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.params.HttpClientParams;
@@ -25,8 +27,16 @@ public class SessIDGet extends AsyncTask<HttpGet, Void, Boolean> {
         DefaultHttpClient httpClient = new DefaultHttpClient(httpParams);
         try {
             HttpResponse response=httpClient.execute(params[0]);
-            if (response.getStatusLine().getStatusCode()== 302)
-                valid=true;
+            if (response.getStatusLine().getStatusCode()== 302){
+                if (response.containsHeader("Location")) {
+                    if (MainActivity.UrlOfHost.contains(response.getFirstHeader("Location").getValue().trim()))
+                        valid = true;
+                    else
+                        valid = false;
+                }
+                else
+                    valid=false;
+            }
             else
                 valid=false;
         } catch (Exception e) {

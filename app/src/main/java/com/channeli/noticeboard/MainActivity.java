@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
         }
-        editor.putLong("expiry_date",getExpiryDate());
+        editor.putLong("expiry_date",getExpiryDate());      //Reset expiry date to current time+ inactive time
         editor.apply();
         parsing = new Parsing();
         user = new User(settings.getString("name",""), settings.getString("info",""),
@@ -275,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
         Date date=c.getTime();
         return date.getTime();
     }
+    /*
     @Override
     protected void onNewIntent(Intent intent){
         super.onNewIntent(intent);
@@ -286,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         closeDialog();
         setDrawerMenu();
         setBottomBar();
-    }
+    }*/
     public void closeDialog(){
         try{
             if ((mDialog != null) && mDialog.isShowing()) {

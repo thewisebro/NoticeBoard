@@ -260,6 +260,7 @@ public class Login extends AppCompatActivity {
                     editor.apply();
                     getConstants();
                     Intent intent = new Intent(this,MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
                 }
@@ -324,7 +325,7 @@ public class Login extends AppCompatActivity {
     }
     public long getExpiryDate(){
         Calendar c=Calendar.getInstance();
-        c.add(Calendar.DATE,20);
+        c.add(Calendar.DATE,15);
         Date date=c.getTime();
         return date.getTime();
     }
