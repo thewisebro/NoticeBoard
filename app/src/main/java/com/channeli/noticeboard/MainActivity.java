@@ -78,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout mDrawerLayout;
     public static String UrlOfHost="http://people.iitr.ernet.in/";
-    //public static String UrlOfHost="http://192.168.121.187:7000/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
@@ -132,15 +131,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        //MainCategory=getIntent().getStringExtra("main_category");
-        //Category=getIntent().getStringExtra("category");
         sqlHelper=new SQLHelper(this);
         sqlHelper.clearNotifications(); //remove all pending notifications
         settings = getSharedPreferences(PREFS_NAME, 0);
         editor=settings.edit();
         csrftoken = settings.getString("csrftoken", "");
         CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
-        if ("".equals(CHANNELI_SESSID) || System.currentTimeMillis()>settings.getLong("expiry_date",0)){
+        if ("".equals(CHANNELI_SESSID)){// || System.currentTimeMillis()>settings.getLong("expiry_date",0)){
             cleanLogout();
             closeDialog();
             startActivity(new Intent(this,SplashScreen.class));
@@ -149,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         if (!settings.getBoolean("FCM_isRegistered",false)){
             new FCMIDService().sendRegistrationToServer(settings);
         }
-        editor.putLong("expiry_date",getExpiryDate());      //Reset expiry date to current time+ inactive time
+        //editor.putLong("expiry_date",getExpiryDate());      //Reset expiry date to current time+ inactive time
         editor.apply();
         parsing = new Parsing();
         user = new User(settings.getString("name",""), settings.getString("info",""),
@@ -269,25 +266,6 @@ public class MainActivity extends AppCompatActivity {
         closeDialog();
         super.onDestroy();
     }
-    public long getExpiryDate(){
-        Calendar c=Calendar.getInstance();
-        c.add(Calendar.DATE, 15);
-        Date date=c.getTime();
-        return date.getTime();
-    }
-    /*
-    @Override
-    protected void onNewIntent(Intent intent){
-        super.onNewIntent(intent);
-        NoticeType = "new";
-        MainCategory = "All";
-        Category="All";
-        //MainActivity.this.recreate();
-        sqlHelper.clearNotifications();
-        closeDialog();
-        setDrawerMenu();
-        setBottomBar();
-    }*/
     public void closeDialog(){
         try{
             if ((mDialog != null) && mDialog.isShowing()) {

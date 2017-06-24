@@ -10,7 +10,7 @@ android {
         }
     }
     compileSdkVersion 25
-    buildToolsVersion '25.0.1'
+    buildToolsVersion '26.0.0'
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "com.channeli.noticeboard"
@@ -36,11 +36,15 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:25.0.1'
-    compile 'com.android.support:support-v4:25.0.1'
-    compile 'com.android.support:design:25.0.0'
-    compile 'com.android.support:percent:25.0.0'
+    compile 'com.android.support:support-v4:25.4.0'
+    compile 'com.android.support:appcompat-v7:25.4.0'
+    compile 'com.android.support:design:25.4.0'
+    compile 'com.android.support:percent:25.4.0'
     compile 'com.roughike:bottom-bar:2.0.2'
     compile 'com.google.firebase:firebase-messaging:10.0.0'
+    compile 'com.github.bumptech.glide:glide:4.0.0-RC1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
+    compile 'com.michaelpardo:activeandroid:3.1.0-SNAPSHOT'
+    compile 'com.squareup.okhttp3:okhttp:3.8.1'
 }
 apply plugin: 'com.google.gms.google-services'

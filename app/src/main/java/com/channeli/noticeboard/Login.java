@@ -89,6 +89,7 @@ public class Login extends AppCompatActivity {
                 coordinatorLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
+
     }
     public void setViews(){
         findViewById(R.id.clear_focus).requestFocus();
@@ -200,11 +201,7 @@ public class Login extends AppCompatActivity {
                 editor.putStringSet("constants", constantSet);
                 editor.apply();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+        } catch (InterruptedException | TimeoutException | ExecutionException e) {
             e.printStackTrace();
         }
     }
@@ -256,7 +253,7 @@ public class Login extends AppCompatActivity {
                     editor.putString("enrollment_no", result.getString("enrollment_no"));
                     editor.putString("csrftoken",cookies.get("csrftoken"));
                     editor.putString("CHANNELI_SESSID", cookies.get("CHANNELI_SESSID"));
-                    editor.putLong("expiry_date",getExpiryDate());
+                    //editor.putLong("expiry_date",getExpiryDate());
                     editor.apply();
                     getConstants();
                     Intent intent = new Intent(this,MainActivity.class);
@@ -323,12 +320,14 @@ public class Login extends AppCompatActivity {
             }
         }.start();
     }
+/*
     public long getExpiryDate(){
         Calendar c=Calendar.getInstance();
         c.add(Calendar.DATE,15);
         Date date=c.getTime();
         return date.getTime();
     }
+*/
     public void hideKeyboard(){
         // Check if no view has focus:
         View view = this.getCurrentFocus();
