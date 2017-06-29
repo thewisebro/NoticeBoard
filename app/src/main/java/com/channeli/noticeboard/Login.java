@@ -15,6 +15,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.Html;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
@@ -26,6 +27,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.franmontiel.persistentcookiejar.ClearableCookieJar;
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+import com.squareup.leakcanary.LeakCanary;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -36,78 +43,86 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.net.CookieManager;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import connections.AsynchronousGet;
 import connections.ConnectTaskHttpGet;
 import connections.CookiesHttpGet;
 import connections.CookiesHttpPost;
+import connections.SynchronousGet;
+import connections.SynchronousPost;
 import objects.DrawerItem;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import utilities.Parsing;
 import utilities.SQLHelper;
 
 
 public class Login extends AppCompatActivity {
-    List<NameValuePair> params=new ArrayList<NameValuePair>();
-    HttpPost httpPost;
-    HttpGet httpGet;
-    String csrfToken;
-    SharedPreferences settings;
-    SharedPreferences.Editor editor;
-    CoordinatorLayout coordinatorLayout;
-    SQLHelper sqlHelper;
-    EditText Username;
-    EditText Password;
-    Button button;
-    View overButton;
-    Boolean flag1=false,flag2=false;
-    AsyncTask<HttpGet, Void, String> mTask=null;
+    private SharedPreferences mSharedPreferences;
+    private SharedPreferences.Editor mEditor;
+    private CoordinatorLayout mCoordinatorLayout;
+    private SQLHelper mSqlHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(getApplication());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.login);
-        sqlHelper=new SQLHelper(this);
-        settings=getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        editor=settings.edit();
+        mSqlHelper=new SQLHelper(this);
+        mSharedPreferences = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        mEditor = mSharedPreferences.edit();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
-        coordinatorLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+        mCoordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
+        mCoordinatorLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 setViews();
-                coordinatorLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                mCoordinatorLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
 
     }
     public void setViews(){
         findViewById(R.id.clear_focus).requestFocus();
-        Username=(EditText) findViewById(R.id.username);
-        Password=(EditText) findViewById(R.id.password);
-        button= (Button) findViewById(R.id.submit);
-        overButton= findViewById(R.id.overSubmit);
+
+        TextView link= (TextView) findViewById(R.id.link);
+        link.setMovementMethod(LinkMovementMethod.getInstance());
+        TextView img_love= (TextView) findViewById(R.id.made_with_love);
+        String text = "Made with <font color=#F50057>"+String.valueOf(Character.toChars(0x2764))+"</font> by IMG";
+        img_love.setText(Html.fromHtml(text));
+
+        final EditText Username=(EditText) findViewById(R.id.username);
+        final EditText Password=(EditText) findViewById(R.id.password);
+        final Button button= (Button) findViewById(R.id.submit);
+        final View overButton= findViewById(R.id.overSubmit);
         overButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showMessage("Enter Login Credentials");
             }
         });
-        TextView link= (TextView) findViewById(R.id.link);
-        link.setMovementMethod(LinkMovementMethod.getInstance());
-        TextView img_love= (TextView) findViewById(R.id.made_with_love);
-        String text = "Made with <font color=#F50057>"+String.valueOf(Character.toChars(0x2764))+"</font> by IMG";
-        img_love.setText(Html.fromHtml(text));
         Username.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -121,11 +136,7 @@ public class Login extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (Username.getText().toString().trim().isEmpty())
-                    flag1 = false;
-                else
-                    flag1 = true;
-                if (flag1 && flag2) {
+                if (!Username.getText().toString().trim().isEmpty() && !Password.getText().toString().trim().isEmpty()) {
                     button.setEnabled(true);
                     overButton.setVisibility(View.GONE);
                 } else {
@@ -148,11 +159,7 @@ public class Login extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (Password.getText().toString().trim().isEmpty())
-                    flag2 = false;
-                else
-                    flag2 = true;
-                if (flag1 && flag2) {
+                if (!Username.getText().toString().trim().isEmpty() && !Password.getText().toString().trim().isEmpty()) {
                     button.setEnabled(true);
                     overButton.setVisibility(View.GONE);
                 } else {
@@ -171,7 +178,7 @@ public class Login extends AppCompatActivity {
             return false;
     }
     public void showMessage(String msg){
-        Snackbar snackbar=Snackbar.make(coordinatorLayout, msg, Snackbar.LENGTH_SHORT);
+        Snackbar snackbar=Snackbar.make(mCoordinatorLayout, msg, Snackbar.LENGTH_SHORT);
         TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
         tv.setGravity(Gravity.CENTER);
         tv.setTextColor(getResources().getColor(R.color.colorPrimary));
@@ -180,32 +187,45 @@ public class Login extends AppCompatActivity {
         snackbar.show();
     }
 
-    public void getConstants(){
-        String constants=null;
-        httpGet = new HttpGet(MainActivity.UrlOfNotice+"get_constants/");
-        httpGet.addHeader("Cookie", "csrftoken=" + settings.getString("csrftoken", ""));
-        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + settings.getString("CHANNELI_SESSID", ""));
+ /*   public void getConstants() {
+
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("Cookie",
+                "csrftoken=" + mSharedPreferences.getString("csrftoken", "") +
+                        ";CHANNELI_SESSID=" + mSharedPreferences.getString("CHANNELI_SESSID", "")
+        );
+        headers.put("Content", "application/x-www-form-urlencoded");
+        headers.put("Accept", "application/xml");
+
         try {
-            mTask = new ConnectTaskHttpGet().execute(httpGet);
-            constants = mTask.get(4000, TimeUnit.MILLISECONDS);
-            mTask.cancel(true);
-            ArrayList<DrawerItem> list=new Parsing().parseConstants(constants);
-            if(list.size()>0){
-                Set<String> constantSet=new HashSet<>(list.size());
-                for(int i=0;i<list.size();i++) {
-                    Set<String> s=new HashSet<>(list.get(i).getCategories());
-                    editor.putStringSet(list.get(i).getName(),s);
+            Map<String, Object> response = new SynchronousGet() {
+                @Override
+                public OkHttpClient setClient() {
+                    return new OkHttpClient();
+                }
+            }.getResponse(MainActivity.UrlOfNotice + "get_constants/", headers, null);
+
+            if (response.get("status") == "fail") throw new IOException("");
+
+            String constants = (String) response.get("body");
+            ArrayList<DrawerItem> list = new Parsing().parseConstants(constants);
+            if (list.size() > 0) {
+                Set<String> constantSet = new HashSet<>(list.size());
+                for (int i = 0; i < list.size(); i++) {
+                    Set<String> s = new HashSet<>(list.get(i).getCategories());
+                    mEditor.putStringSet(list.get(i).getName(), s);
                     constantSet.add(list.get(i).getName());
                 }
-                editor.putStringSet("constants", constantSet);
-                editor.apply();
+                mEditor.putStringSet("constants", constantSet);
+                mEditor.apply();
             }
-        } catch (InterruptedException | TimeoutException | ExecutionException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
+
+/*
     private void peopleLogin(String username, String password){
 
         httpGet=new HttpGet(MainActivity.UrlOfLogin);
@@ -283,9 +303,103 @@ public class Login extends AppCompatActivity {
             showMessage("Check Network Connection!");
         }
     }
+*/
+    private Map<String,String> getCookiesList(List<Cookie> cookieList){
+        Map<String,String> cookiesMap = new HashMap<>();
+        for (Cookie cookie : cookieList){
+            cookiesMap.put(cookie.name(),cookie.value());
+        }
+        return cookiesMap;
+    }
+    private void peopleLogin(String username, String password){
+        try {
+            SetCookieCache cookieCache = new SetCookieCache();
+            SharedPrefsCookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
+            final ClearableCookieJar cookieJar = new PersistentCookieJar(
+                    cookieCache,
+                    cookiePersistor
+            );
+            cookieJar.clear();
+            new SynchronousGet() {
+                @Override
+                public OkHttpClient setClient() {
+                    return new OkHttpClient.Builder()
+                            .cookieJar(cookieJar)
+                            .followRedirects(false)
+                            .followSslRedirects(false)
+                            .build();
+                }
+            }.getResponse(MainActivity.UrlOfLogin,null,null);
+
+            Map<String,String> params = new HashMap<>();
+            params.put("username",username);
+            params.put("password",password);
+            params.put("remember_me","on");
+            params.put("csrfmiddlewaretoken", getCookiesList(cookiePersistor.loadAll()).get("csrftoken"));
+
+            new SynchronousPost() {
+                @Override
+                public OkHttpClient setClient() {
+                    return new OkHttpClient.Builder()
+                            .cookieJar(cookieJar)
+                            .followRedirects(false)
+                            .followSslRedirects(false)
+                            .build();
+                }
+            }.getResponse(MainActivity.UrlOfLogin,null,params);
+
+            if (!getCookiesList(cookiePersistor.loadAll()).containsKey("CHANNELI_SESSID")){
+                throw new IOException("");
+            }
+            mEditor.putString("username",username);
+            mEditor.putString("csrftoken",getCookiesList(cookiePersistor.loadAll()).get("csrftoken"));
+            mEditor.putString("CHANNELI_SESSID",getCookiesList(cookiePersistor.loadAll()).get("CHANNELI_SESSID"));
+            mEditor.apply();
+
+            new AsynchronousGet() {
+                @Override
+                public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                    try {
+                        JSONObject response = new JSONObject(responseBody);
+                        if (response.getString("msg")!="YES") onFail(new JSONException(""));
+
+                        mEditor.putString("name", response.getString("_name"));
+                        mEditor.putString("info", response.getString("info"));
+                        mEditor.putString("enrollment_no", response.getString("enrollment_no"));
+                        mEditor.apply();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        onFail(new JSONException(""));
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFail(Exception e) {
+
+                }
+
+                @Override
+                public OkHttpClient setClient() {
+                    return new OkHttpClient.Builder()
+                            .cookieJar(cookieJar)
+                            .build();
+                }
+            }.getResponse(MainActivity.UrlOfPeopleSearch+"return_details/?username="+username,null,null);
+
+            startActivity(new Intent(Login.this,MainActivity.class));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void login(View view) {
         hideKeyboard();
+        final EditText Username=(EditText) findViewById(R.id.username);
+        final EditText Password=(EditText) findViewById(R.id.password);
+        final Button button= (Button) findViewById(R.id.submit);
+        final View overButton= findViewById(R.id.overSubmit);
         button.setText("LOGGING IN");
         button.setClickable(false);
         overButton.setClickable(false);
@@ -293,9 +407,8 @@ public class Login extends AppCompatActivity {
             @Override
             public void run(){
                 if (isConnected()){
-
-                    final String usernameText= Username.getText().toString();
-                    final String passwordText= Password.getText().toString();
+                    String usernameText= Username.getText().toString().trim().replace("@iitr.ac.in","");
+                    String passwordText= Password.getText().toString().trim();
                     if (usernameText.matches("")){
                         showMessage("Enter username");
                     }
@@ -320,14 +433,6 @@ public class Login extends AppCompatActivity {
             }
         }.start();
     }
-/*
-    public long getExpiryDate(){
-        Calendar c=Calendar.getInstance();
-        c.add(Calendar.DATE,15);
-        Date date=c.getTime();
-        return date.getTime();
-    }
-*/
     public void hideKeyboard(){
         // Check if no view has focus:
         View view = this.getCurrentFocus();

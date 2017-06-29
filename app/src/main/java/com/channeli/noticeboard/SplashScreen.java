@@ -12,6 +12,7 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.squareup.leakcanary.LeakCanary;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -20,69 +21,58 @@ import utilities.SQLHelper;
 
 public class SplashScreen  extends Activity{
     private static int SPLASH_TIME_OUT = 1000;
-    public String CHANNELI_SESSID, csrftoken;
-    long expiry_date;
 
-    SharedPreferences settings;
-    SharedPreferences.Editor editor;
+//    SharedPreferences settings;
+//    SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(getApplication());
         setContentView(R.layout.splash_screen);
-
-        //if(Build.VERSION.SDK_INT >= 21){
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        //}
-        settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        editor=settings.edit();
-        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
-        csrftoken=settings.getString("csrftoken", "");
-        expiry_date=settings.getLong("expiry_date", 0);
-        final View view=findViewById(R.id.splashscreen);
-        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                if(!CHANNELI_SESSID.equals("") && System.currentTimeMillis()<expiry_date){
-                    if (isOnline()){
-                        new Thread(){
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        final String channeli_sessid = settings.getString("CHANNELI_SESSID", "");
+        final String csrftoken=settings.getString("csrftoken", "");
+        if(!channeli_sessid.equals("")){
+            if (isOnline()){
+                new Thread(){
+                    @Override
+                    public void run(){
+                        runOnUiThread(new Runnable() {
                             @Override
-                            public void run(){
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        HttpGet httpGet = new HttpGet(MainActivity.UrlOfLogin);
-                                        httpGet.addHeader("Cookie","csrftoken="+csrftoken);
-                                        httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                                        httpGet.addHeader("Accept", "application/xml");
-                                        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
-                                        try {
-                                            Boolean valid=new SessIDGet().execute(httpGet).get();
-                                            //True if logged in else False
-                                            if (valid)
-                                                goToMain();
-                                            else
-                                                goToLogin();
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                            goToMain();
-                                        }
-                                    }
-                                });
+                            public void run() {
+                                HttpGet httpGet = new HttpGet(MainActivity.UrlOfLogin);
+                                httpGet.addHeader("Cookie","csrftoken="+csrftoken);
+                                httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + channeli_sessid);
+                                httpGet.addHeader("Accept", "application/xml");
+                                httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                                try {
+                                    Boolean valid=new SessIDGet().execute(httpGet).get();
+                                    //True if logged in else False
+                                    if (valid)
+                                        goToMain();
+                                    else
+                                        goToLogin();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    goToMain();
+                                }
                             }
-                        }.start();
+                        });
                     }
-                    else
-                        goToMain();
-                }
-                else
-                    goToLogin();
+                }.start();
             }
-        });
+            else goToMain();
+        }
+        else goToLogin();
     }
     public void goToLogin(){
+        SharedPreferences.Editor editor= getSharedPreferences(MainActivity.PREFS_NAME, 0).edit();
         editor.clear();
         editor.apply();
         new SQLHelper(this).clear();

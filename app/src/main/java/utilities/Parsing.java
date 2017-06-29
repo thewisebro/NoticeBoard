@@ -12,9 +12,9 @@ import objects.DrawerItem;
 import objects.NoticeInfo;
 import objects.NoticeObject;
 
-public class Parsing {
+public final class Parsing {
 
-    public ArrayList<DrawerItem> parseConstants(String constants){
+    public static ArrayList<DrawerItem> parseConstants(String constants){
         ArrayList<DrawerItem> list = new ArrayList<>();
         ArrayList<String> constantsList=new ArrayList<>();
         try {
@@ -37,19 +37,19 @@ public class Parsing {
         return list;
     }
 
-    private boolean checkStar(int id, ArrayList<NoticeObject> list){
+    private static boolean checkStar(int id, ArrayList<NoticeObject> list){
         for (NoticeObject n:list)
             if (n.getId()==id)
                 return true;
         return false;
     }
-    private boolean checkRead(int id, ArrayList<Integer> list){
+    private static boolean checkRead(int id, ArrayList<Integer> list){
         for (Integer i:list)
             if(i.intValue()==id)
                 return true;
         return false;
     }
-    public ArrayList<NoticeObject> parseNotices(String notices,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList){
+    public static ArrayList<NoticeObject> parseNotices(String notices,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList){
         ArrayList<NoticeObject> noticeslist = new ArrayList<>();
         try{
             JSONArray jsonArray = new JSONArray(notices);
@@ -73,7 +73,7 @@ public class Parsing {
         }
         return noticeslist;
     }
-    public ArrayList<NoticeObject> parseStarredNotices(String notices){
+    public static ArrayList<NoticeObject> parseStarredNotices(String notices){
         ArrayList<NoticeObject> noticeslist = new ArrayList<>();
         try{
             JSONArray jsonArray = new JSONArray(notices);
@@ -97,7 +97,7 @@ public class Parsing {
         }
         return noticeslist;
     }
-    public ArrayList<NoticeObject> parseStarredNotices(String notices,ArrayList<Integer> readNotices){
+    public static ArrayList<NoticeObject> parseStarredNotices(String notices,ArrayList<Integer> readNotices){
         ArrayList<NoticeObject> noticeslist = new ArrayList<>();
         try{
             JSONArray jsonArray = new JSONArray(notices);
@@ -121,7 +121,7 @@ public class Parsing {
         }
         return noticeslist;
     }
-    public ArrayList<Integer> parseReadNotices(String ids){
+    public static ArrayList<Integer> parseReadNotices(String ids){
         ArrayList<Integer> list = new ArrayList<>();
         try{
             JSONObject jsonObject=new JSONObject(ids);
@@ -137,7 +137,7 @@ public class Parsing {
         return list;
     }
 
-    public ArrayList<NoticeObject> parseSearchNotices(String result,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList){
+    public static ArrayList<NoticeObject> parseSearchNotices(String result,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList){
         ArrayList<NoticeObject> noticeList = new ArrayList<NoticeObject>();
         try {
             JSONArray jsonArray = new JSONArray(result);
@@ -161,7 +161,7 @@ public class Parsing {
         return noticeList;
     }
 
-    public NoticeInfo parseNoticeInfo(String noticeinfo){
+    public static NoticeInfo parseNoticeInfo(String noticeinfo){
         NoticeInfo noticeInfo = new NoticeInfo();
         try{
             JSONObject jsonObject = new JSONObject(noticeinfo);

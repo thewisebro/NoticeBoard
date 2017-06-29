@@ -18,9 +18,17 @@ import okio.BufferedSink;
  */
 
 public abstract class SynchronousPost {
-    public abstract OkHttpClient getClient();
+    private OkHttpClient mClient;
+    public abstract OkHttpClient setClient();
+    public OkHttpClient getClient(){ return this.mClient; }
+    public SynchronousPost(){
+        this.mClient = setClient();
+        if (mClient == null) this.mClient = new OkHttpClient();
+    }
 
     public Map getResponse(String url, Map<String,String> headers, Map<String,String> params) throws IOException {
+        if (getClient() == null) return null;
+
         Map<String,Object> responseMap = new HashMap<String,Object>();
         responseMap.put("status","fail");
 
@@ -53,10 +61,11 @@ public abstract class SynchronousPost {
         requestBuilder.post(bodyBuilder.build());
 
         Response response = getClient().newCall(requestBuilder.build()).execute();
-        if (!response.isSuccessful()) throw new IOException("");
+        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("");
 
         responseMap.put("body",response.body().string());
-        responseMap.put("headees",response.headers());
+        responseMap.put("headers",response.headers());
+        responseMap.put("code",response.code());
         responseMap.put("status","success");
 
         return responseMap;

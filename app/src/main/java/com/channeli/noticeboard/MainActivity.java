@@ -44,6 +44,7 @@ import android.widget.TextView;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.roughike.bottombar.BottomBar;
 import com.roughike.bottombar.OnTabSelectListener;
+import com.squareup.leakcanary.LeakCanary;
 
 import org.apache.http.client.methods.HttpGet;
 
@@ -53,8 +54,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -62,12 +65,15 @@ import java.util.concurrent.TimeoutException;
 
 import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
+import connections.AsynchronousGet;
 import connections.ConnectTaskHttpGet;
 import connections.FCMIDService;
 import connections.ProfilePicTask;
 import objects.DrawerItem;
 import objects.NoticeObject;
 import objects.User;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
 import utilities.EndlessRecyclerViewScrollListener;
 import utilities.Parsing;
 import utilities.RoundImageView;
@@ -76,50 +82,50 @@ import utilities.SQLHelper;
 
 public class MainActivity extends AppCompatActivity {
 
-    private DrawerLayout mDrawerLayout;
     public static String UrlOfHost="http://people.iitr.ernet.in/";
     public static String UrlOfNotice = UrlOfHost+"notices/";
     public static String UrlOfLogin = UrlOfHost+"login/";
     public static String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
     public static String UrlOfFCMRegistration = UrlOfHost+"push_subscription_sync/";
     private ActionBarDrawerToggle mDrawerToggle;
-    private Toolbar toolbar;
-    private NavigationView navigationView;
+//    private Toolbar toolbar;
+//    private NavigationView navigationView;
     public static String NoticeType = "new", MainCategory = "All", Category="All";
-    private User user;
+//    private User user;
     public BottomBar bottomBar;
 
-    CoordinatorLayout coordinatorLayout;
-    HttpGet httpGet;
+//    CoordinatorLayout coordinatorLayout;
+//    HttpGet httpGet;
     public static final String PREFS_NAME = "MyPrefsFile";
-    Parsing parsing;
-    SharedPreferences settings;
-    SharedPreferences.Editor editor;
-    ArrayList<DrawerItem> drawerList;
-    ProgressDialog mDialog=null;
+//    Parsing parsing;
+    private SharedPreferences mSharedPreferences;
+    private SharedPreferences.Editor mEditor;
+    private ArrayList<DrawerItem> mDrawerList;
+    private DrawerLayout mDrawerLayout;
+//    ProgressDialog mDialog=null;
 
-    private RecyclerView recyclerView;
-    private CustomRecyclerViewAdapter customAdapter=null;
-    private CustomDrawerListViewAdapter drawerAdapter=null;
-    private SwipeRefreshLayout swipeRefreshLayout;
-    private ArrayList<NoticeObject> noticelist;
-    private ArrayList<NoticeObject> starredList;
-    private ArrayList<Integer> readList;
-    private SQLHelper sqlHelper;
-    private String csrftoken, CHANNELI_SESSID;
-    private ExpandableListView listView;
-    private EndlessRecyclerViewScrollListener scrollListener;
+    private RecyclerView mRecyclerView;
+    private CustomRecyclerViewAdapter mCustomAdapter;
+//    private CustomDrawerListViewAdapter drawerAdapter=null;
+//    private SwipeRefreshLayout swipeRefreshLayout;
+    private ArrayList<NoticeObject> mNoticeList;
+    private ArrayList<NoticeObject> mStarredList;
+    private ArrayList<Integer> mReadList;
+    private SQLHelper mSqlHelper;
+//    private String csrftoken, CHANNELI_SESSID;
+//    private ExpandableListView listView;
+    private EndlessRecyclerViewScrollListener mScrollListener;
 
-    String msg=null;
-    boolean refreshScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
-    boolean swiperefresh=false; //to update starred list and read list
+//    String msg=null;
+    public boolean refreshScroll=false;  //denotes when the adapter is updated so as to control scroll listener calls
+    public boolean swiperefresh=false; //to update starred list and read list
 
-    private void addToDB(ArrayList<NoticeObject> list){
+/*    private void addToDB(ArrayList<NoticeObject> list){
         try {
             if (MainCategory.equals("Starred"))
-                sqlHelper.addNoticesList(list,"");
+                mSqlHelper.addNoticesList(list,"");
             else
-                sqlHelper.addNoticesList(list,NoticeType);
+                mSqlHelper.addNoticesList(list,NoticeType);
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -129,85 +135,114 @@ public class MainActivity extends AppCompatActivity {
     @TargetApi(21)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(getApplication());
         setContentView(R.layout.main);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        sqlHelper=new SQLHelper(this);
-        sqlHelper.clearNotifications(); //remove all pending notifications
-        settings = getSharedPreferences(PREFS_NAME, 0);
-        editor=settings.edit();
-        csrftoken = settings.getString("csrftoken", "");
-        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
-        if ("".equals(CHANNELI_SESSID)){// || System.currentTimeMillis()>settings.getLong("expiry_date",0)){
+
+        //Initialisations
+        mSqlHelper=new SQLHelper(this);
+        mSqlHelper.clearNotifications(); //remove all pending notifications
+        mSharedPreferences = getSharedPreferences(PREFS_NAME, 0);
+        mEditor = mSharedPreferences.edit();
+//        csrftoken = settings.getString("csrftoken", "");
+//        CHANNELI_SESSID = settings.getString("CHANNELI_SESSID", "");
+        if ("".equals(mSharedPreferences.getString("CHANNELI_SESSID",""))){
             cleanLogout();
             closeDialog();
             startActivity(new Intent(this,SplashScreen.class));
             finish();
         }
-        if (!settings.getBoolean("FCM_isRegistered",false)){
-            new FCMIDService().sendRegistrationToServer(settings);
+        if (!mSharedPreferences.getBoolean("FCM_isRegistered",false)){
+            new FCMIDService().sendRegistrationToServer(mSharedPreferences);
         }
-        //editor.putLong("expiry_date",getExpiryDate());      //Reset expiry date to current time+ inactive time
-        editor.apply();
-        parsing = new Parsing();
-        user = new User(settings.getString("name",""), settings.getString("info",""),
-                settings.getString("enrollment_no",""));
-        navigationView= (NavigationView) findViewById(R.id.left_drawer);
-        toolbar= (Toolbar) findViewById(R.id.toolbar);
-        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
-        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
-        recyclerView= (RecyclerView) swipeRefreshLayout.findViewById(R.id.list_view);
+//        parsing = new Parsing();
+//        user = new User(settings.getString("name",""), settings.getString("info",""),
+//                settings.getString("enrollment_no",""));
+//        navigationView= (NavigationView) findViewById(R.id.left_drawer);
+//        coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
         bottomBar= (BottomBar) findViewById(R.id.bottom_bar);
+        Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        noticelist=new ArrayList<NoticeObject>();
-        starredList=new ArrayList<NoticeObject>();
-        readList=new ArrayList<Integer>();
-        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
 
-        customAdapter=new CustomRecyclerViewAdapter(this,
-                R.layout.list_itemview, noticelist,starredList,readList);
+        mNoticeList=new ArrayList<NoticeObject>();
+        mStarredList=new ArrayList<NoticeObject>();
+        mReadList=new ArrayList<Integer>();
+
+        mCustomAdapter = new CustomRecyclerViewAdapter(this,
+                R.layout.list_itemview, mNoticeList, mStarredList, mReadList);
 
         setNavigationView();
         setBottomBar();
 
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,
-                mDrawerLayout,
+                drawerLayout,
                 R.string.drawer_open,
                 R.string.drawer_close
-        ){
+        ) {
             public void onDrawerClosed(View view) {
                 super.onDrawerClosed(view);
             }
+
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
             }
         };
 
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        drawerLayout.setDrawerListener(mDrawerToggle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         mDrawerToggle.syncState();
-        //setTitle("All");
 
-        recyclerView.setAdapter(customAdapter);
+        mRecyclerView = (RecyclerView) findViewById(R.id.list_view);
+        mRecyclerView.setAdapter(mCustomAdapter);
         WrapContentLinearLayoutManager layoutManager=new WrapContentLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setLayoutManager(layoutManager);
-        scrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setLayoutManager(layoutManager);
+
+
+        mScrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
-                if(totalItemsCount>0 && totalItemsCount<=noticelist.size() && (!MainCategory.equals("Starred")))
+                if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && (!MainCategory.equals("Starred")))
                     new Thread(){
                         @Override
                         public void run(){
                             if (isOnline()) {
                                 int initialTab=bottomBar.getCurrentTabId();
-                                if (totalItemsCount<=0 || totalItemsCount>noticelist.size())
-                                    return;
+                                if (totalItemsCount<=0 || totalItemsCount>mNoticeList.size()) return;
+
+                                Map<String,String> headers = new HashMap<String, String>();
+                                headers.put("Content-Type", "application/x-www-form-urlencoded");
+                                headers.put("X-CSRFToken", csrftoken);
+                                new AsynchronousGet() {
+                                    @Override
+                                    public OkHttpClient setClient() {
+                                        return null;
+                                    }
+
+                                    @Override
+                                    public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+
+                                    }
+
+                                    @Override
+                                    public void onFail(Exception e) {
+
+                                    }
+                                }.getResponse(MainActivity.UrlOfNotice +
+                                        "list_notices/" + NoticeType + "/" + MainCategory.replace(" ","%20") +
+                                        "/All/1/20/" + mNoticeList.get(totalItemsCount - 1).getId(),
+                                        headers, null
+                                );
+
                                 httpGet = new HttpGet(MainActivity.UrlOfNotice +
                                         "list_notices/" + NoticeType + "/" + MainCategory.replace(" ","%20") +
-                                        "/All/1/20/" + noticelist.get(totalItemsCount - 1).getId());
+                                        "/All/1/20/" + mNoticeList.get(totalItemsCount - 1).getId());
                                 httpGet.addHeader("Cookie", "csrftoken=" + csrftoken);
                                 httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
                                 httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
@@ -221,19 +256,20 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 //mTask.cancel(true);
                                 if (initialTab!=bottomBar.getCurrentTabId()){
-                                    scrollListener.resetState();
+                                    mScrollListener.resetState();
                                     return;
                                 }
                                 if (result != null && result!="") {
-                                    ArrayList<NoticeObject> list = parsing.parseNotices(result,starredList,readList);
+                                    ArrayList<NoticeObject> list = Parsing.parseNotices(result,mStarredList,mReadList);
                                     if (list!= null) {
                                         addToDB(list);
-                                        noticelist.addAll(list);
+                                        mNoticeList.addAll(list);
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                recyclerView.getRecycledViewPool().clear();
-                                                customAdapter.notifyDataSetChanged();
+                                                mRecyclerView.getRecycledViewPool().clear();
+                                                mCustomAdapter.notifyDataSetChanged();
+
                                             }
                                         });
                                     }
@@ -241,15 +277,14 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 showNetworkError();
                             }
-                            scrollListener.resetState();
+                            mScrollListener.resetState();
                         }
                     }.start();
             }
         };
-        recyclerView.setOnScrollListener(scrollListener);
-        //recyclerView.setOnScrollListener(new RecyclerViewScrollListener(layoutManager));
+        mRecyclerView.setOnScrollListener(mScrollListener);
         //Scroll only when touched, not due to drawer clicks
-        recyclerView.setOnTouchListener(new View.OnTouchListener() {
+        mRecyclerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 refreshScroll = false;
@@ -257,16 +292,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        SwipeRefreshLayout swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+
         swipeRefreshLayout.setColorSchemeColors(new int[]{getResources().getColor(R.color.colorAccentDark)
                 ,getResources().getColor(R.color.colorPrimaryDark)});
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener());
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshListener(swipeRefreshLayout));
     }
     @Override
     protected void onDestroy() {
         closeDialog();
         super.onDestroy();
     }
-    public void closeDialog(){
+*//*    public void closeDialog(){
         try{
             if ((mDialog != null) && mDialog.isShowing()) {
                 mDialog.dismiss();
@@ -275,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
         }finally {
             mDialog=null;
         }
-    }
+    }*//*
 
     void setNavigationView(){
         addHeader();
@@ -290,22 +327,18 @@ public class MainActivity extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = "new";
-                        //msg = "Current Notices";
                         changeList();
-                        //showMessage("Current Notices");
                         break;
                     case R.id.old_items:
                         NoticeType = "old";
-                        //msg = "Expired Notices";
                         changeList();
-                        //showMessage("Expired Notices");
                         break;
                 }
             }
         });
     }
     private void addHeader(){
-        View headerView=navigationView.findViewById(R.id.drawer_header);
+        View headerView = findViewById(R.id.drawer_header);
         final RoundImageView view= (RoundImageView) headerView.findViewById(R.id.profile_picture);
         final TextView nameView= (TextView) headerView.findViewById(R.id.name);
         final TextView infoView= (TextView) headerView.findViewById(R.id.info);
@@ -315,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(){
             @Override
             public void run(){
-                final Bitmap bitmap=sqlHelper.getProfilePic();
+                final Bitmap bitmap = mSqlHelper.getProfilePic();
                 if (bitmap==null){
                     String url="http://people.iitr.ernet.in/photo/"+user.getEnrollmentno();
                     HttpGet get=new HttpGet(url);
@@ -330,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
                                             , dim, dim, false));
                                     view.setVisibility(View.VISIBLE);
                                     view.invalidate();
-                                    sqlHelper.addProfilePic(bitm);
+                                    mSqlHelper.addProfilePic(bitm);
                                 }
                             }
                         });
@@ -352,14 +385,14 @@ public class MainActivity extends AppCompatActivity {
     }
     ArrayList<DrawerItem> getConstants(){
         ArrayList<DrawerItem> list=new ArrayList<>();
-        Set<String> constants=settings.getStringSet("constants", null);
+        Set<String> constants=mSharedPreferences.getStringSet("constants", null);
         if(constants!=null && constants.size()>0){
             List<String> listConstants=new ArrayList<>();
             for (String s: constants)
                 listConstants.add(s);
             Collections.sort(listConstants);
             for (String s:listConstants) {
-                Set<String> set=settings.getStringSet(s,null);
+                Set<String> set=mSharedPreferences.getStringSet(s,null);
                 if (set==null)
                     list.add(new DrawerItem(s,null));
                 else {
@@ -405,15 +438,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void setDrawerMenu(){
-        listView= (ExpandableListView) navigationView.findViewById(R.id.drawer_menu);
-        drawerList=getConstants();
-        drawerList.add(new DrawerItem("Starred", null));
-        drawerList.add(new DrawerItem("", null));
-        drawerList.add(new DrawerItem("Notifications Settings", null));
-        drawerList.add(new DrawerItem("Feedback", null));
-        drawerList.add(new DrawerItem("Logout", null));
+        final ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
+        mDrawerList=getConstants();
+        mDrawerList.add(new DrawerItem("Starred", null));
+        mDrawerList.add(new DrawerItem("", null));
+        mDrawerList.add(new DrawerItem("Notifications Settings", null));
+        mDrawerList.add(new DrawerItem("Feedback", null));
+        mDrawerList.add(new DrawerItem("Logout", null));
 
-        drawerAdapter=new CustomDrawerListViewAdapter(drawerList,this){
+        listView.setAdapter(new CustomDrawerListViewAdapter(mDrawerList,this){
             int lastGroup=-1;
 
             @Override
@@ -453,11 +486,10 @@ public class MainActivity extends AppCompatActivity {
                 //int index = listView.getFlatListPosition(ExpandableListView.getPackedPositionForChild(gp, cp));
                 //listView.setItemChecked(index, true);
             }
-        };
-        listView.setAdapter(drawerAdapter);
+        });
     }
     public boolean checkDrawerColorChange(int pos){
-        String gp_name=drawerList.get(pos).getName();
+        String gp_name=mDrawerList.get(pos).getName();
         if (gp_name.contains("Notification"))
             return false;
         if (gp_name.contains("Feedback"))
@@ -468,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void clickListener(int groupPosition, int childPosition){
         mDrawerLayout.closeDrawers();
-        switch (drawerList.get(groupPosition).getName()) {
+        switch (mDrawerList.get(groupPosition).getName()) {
             case "Starred": //Starred
                 MainCategory = "Starred";
                 Category = "All";
@@ -487,18 +519,18 @@ public class MainActivity extends AppCompatActivity {
                 logout();
                 break;
             default:
-                MainCategory = drawerList.get(groupPosition).getName();
+                MainCategory = mDrawerList.get(groupPosition).getName();
                 if(childPosition<0)
                     Category="All";
                 else
-                    Category = drawerList.get(groupPosition).getCategories().get(childPosition);
+                    Category = mDrawerList.get(groupPosition).getCategories().get(childPosition);
                 selectItem();
         }
     }
     void cleanLogout(){
-        editor.clear();
-        editor.apply();
-        sqlHelper.clear();
+        mEditor.clear();
+        mEditor.apply();
+        mSqlHelper.clear();
         if (FirebaseMessaging.getInstance()!=null) {
             FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
             FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
@@ -593,15 +625,14 @@ public class MainActivity extends AppCompatActivity {
             httpGet = new HttpGet(MainActivity.UrlOfNotice+"list_notices/" +NoticeType+"/"+MainCategory.replace(" ", "%20")
                     +"/"+Category.replace(" ", "%20")+"/0/20/0");
         }
-        //noticelist.clear();
-        recyclerView.stopScroll();
+        mRecyclerView.stopScroll();
         Thread thread=new Thread(){
             @Override
             public void run(){
 
-                if (swiperefresh || readList.size()==0)
+                if (swiperefresh || mReadList.size()==0)
                     getReadNotices();
-                if (swiperefresh || starredList.size()==0)
+                if (swiperefresh || mStarredList.size()==0)
                     getStarredNotices();
 
                 swiperefresh=false;
@@ -615,16 +646,16 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            recyclerView.scrollToPosition(0);
+                            mRecyclerView.scrollToPosition(0);
                         }catch (Exception e){}
 
-                        recyclerView.getRecycledViewPool().clear();
-                        customAdapter.notifyDataSetChanged();
-                        if (noticelist.size() > 0)
+                        mRecyclerView.getRecycledViewPool().clear();
+                        mCustomAdapter.notifyDataSetChanged();
+                        if (mNoticeList.size() > 0)
                             findViewById(R.id.no_notice).setVisibility(View.GONE);
                         else
                             findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
-                        scrollListener.resetState();
+                        mScrollListener.resetState();
                         closeDialog();
                         if (msg != null)
                             showMessage();
@@ -653,19 +684,19 @@ public class MainActivity extends AppCompatActivity {
                 AsyncTask<HttpGet, Void, String> mTask = new ConnectTaskHttpGet().execute(httpGet);
                 content = mTask.get();
                 if (MainCategory.equals("Starred")) {
-                    list = parsing.parseStarredNotices(content,readList);
+                    list = parsing.parseStarredNotices(content,mReadList);
                     if (list!=null) {
-                        starredList.clear();
-                        starredList.addAll(list);
+                        mStarredList.clear();
+                        mStarredList.addAll(list);
                     }
                 }
                 else
-                    list=parsing.parseNotices(content,starredList,readList);
+                    list=parsing.parseNotices(content,mStarredList,mReadList);
 
                 if (list!=null) {
                     addToDB(list);
-                    noticelist.clear();
-                    noticelist.addAll(list);
+                    mNoticeList.clear();
+                    mNoticeList.addAll(list);
                     return;
                 }
             } catch (Exception e) {
@@ -673,12 +704,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if("All".equals(Category))
-            list=sqlHelper.getNotices(MainCategory,NoticeType);
+            list=mSqlHelper.getNotices(MainCategory,NoticeType);
         else
-            list=sqlHelper.getNotices(MainCategory,Category,NoticeType);
+            list=mSqlHelper.getNotices(MainCategory,Category,NoticeType);
         if(list!=null) {
-            noticelist.clear();
-            noticelist.addAll(list);
+            mNoticeList.clear();
+            mNoticeList.addAll(list);
         }
         showNetworkError();
     }
@@ -697,8 +728,8 @@ public class MainActivity extends AppCompatActivity {
                 if (content != null) {
                     ArrayList<NoticeObject> list = new Parsing().parseStarredNotices(content);
                     if (list != null) {
-                        starredList.clear();
-                        starredList.addAll(list);
+                        mStarredList.clear();
+                        mStarredList.addAll(list);
                         return;
                     }
                 }
@@ -707,10 +738,10 @@ public class MainActivity extends AppCompatActivity {
                 //showNetworkError();
             }
         }
-        ArrayList<NoticeObject> list=sqlHelper.getNotices("Starred", "All","");
+        ArrayList<NoticeObject> list=mSqlHelper.getNotices("Starred", "All","");
         if (list!=null) {
-            starredList.clear();
-            starredList.addAll(list);
+            mStarredList.clear();
+            mStarredList.addAll(list);
         }
     }
     private void getReadNotices(){
@@ -727,9 +758,9 @@ public class MainActivity extends AppCompatActivity {
                 //mTask.cancel(true);
                 if (content != null) {
                     ArrayList<Integer> list = new Parsing().parseReadNotices(content);
-                    if (list != null && list.size()>readList.size()) {
-                        readList.clear();
-                        readList.addAll(list);
+                    if (list != null && list.size()>mReadList.size()) {
+                        mReadList.clear();
+                        mReadList.addAll(list);
                         return;
                     }
                 }
@@ -738,20 +769,27 @@ public class MainActivity extends AppCompatActivity {
                 //showNetworkError();
             }
         }
-        ArrayList<Integer> list=sqlHelper.getReadNotices();
-        if (list!=null && list.size()>readList.size()) {
-            readList.clear();
-            readList.addAll(list);
+        ArrayList<Integer> list=mSqlHelper.getReadNotices();
+        if (list!=null && list.size()>mReadList.size()) {
+            mReadList.clear();
+            mReadList.addAll(list);
         }
     }
 
     private class SwipeRefreshListener implements SwipeRefreshLayout.OnRefreshListener{
+        private SwipeRefreshLayout mLayout;
+        public SwipeRefreshListener(SwipeRefreshLayout layout){
+            this.mLayout = layout;
+        }
+        public SwipeRefreshLayout getLayout(){
+            return this.mLayout;
+        }
         @Override
         public void onRefresh() {
             new Handler().post(new Runnable() {
                 @Override
                 public void run() {
-                    swipeRefreshLayout.setRefreshing(false);
+                    getLayout().setRefreshing(false);
                     swiperefresh=true;
                     changeList();
                 }
@@ -777,7 +815,7 @@ public class MainActivity extends AppCompatActivity {
         showMessage("Check Network Connection");
     }
     public void showMessage(String msg){
-        Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
+        Snackbar snackbar=Snackbar.make((CoordinatorLayout) findViewById(R.id.main_content),msg,Snackbar.LENGTH_SHORT);
         TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
         tv.setGravity(Gravity.CENTER);
         tv.setTextColor(getResources().getColor(R.color.colorPrimary));
@@ -785,7 +823,7 @@ public class MainActivity extends AppCompatActivity {
         tv.setTypeface(null, Typeface.BOLD);
         snackbar.show();
     }
-    public void showMessage(){
+*//*    public void showMessage(){
         Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
         TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
         tv.setGravity(Gravity.CENTER);
@@ -794,7 +832,7 @@ public class MainActivity extends AppCompatActivity {
         tv.setTypeface(null, Typeface.BOLD);
         snackbar.show();
         msg=null;
-    }
+    }*//*
     public void setTitle(String title){
         try {
             getSupportActionBar().setTitle(title.replaceAll("%20", " "));
@@ -926,7 +964,9 @@ public class MainActivity extends AppCompatActivity {
             });
             dialog.show();
         }
-        else
+        else {
+            ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
             listView.getChildAt(0).performClick();
-    }
+        }
+    }*/
 }

@@ -20,14 +20,26 @@ import okhttp3.Headers;
  */
 
 public abstract class AsynchronousGet {
-//    private final OkHttpClient mClient = new OkHttpClient();
 
-    //Implement these method
-    public abstract void onSuccess(String responseBody, Headers responseHeaders);
-    public abstract void onFail(IOException e);
-    public abstract OkHttpClient getClient();
+    private OkHttpClient mClient;
+    private boolean mCompleted;
+
+    public abstract OkHttpClient setClient();
+    public abstract void onSuccess(String responseBody, Headers responseHeaders, int responseCode);
+    public abstract void onFail(Exception e);
+
+    public OkHttpClient getClient(){ return this.mClient; }
+    public boolean isCompleted(){ return this.mCompleted; }
+    public void setCompletion(boolean flag){ this.mCompleted = flag; }
+
+    public AsynchronousGet(){
+        this.mCompleted = true;
+        this.mClient = setClient();
+        if (mClient == null) this.mClient = new OkHttpClient();
+    }
 
     public void getResponse(String url, Map<String,String> headers, Map<String,String> params){
+        setCompletion(false);
         Request.Builder requestBuilder = new Request.Builder();
 
         HttpUrl.Builder urlBuilder = HttpUrl.parse(url).newBuilder();
@@ -49,30 +61,25 @@ public abstract class AsynchronousGet {
 
         getClient().newCall(requestBuilder.build()).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(Call call, final IOException e) {
                 e.printStackTrace();
+                setCompletion(true);
                 onFail(e);
             }
 
             @Override
             public void onResponse(Call call, final Response response) {
                 //TODO: Raise proper exception
-                if (!response.isSuccessful()) onFail(new IOException(""));
+                if (!response.isSuccessful() && !response.isRedirect()) onFail(new IOException(""));
+                setCompletion(true);
 
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            onSuccess(response.body().string(),response.headers());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            //TODO: Raise proper exception
-                            onFail(new IOException(""));
-                        }
-                    }
-                });
-
+                try {
+                    onSuccess(response.body().string(),response.headers(),response.code());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    //TODO: Raise proper exception
+                    onFail(new IOException(""));
+                }
             }
         });
     }

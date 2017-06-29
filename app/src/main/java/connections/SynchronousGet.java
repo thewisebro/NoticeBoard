@@ -17,9 +17,13 @@ import okhttp3.Response;
  */
 
 public abstract class SynchronousGet {
-//    private final OkHttpClient mClient=new OkHttpClient();
-
-    public abstract OkHttpClient getClient();
+    private OkHttpClient mClient;
+    public abstract OkHttpClient setClient();
+    public OkHttpClient getClient(){ return this.mClient; }
+    public SynchronousGet(){
+        this.mClient = setClient();
+        if (mClient == null) this.mClient = new OkHttpClient();
+    }
     public Map getResponse(String url, Map<String,String> headers, Map<String,String> params) throws IOException {
 
         Map<String,Object> responseMap = new HashMap<String,Object>();
@@ -45,10 +49,11 @@ public abstract class SynchronousGet {
         }
 
         Response response = getClient().newCall(requestBuilder.build()).execute();
-        if (!response.isSuccessful()) throw new IOException("");
+        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("");
 
         responseMap.put("headers",response.headers());
         responseMap.put("body",response.body().string());
+        responseMap.put("code",response.code());
         responseMap.put("status","success");
 
         return responseMap;
