@@ -1,29 +1,32 @@
 package com.channeli.noticeboard;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
-import android.support.v4.util.TimeUtils;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.format.DateUtils;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.ExpandableListView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.GlideBuilder;
-import com.bumptech.glide.GlideContext;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
-import com.bumptech.glide.annotation.GlideModule;
-import com.bumptech.glide.module.AppGlideModule;
 import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
@@ -34,31 +37,38 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import adapters.CustomDrawerListViewAdapter;
+import adapters.CustomRecyclerViewAdapter;
 import connections.AsynchronousGet;
 import objects.DrawerItem;
+import objects.NoticeObject;
 import objects.User;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
+import utilities.EndlessRecyclerViewScrollListener;
 import utilities.Parsing;
 import utilities.RoundImageView;
 import utilities.SQLHelper;
 
 public class Notices extends AppCompatActivity {
 
+    public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4;
+    public static final String NOTICE_OLD = "old", NOTICE_NEW = "new", NOTICE_ALL="All";
 
-    public static final String UrlOfHost="http://people.iitr.ernet.in/";
-    public static final String UrlOfNotice = UrlOfHost+"notices/";
-    public static final String UrlOfLogin = UrlOfHost+"login/";
-    public static final String UrlOfPeopleSearch = UrlOfHost+"peoplesearch/";
-    public static final String UrlOfFCMRegistration = UrlOfHost+"push_subscription_sync/";
-    public static final String UrlOfPhoto = UrlOfHost+"photo/";
+    public static final String HOST_URL="http://people.iitr.ernet.in/";
+    public static final String NOTICES_URL = HOST_URL+"notices/";
+    public static final String LOGIN_URL = HOST_URL+"login/";
+    public static final String PEOPLE_SEARCH_URL = HOST_URL+"peoplesearch/";
+//    public static final String UrlOfFCMRegistration = HOST_URL+"push_subscription_sync/";
+    public static final String PHOTO_URL = HOST_URL+"photo/";
     public static final String PREFS_NAME = "MyPrefsFile";
     public static String NoticeType = "new", MainCategory = "All", Category="All";
 
@@ -66,7 +76,12 @@ public class Notices extends AppCompatActivity {
     private SharedPreferences.Editor mEditor;
     private User mUser;
     private CookieJar mCookieJar;
-    private SQLHelper sqlHelper;
+    private SQLHelper mSqlHelper;
+    private ArrayList<DrawerItem> mDrawerItems=new ArrayList<>();
+    private ArrayList<NoticeObject> mNoticeList;
+    private ArrayList<NoticeObject> mStarredList;
+    private ArrayList<Integer> mReadList;
+    private CustomRecyclerViewAdapter customRecyclerViewAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,39 +93,76 @@ public class Notices extends AppCompatActivity {
         setContentView(R.layout.main);
 
         //Initialize instance variables
-        sqlHelper = new SQLHelper(getApplicationContext());
+        mSqlHelper = new SQLHelper(getApplicationContext());
         mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
         mUser = new User(mSharedPreferences.getString("username","14115019"),
                 mSharedPreferences.getString("csrftoken",""), mSharedPreferences.getString("CHANNELI_SESSID","")
         );
+        mNoticeList=new ArrayList<NoticeObject>();
+        mStarredList=new ArrayList<NoticeObject>();
+        mReadList=new ArrayList<Integer>();
+
         //Set up Cookies for networking
         SetCookieCache cookieCache = new SetCookieCache();
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name("csrftoken").value(mUser.getCsrfToken()).domain(Notices.UrlOfHost).build());
-            cookieList.add(new Cookie.Builder().name("CHANNELI_SESSID").value(mUser.getChanneliSessid()).domain(Notices.UrlOfHost).build());
+            cookieList.add(new Cookie.Builder().name("csrftoken").value(mUser.getCsrfToken()).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name("CHANNELI_SESSID").value(mUser.getChanneliSessid()).domain(Notices.HOST_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
         mCookieJar = new PersistentCookieJar(cookieCache,cookiePersistor);
 
+        //Set up Toolbar
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
         //TODO: Set up views
-        setDrawerProfile();
+        setDrawerLayout();
         setDrawerList();
         setListView();
 
         //TODO: GET user details, constants, notices
         fetchUserDetails();
         fetchConstants();
-        fetchNotices();
+        fetchNotices(NOTICE_NEW, NOTICE_ALL, NOTICE_ALL, 0, 20, TYPE_LIST);
     }
 
-    private void fetchNotices(){
+    private void fetchNotices(String noticeType, String category, String mainCategory, int offset, int count, int type){
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mUser.getCsrfToken());
+        new AsynchronousGet() {
+            @Override
+            public OkHttpClient setClient() {
+                return new OkHttpClient.Builder()
+                        .cookieJar(mCookieJar)
+//                        .followRedirects(false)
+//                        .followSslRedirects(false)
+                        .build();
+            }
 
+            @Override
+            public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                try {
+                    ArrayList<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
+                    mNoticeList.addAll(list);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFail(Exception e) {
+
+            }
+        }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,"",type), headers, null);
     }
     private void fetchConstants(){
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mUser.getCsrfToken());
         new AsynchronousGet() {
             @Override
             public OkHttpClient setClient() {
@@ -121,17 +173,20 @@ public class Notices extends AppCompatActivity {
 
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
-                ArrayList<DrawerItem> list=new ArrayList<>();
-                list.addAll(new Parsing().parseConstants(responseBody));
-                if(list.size()>0){
-                    Set<String> constantSet=new HashSet<>(list.size());
-                    for(int i=0;i<list.size();i++) {
-                        Set<String> s=new HashSet<>(list.get(i).getCategories());
-                        mEditor.putStringSet(list.get(i).getName(),s);
-                        constantSet.add(list.get(i).getName());
+                try {
+                    mDrawerItems.addAll(new Parsing().parseConstants(responseBody));
+                    if (mDrawerItems.size() > 0) {
+                        Set<String> constantSet = new HashSet<>(mDrawerItems.size());
+                        for (int i = 0; i < mDrawerItems.size(); i++) {
+                            Set<String> s = new HashSet<>(mDrawerItems.get(i).getCategories());
+                            mEditor.putStringSet(mDrawerItems.get(i).getName(), s);
+                            constantSet.add(mDrawerItems.get(i).getName());
+                        }
+                        mEditor.putStringSet("constants", constantSet);
+                        mEditor.apply();
                     }
-                    mEditor.putStringSet("constants", constantSet);
-                    mEditor.apply();
+                } catch (JSONException e){
+
                 }
             }
 
@@ -139,9 +194,12 @@ public class Notices extends AppCompatActivity {
             public void onFail(Exception e) {
 
             }
-        }.getResponse(Notices.UrlOfNotice + "get_constants/",null,null);
+        }.getResponse(Notices.NOTICES_URL + "get_constants/", headers, null);
     }
     private void fetchUserDetails(){
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mUser.getCsrfToken());
         new AsynchronousGet() {
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
@@ -185,11 +243,11 @@ public class Notices extends AppCompatActivity {
                         .cookieJar(mCookieJar)
                         .build();
             }
-        }.getResponse(Notices.UrlOfPeopleSearch + "return_details/?username=" + mUser.getUsername(), null, null);
+        }.getResponse(Notices.PEOPLE_SEARCH_URL + "return_details/?username=" + mUser.getUsername(), headers, null);
     }
     private void fetchUserPhoto(){
         RoundImageView imageView = (RoundImageView) findViewById(R.id.profile_picture);
-        Glide.with(Notices.this).load(UrlOfPhoto+mUser.getEnrollmentNo()).listener(new RequestListener<Drawable>() {
+        Glide.with(Notices.this).load(PHOTO_URL+mUser.getEnrollmentNo()).listener(new RequestListener<Drawable>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                 return false;
@@ -198,11 +256,10 @@ public class Notices extends AppCompatActivity {
             public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                 //Convert drawable to bitmap
                 Bitmap bitmap = null;
-
                 if (resource instanceof BitmapDrawable) {
                     BitmapDrawable bitmapDrawable = (BitmapDrawable) resource;
                     if(bitmapDrawable.getBitmap() != null) {
-                        sqlHelper.addProfilePic(bitmapDrawable.getBitmap());
+                        mSqlHelper.addProfilePic(bitmapDrawable.getBitmap());
                         return false;
                     }
                 }
@@ -216,22 +273,93 @@ public class Notices extends AppCompatActivity {
                 Canvas canvas = new Canvas(bitmap);
                 resource.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                 resource.draw(canvas);
-                sqlHelper.addProfilePic(bitmap);
-
+                mSqlHelper.addProfilePic(bitmap);
                 return false;
             }
         }).into(imageView);
-//        .with(Notices.this).placeholder(R.drawable.ic_person_black_24dp).fitCenter().into(imageView);
     }
 
     private void setListView(){
+        RecyclerView listView = (RecyclerView) findViewById(R.id.list_view);
+        customRecyclerViewAdapter = new CustomRecyclerViewAdapter(Notices.this, R.layout.list_itemview, mNoticeList, mStarredList, mReadList);
+        listView.setAdapter(customRecyclerViewAdapter);
 
+        LinearLayoutManager layoutManager=new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        listView.setLayoutManager(layoutManager);
+        listView.setOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
+            @Override
+            public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
+                if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && (!MainCategory.equals("Starred"))){
+//                    fetchNotices();
+                }
+            }
+        });
     }
     private void setDrawerList(){
+        final ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
 
+        listView.setAdapter(new CustomDrawerListViewAdapter(mDrawerItems,this){
+            int lastGroup=-1;
+
+            @Override
+            public void OnIndicatorClick(boolean isExpanded, int position) {
+                if(isExpanded) {
+                    listView.collapseGroup(position);
+                } else {
+                    listView.expandGroup(position);
+                    if(lastGroup!=position) listView.collapseGroup(lastGroup);
+                    lastGroup=position;
+                }
+            }
+            @Override
+            public void OnGroupItemClick(boolean isExpanded, int position) {
+                if (isExpanded) {
+                    listView.collapseGroup(position);
+                }
+                else {
+                    if(lastGroup!=position) {
+                        listView.collapseGroup(lastGroup);
+                    }
+                    lastGroup=position;
+                    clickListener(position, -1);
+                    if (checkDrawerColorChange(position)) {
+                        this.groupPos = position;
+                        this.childPos = -1;
+                    }
+                    notifyDataSetChanged();
+                }
+            }
+            @Override
+            public void OnChildItemClick(int gp, int cp){
+                clickListener(gp, cp);
+                this.groupPos=gp;
+                this.childPos=cp;
+                notifyDataSetChanged();
+            }
+        });
     }
-    private void setDrawerProfile(){
 
+    private void setDrawerLayout(){
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle(
+                this,
+                drawerLayout,
+                R.string.drawer_open,
+                R.string.drawer_close
+        ) {
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+            }
+
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+            }
+        };
+
+        drawerLayout.setDrawerListener(drawerToggle);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+        drawerToggle.syncState();
     }
 
     private void populateListView(){
@@ -242,6 +370,64 @@ public class Notices extends AppCompatActivity {
     }
     private void populateDrawerProfile(){
 
+    }
+    private void clickListener(int groupPosition, int childPosition){
+        ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawers();
+        switch (mDrawerItems.get(groupPosition).getName()) {
+            case "Starred": //Starred
+                MainCategory = "Starred";
+                Category = "All";
+//                selectItem();
+                break;
+            case "Notifications Settings":
+                Intent intent1=new Intent(Notices.this,SubscriptionSettings.class);
+                startActivity(intent1);
+                break;
+            case "Feedback": //Feedback
+                Intent intent2 = new Intent(Intent.ACTION_VIEW);
+                intent2.setData(Uri.parse("market://details?id=com.channeli.noticeboard"));
+                startActivity(intent2);
+                break;
+            case "Logout": //Logout
+//                logout();
+                break;
+            default:
+                MainCategory = mDrawerItems.get(groupPosition).getName();
+                if(childPosition<0)
+                    Category="All";
+                else
+                    Category = mDrawerItems.get(groupPosition).getCategories().get(childPosition);
+//                selectItem();
+        }
+    }
+    public boolean checkDrawerColorChange(int pos){
+        String gp_name=mDrawerItems.get(pos).getName();
+        if (gp_name.contains("Notification"))
+            return false;
+        if (gp_name.contains("Feedback"))
+            return false;
+        if (gp_name.contains("Logout"))
+            return false;
+        return true;
+    }
+    private String generateUrl(String noticeType, String category, String mainCategory, Integer offset, Integer count, int nextId,String query, int type){
+        switch (type){
+            case TYPE_LIST: {
+                return Notices.NOTICES_URL + TextUtils.join("/", new String[]{ "list_notices", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
+                        , category.replaceAll(" ", "%20"), String.valueOf(offset), String.valueOf(count), String.valueOf(nextId)});
+            }
+            case TYPE_SEARCH: {
+                return NOTICES_URL + TextUtils.join("/", new String[]{ "search", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
+                        , category.replaceAll(" ", "%20"), "?=" + query });
+            }
+            case TYPE_STARRED: {
+                return NOTICES_URL + "star_notice_list";
+            }
+            case TYPE_READ: {
+                return NOTICES_URL + "read_notice_list";
+            }
+            default: return null;
+        }
     }
 }
 

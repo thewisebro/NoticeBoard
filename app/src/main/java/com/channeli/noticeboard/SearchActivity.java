@@ -34,6 +34,7 @@ import com.roughike.bottombar.OnTabSelectListener;
 import com.squareup.leakcanary.LeakCanary;
 
 import org.apache.http.client.methods.HttpGet;
+import org.json.JSONException;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -319,6 +320,8 @@ public class SearchActivity extends AppCompatActivity {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
             //task.cancel(true);

@@ -202,7 +202,6 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setAdapter(mCustomAdapter);
         WrapContentLinearLayoutManager layoutManager=new WrapContentLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-        mRecyclerView.setLayoutManager(layoutManager);
 
 
         mScrollListener=new EndlessRecyclerViewScrollListener(layoutManager) {
