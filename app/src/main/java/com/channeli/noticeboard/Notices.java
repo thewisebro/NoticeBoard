@@ -18,6 +18,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
@@ -36,6 +37,7 @@ import com.squareup.leakcanary.LeakCanary;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +48,7 @@ import java.util.Set;
 import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
 import connections.AsynchronousGet;
+import connections.SynchronousGet;
 import objects.DrawerItem;
 import objects.NoticeObject;
 import objects.User;
@@ -82,6 +85,7 @@ public class Notices extends AppCompatActivity {
     private ArrayList<NoticeObject> mStarredList;
     private ArrayList<Integer> mReadList;
     private CustomRecyclerViewAdapter customRecyclerViewAdapter;
+    private ActionBarDrawerToggle mDrawerToggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,10 +130,60 @@ public class Notices extends AppCompatActivity {
         //TODO: GET user details, constants, notices
         fetchUserDetails();
         fetchConstants();
-        fetchNotices(NOTICE_NEW, NOTICE_ALL, NOTICE_ALL, 0, 20, TYPE_LIST);
+        fetchFirstTimeNotices(Notices.NOTICE_NEW, Notices.NOTICE_ALL, Notices.NOTICE_ALL, null, Notices.TYPE_LIST);
+//        fetchNotices(NOTICE_NEW, NOTICE_ALL, NOTICE_ALL, 0, 20, "", TYPE_LIST);
+    }
+    private void fetchFirstTimeNotices(final String noticeType, final String category, final String mainCategory, final String query, final int type){
+        new Thread(){
+            @Override
+            public void run(){
+                Map<String,String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+                headers.put("X-CSRFToken", mUser.getCsrfToken());
+                try {
+                    mReadList = Parsing.parseReadNotices(
+                            (String) new SynchronousGet() {
+                                @Override
+                                public OkHttpClient setClient() {
+                                    return new OkHttpClient.Builder()
+                                            .cookieJar(mCookieJar)
+                                            .build();
+                                }
+                            }.getResponse(Notices.NOTICES_URL + "read_notice_list",headers,null)
+                                    .get("body")
+                    );
+                    mStarredList = Parsing.parseStarredNotices(
+                            (String) new SynchronousGet() {
+                                @Override
+                                public OkHttpClient setClient() {
+                                    return new OkHttpClient.Builder()
+                                            .cookieJar(mCookieJar)
+                                            .build();
+                                }
+                            }.getResponse(Notices.NOTICES_URL + "star_notice_list",headers,null)
+                                    .get("body"),
+                            mReadList
+                    );
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (type != Notices.TYPE_LIST && type != Notices.TYPE_STARRED) {
+                                fetchNotices(noticeType, category, mainCategory, 0, 20, query, type);
+                            } else {
+
+                            }
+                        }
+                    });
+                }catch (JSONException e){
+                    e.printStackTrace();
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }.run();
     }
 
-    private void fetchNotices(String noticeType, String category, String mainCategory, int offset, int count, int type){
+    private void fetchNotices(String noticeType, String category, String mainCategory, int offset, int count, String query, int type){
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mUser.getCsrfToken());
@@ -157,7 +211,7 @@ public class Notices extends AppCompatActivity {
             public void onFail(Exception e) {
 
             }
-        }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,"",type), headers, null);
+        }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,query,type), headers, null);
     }
     private void fetchConstants(){
         Map<String,String> headers = new HashMap<>();
@@ -341,7 +395,7 @@ public class Notices extends AppCompatActivity {
 
     private void setDrawerLayout(){
         DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle(
+        mDrawerToggle = new ActionBarDrawerToggle(
                 this,
                 drawerLayout,
                 R.string.drawer_open,
@@ -356,10 +410,10 @@ public class Notices extends AppCompatActivity {
             }
         };
 
-        drawerLayout.setDrawerListener(drawerToggle);
+        drawerLayout.setDrawerListener(mDrawerToggle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
-        drawerToggle.syncState();
+        mDrawerToggle.syncState();
     }
 
     private void populateListView(){
@@ -428,6 +482,13 @@ public class Notices extends AppCompatActivity {
             }
             default: return null;
         }
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
 
