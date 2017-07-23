@@ -89,7 +89,7 @@ public class SplashScreen  extends Activity{
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                Intent intent = new Intent(SplashScreen.this, MainActivity.class);
+                Intent intent = new Intent(SplashScreen.this, Notices.class);
                 if (getIntent().getBooleanExtra("notification",false))
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 else

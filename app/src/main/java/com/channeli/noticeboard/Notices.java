@@ -84,8 +84,10 @@ public class Notices extends AppCompatActivity {
     private ArrayList<NoticeObject> mNoticeList;
     private ArrayList<NoticeObject> mStarredList;
     private ArrayList<Integer> mReadList;
-    private CustomRecyclerViewAdapter customRecyclerViewAdapter;
+    private CustomRecyclerViewAdapter mCustomRecyclerViewAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
+    private RecyclerView mRecyclerView;
+    private CustomDrawerListViewAdapter mCustomDrawerListViewAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,7 +169,7 @@ public class Notices extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (type != Notices.TYPE_LIST && type != Notices.TYPE_STARRED) {
+                            if (type == Notices.TYPE_LIST ) {
                                 fetchNotices(noticeType, category, mainCategory, 0, 20, query, type);
                             } else {
 
@@ -180,10 +182,21 @@ public class Notices extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-        }.run();
+        }.start();
     }
 
     private void fetchNotices(String noticeType, String category, String mainCategory, int offset, int count, String query, int type){
+
+        mRecyclerView.stopScroll();
+
+        if (MainCategory.equals(Category)) {          //For All - All
+            setTitle(MainCategory);
+        }
+        else {
+            setTitle(MainCategory + " - " + Category);
+        }
+        mRecyclerView.stopScroll();
+
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mUser.getCsrfToken());
@@ -202,6 +215,12 @@ public class Notices extends AppCompatActivity {
                 try {
                     ArrayList<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
                     mNoticeList.addAll(list);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            populateListView();
+                        }
+                    });
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -239,6 +258,12 @@ public class Notices extends AppCompatActivity {
                         mEditor.putStringSet("constants", constantSet);
                         mEditor.apply();
                     }
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            populateDrawerList();
+                        }
+                    });
                 } catch (JSONException e){
 
                 }
@@ -334,13 +359,13 @@ public class Notices extends AppCompatActivity {
     }
 
     private void setListView(){
-        RecyclerView listView = (RecyclerView) findViewById(R.id.list_view);
-        customRecyclerViewAdapter = new CustomRecyclerViewAdapter(Notices.this, R.layout.list_itemview, mNoticeList, mStarredList, mReadList);
-        listView.setAdapter(customRecyclerViewAdapter);
+        mRecyclerView = (RecyclerView) findViewById(R.id.list_view);
+        mCustomRecyclerViewAdapter = new CustomRecyclerViewAdapter(Notices.this, R.layout.list_itemview, mNoticeList, mStarredList, mReadList);
+        mRecyclerView.setAdapter(mCustomRecyclerViewAdapter);
 
         LinearLayoutManager layoutManager=new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        listView.setLayoutManager(layoutManager);
-        listView.setOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
                 if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && (!MainCategory.equals("Starred"))){
@@ -350,29 +375,28 @@ public class Notices extends AppCompatActivity {
         });
     }
     private void setDrawerList(){
-        final ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
-
-        listView.setAdapter(new CustomDrawerListViewAdapter(mDrawerItems,this){
+        final ExpandableListView drawerListView= (ExpandableListView) findViewById(R.id.drawer_menu);
+        mCustomDrawerListViewAdapter = new CustomDrawerListViewAdapter(mDrawerItems,this){
             int lastGroup=-1;
 
             @Override
             public void OnIndicatorClick(boolean isExpanded, int position) {
                 if(isExpanded) {
-                    listView.collapseGroup(position);
+                    drawerListView.collapseGroup(position);
                 } else {
-                    listView.expandGroup(position);
-                    if(lastGroup!=position) listView.collapseGroup(lastGroup);
+                    drawerListView.expandGroup(position);
+                    if(lastGroup!=position) drawerListView.collapseGroup(lastGroup);
                     lastGroup=position;
                 }
             }
             @Override
             public void OnGroupItemClick(boolean isExpanded, int position) {
                 if (isExpanded) {
-                    listView.collapseGroup(position);
+                    drawerListView.collapseGroup(position);
                 }
                 else {
                     if(lastGroup!=position) {
-                        listView.collapseGroup(lastGroup);
+                        drawerListView.collapseGroup(lastGroup);
                     }
                     lastGroup=position;
                     clickListener(position, -1);
@@ -390,7 +414,9 @@ public class Notices extends AppCompatActivity {
                 this.childPos=cp;
                 notifyDataSetChanged();
             }
-        });
+        };
+
+        drawerListView.setAdapter(mCustomDrawerListViewAdapter);
     }
 
     private void setDrawerLayout(){
@@ -417,14 +443,29 @@ public class Notices extends AppCompatActivity {
     }
 
     private void populateListView(){
+        mRecyclerView.getRecycledViewPool().clear();
+        mCustomRecyclerViewAdapter.notifyDataSetChanged();
 
+        if (mNoticeList.size() > 0) {
+            findViewById(R.id.no_notice).setVisibility(View.GONE);
+        }
+        else {
+            findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
+        }
+
+        //mScrollListener.resetState()
     }
     private void populateDrawerList(){
-
+        mDrawerItems.add(new DrawerItem("Starred", null));
+        mDrawerItems.add(new DrawerItem("", null));
+        mDrawerItems.add(new DrawerItem("Notifications Settings", null));
+        mDrawerItems.add(new DrawerItem("Feedback", null));
+        mDrawerItems.add(new DrawerItem("Logout", null));
+        mCustomDrawerListViewAdapter.notifyDataSetChanged();
     }
-    private void populateDrawerProfile(){
+/*    private void populateDrawerProfile(){
 
-    }
+    }*/
     private void clickListener(int groupPosition, int childPosition){
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawers();
         switch (mDrawerItems.get(groupPosition).getName()) {

@@ -367,6 +367,8 @@ public class Login extends AppCompatActivity {
                         mEditor.putString("info", response.getString("info"));
                         mEditor.putString("enrollment_no", response.getString("enrollment_no"));
                         mEditor.apply();
+
+                        startActivity(new Intent(Login.this,Notices.class));
                     } catch (JSONException e) {
                         e.printStackTrace();
                         onFail(new JSONException(""));
