@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/tab_new"
+        android:icon="@drawable/ic_schedule_black_24dp"
+        android:title="Current"
+        android:enabled="true"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/tab_old"
+        android:icon="@drawable/ic_restore_black_24dp"
+        android:title="Expired"
+        android:enabled="true"
+        app:showAsAction="ifRoom"/>
+</menu>

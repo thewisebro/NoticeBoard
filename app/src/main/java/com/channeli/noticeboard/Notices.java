@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+import com.squareup.haha.perflib.Main;
 import com.squareup.leakcanary.LeakCanary;
 
 import org.json.JSONException;
@@ -73,6 +75,7 @@ public class Notices extends AppCompatActivity {
 //    public static final String UrlOfFCMRegistration = HOST_URL+"push_subscription_sync/";
     public static final String PHOTO_URL = HOST_URL+"photo/";
     public static final String PREFS_NAME = "MyPrefsFile";
+    public static final int BATCH_SIZE = 20;
     public static String NoticeType = "new", MainCategory = "All", Category="All";
 
     private SharedPreferences mSharedPreferences;
@@ -88,6 +91,7 @@ public class Notices extends AppCompatActivity {
     private ActionBarDrawerToggle mDrawerToggle;
     private RecyclerView mRecyclerView;
     private CustomDrawerListViewAdapter mCustomDrawerListViewAdapter;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,7 +100,7 @@ public class Notices extends AppCompatActivity {
             return;
         }
         LeakCanary.install(getApplication());
-        setContentView(R.layout.main);
+        setContentView(R.layout.activity_notices);
 
         //Initialize instance variables
         mSqlHelper = new SQLHelper(getApplicationContext());
@@ -170,7 +174,7 @@ public class Notices extends AppCompatActivity {
                         @Override
                         public void run() {
                             if (type == Notices.TYPE_LIST ) {
-                                fetchNotices(noticeType, category, mainCategory, 0, 20, query, type);
+                                fetchNotices(noticeType, category, mainCategory, 0, BATCH_SIZE, query, type);
                             } else {
 
                             }
@@ -189,13 +193,20 @@ public class Notices extends AppCompatActivity {
 
         mRecyclerView.stopScroll();
 
-        if (MainCategory.equals(Category)) {          //For All - All
-            setTitle(MainCategory);
+        if (mainCategory.equals(category)) {          //For All - All
+            setTitle(mainCategory);
         }
         else {
-            setTitle(MainCategory + " - " + Category);
+            setTitle(mainCategory + " - " + category);
         }
         mRecyclerView.stopScroll();
+
+        if (type == TYPE_STARRED){
+//            mNoticeList.clear();
+            mNoticeList.addAll(mStarredList);
+            populateListView();
+            return;
+        }
 
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
@@ -369,8 +380,19 @@ public class Notices extends AppCompatActivity {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
                 if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && (!MainCategory.equals("Starred"))){
-//                    fetchNotices();
+                    fetchNotices( NoticeType, Category, MainCategory, totalItemsCount, totalItemsCount + BATCH_SIZE, null, TYPE_LIST);
                 }
+            }
+        });
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+
+        mSwipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorAccentDark)
+                ,getResources().getColor(R.color.colorPrimaryDark));
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                mRecyclerView.setEnabled(false);
+                fetchFirstTimeNotices(NoticeType,Category, MainCategory,null,TYPE_LIST);
             }
         });
     }
@@ -443,6 +465,7 @@ public class Notices extends AppCompatActivity {
     }
 
     private void populateListView(){
+
         mRecyclerView.getRecycledViewPool().clear();
         mCustomRecyclerViewAdapter.notifyDataSetChanged();
 
@@ -452,7 +475,8 @@ public class Notices extends AppCompatActivity {
         else {
             findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
         }
-
+        mRecyclerView.setEnabled(true);
+        mSwipeRefreshLayout.setRefreshing(false);
         //mScrollListener.resetState()
     }
     private void populateDrawerList(){
@@ -468,10 +492,13 @@ public class Notices extends AppCompatActivity {
     }*/
     private void clickListener(int groupPosition, int childPosition){
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawers();
+
         switch (mDrawerItems.get(groupPosition).getName()) {
             case "Starred": //Starred
                 MainCategory = "Starred";
                 Category = "All";
+                mNoticeList.clear();
+                fetchNotices(null,Category,MainCategory,0,0,null,TYPE_STARRED);
 //                selectItem();
                 break;
             case "Notifications Settings":
@@ -487,11 +514,15 @@ public class Notices extends AppCompatActivity {
 //                logout();
                 break;
             default:
+                mNoticeList.clear();
                 MainCategory = mDrawerItems.get(groupPosition).getName();
-                if(childPosition<0)
-                    Category="All";
-                else
+                if(childPosition<0) {
+                    Category = "All";
+                }
+                else {
                     Category = mDrawerItems.get(groupPosition).getCategories().get(childPosition);
+                }
+                fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
 //                selectItem();
         }
     }
