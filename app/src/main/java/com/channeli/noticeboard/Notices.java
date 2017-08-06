@@ -1,26 +1,36 @@
 package com.channeli.noticeboard;
 
+import android.app.SearchManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 
@@ -33,6 +43,9 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.roughike.bottombar.BottomBar;
+import com.roughike.bottombar.OnTabSelectListener;
 import com.squareup.haha.perflib.Main;
 import com.squareup.leakcanary.LeakCanary;
 
@@ -40,6 +53,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +106,7 @@ public class Notices extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     private CustomDrawerListViewAdapter mCustomDrawerListViewAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private BottomBar mBottomBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +115,7 @@ public class Notices extends AppCompatActivity {
             return;
         }
         LeakCanary.install(getApplication());
-        setContentView(R.layout.activity_notices);
+        setContentView(R.layout.main);
 
         //Initialize instance variables
         mSqlHelper = new SQLHelper(getApplicationContext());
@@ -132,6 +147,7 @@ public class Notices extends AppCompatActivity {
         setDrawerLayout();
         setDrawerList();
         setListView();
+        setBottomBar();
 
         //TODO: GET user details, constants, notices
         fetchUserDetails();
@@ -189,7 +205,7 @@ public class Notices extends AppCompatActivity {
         }.start();
     }
 
-    private void fetchNotices(String noticeType, String category, String mainCategory, int offset, int count, String query, int type){
+    private void fetchNotices(String noticeType, String category, String mainCategory, final int offset, int count, String query, int type){
 
         mRecyclerView.stopScroll();
 
@@ -225,6 +241,10 @@ public class Notices extends AppCompatActivity {
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
                 try {
                     ArrayList<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
+                    if (offset==0){
+                        mRecyclerView.smoothScrollToPosition(0);
+                        mNoticeList.clear();
+                    }
                     mNoticeList.addAll(list);
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
@@ -463,6 +483,26 @@ public class Notices extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         mDrawerToggle.syncState();
     }
+    private void setBottomBar(){
+        mBottomBar = (BottomBar) findViewById(R.id.bottom_bar);
+        mBottomBar.setOnTabSelectListener(new OnTabSelectListener() {
+            @Override
+            public void onTabSelected(int itemId) {
+//                refreshScroll = true;
+                switch (itemId) {
+                    case R.id.new_items:
+                        NoticeType = "new";
+//                        changeList();
+                        break;
+                    case R.id.old_items:
+                        NoticeType = "old";
+//                        changeList();
+                        break;
+                }
+                fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
+            }
+        });
+    }
 
     private void populateListView(){
 
@@ -511,7 +551,7 @@ public class Notices extends AppCompatActivity {
                 startActivity(intent2);
                 break;
             case "Logout": //Logout
-//                logout();
+                logout();
                 break;
             default:
                 mNoticeList.clear();
@@ -555,12 +595,153 @@ public class Notices extends AppCompatActivity {
             default: return null;
         }
     }
+
+    void cleanLogout(){
+        mEditor.clear();
+        mEditor.apply();
+        mSqlHelper.clear();
+        if (FirebaseMessaging.getInstance()!=null) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
+        }
+    }
+    //TODO: Proper logout
+    void logout(){
+        final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
+        dialog.setTitle("Logout");
+        dialog.setMessage("Are you sure you want to Logout?");
+        dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                dialog.show();
+            }
+        }, 250);
+
+    }
+
     @Override
-    public boolean onOptionsItemSelected(MenuItem item){
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        final MenuItem searchMenuItem=menu.findItem(R.id.search);
+        final SearchView searchView = (SearchView) searchMenuItem.getActionView();
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
+        searchView.setIconified(false);
+        //searchView.setSubmitButtonEnabled(true);
+        searchView.setQueryHint("Search notices");
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                searchView.clearFocus();
+                //hideKeyboard();
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
+                searchMenuItem.collapseActionView();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        searchView.clearFocus();
+        MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item) {
+                searchView.requestFocus();
+                ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).
+                        toggleSoftInput(InputMethodManager.SHOW_FORCED,
+                                InputMethodManager.HIDE_IMPLICIT_ONLY);
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item) {
+                searchView.clearFocus();
+                searchView.setQuery("", false);
+                searchView.setIconified(false);
+                //hideKeyboard();
+                searchView.setVisibility(View.INVISIBLE);
+                searchView.setVisibility(View.VISIBLE);
+                return true;
+            }
+        });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchView.setQuery("", false);
+                return true;
+            }
+        });
+        int searchPlateId = searchView.getContext().getResources().getIdentifier("android:id/search_plate", null, null);
+        View searchPlate = searchView.findViewById(searchPlateId);
+        if (searchPlate!=null) {
+            searchPlate.setBackground(getResources().getDrawable(R.drawable.normal));
+            int searchTextId = searchPlate.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+            TextView searchText = (TextView) searchPlate.findViewById(searchTextId);
+            if (searchText!=null) {
+                searchText.setTextColor(Color.BLACK);
+                searchText.setHintTextColor(Color.DKGRAY);
+                try {
+                    Field mCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
+                    mCursorDrawableRes.setAccessible(true);
+                    mCursorDrawableRes.set(searchText, 0); //This sets the cursor resource ID to 0 or @null which will make it visible on white background
+                } catch (Exception e) {}
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
         }
+
         return super.onOptionsItemSelected(item);
+    }
+    @Override
+    public void onBackPressed(){
+        if (MainCategory.contains("All")){
+            AlertDialog.Builder dialog=new AlertDialog.Builder(this);
+            dialog.setTitle("Exit");
+            dialog.setMessage("Are you sure you want to exit?");
+            dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+//                    closeDialog();
+                    finish();
+                }
+            });
+            dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            dialog.show();
+        }
+        else {
+            ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
+            listView.getChildAt(0).performClick();
+        }
     }
 }
 
