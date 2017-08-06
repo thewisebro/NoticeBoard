@@ -48,8 +48,9 @@ public class SubscriptionSettings extends ActionBarActivity {
             constants.add("Authorities");
             constants.add("Departments");
         }
-        else
+        else {
             constants.remove("All");
+        }
         List<String> listConstants=new ArrayList<>(constants);
         Collections.sort(listConstants);
 

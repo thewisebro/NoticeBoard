@@ -69,7 +69,6 @@ import objects.DrawerItem;
 import objects.NoticeObject;
 import objects.User;
 import okhttp3.Cookie;
-import okhttp3.CookieJar;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import utilities.EndlessRecyclerViewScrollListener;
@@ -79,6 +78,7 @@ import utilities.SQLHelper;
 
 public class Notices extends AppCompatActivity {
 
+    public static final String CHANNELI_SESSID="CHANNELI_SESSID",CSRF_TOKEN="csrftoken";
     public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4;
     public static final String NOTICE_OLD = "old", NOTICE_NEW = "new", NOTICE_ALL="All";
 
@@ -86,16 +86,15 @@ public class Notices extends AppCompatActivity {
     public static final String NOTICES_URL = HOST_URL+"notices/";
     public static final String LOGIN_URL = HOST_URL+"login/";
     public static final String PEOPLE_SEARCH_URL = HOST_URL+"peoplesearch/";
-//    public static final String UrlOfFCMRegistration = HOST_URL+"push_subscription_sync/";
     public static final String PHOTO_URL = HOST_URL+"photo/";
     public static final String PREFS_NAME = "MyPrefsFile";
     public static final int BATCH_SIZE = 20;
-    public static String NoticeType = "new", MainCategory = "All", Category="All";
+    public static String NoticeType = NOTICE_NEW, MainCategory = NOTICE_ALL, Category=NOTICE_ALL;
 
     private SharedPreferences mSharedPreferences;
     private SharedPreferences.Editor mEditor;
     private User mUser;
-    private CookieJar mCookieJar;
+    private PersistentCookieJar mCookieJar;
     private SQLHelper mSqlHelper;
     private ArrayList<DrawerItem> mDrawerItems=new ArrayList<>();
     private ArrayList<NoticeObject> mNoticeList;
@@ -122,7 +121,7 @@ public class Notices extends AppCompatActivity {
         mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
         mUser = new User(mSharedPreferences.getString("username","14115019"),
-                mSharedPreferences.getString("csrftoken",""), mSharedPreferences.getString("CHANNELI_SESSID","")
+                mSharedPreferences.getString(CSRF_TOKEN,""), mSharedPreferences.getString(CHANNELI_SESSID,"")
         );
         mNoticeList=new ArrayList<NoticeObject>();
         mStarredList=new ArrayList<NoticeObject>();
@@ -133,8 +132,8 @@ public class Notices extends AppCompatActivity {
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name("csrftoken").value(mUser.getCsrfToken()).domain(Notices.HOST_URL).build());
-            cookieList.add(new Cookie.Builder().name("CHANNELI_SESSID").value(mUser.getChanneliSessid()).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(CSRF_TOKEN).value(mUser.getCsrfToken()).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(CHANNELI_SESSID).value(mUser.getChanneliSessid()).domain(Notices.HOST_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
@@ -491,11 +490,11 @@ public class Notices extends AppCompatActivity {
 //                refreshScroll = true;
                 switch (itemId) {
                     case R.id.new_items:
-                        NoticeType = "new";
+                        NoticeType = NOTICE_NEW;
 //                        changeList();
                         break;
                     case R.id.old_items:
-                        NoticeType = "old";
+                        NoticeType = NOTICE_OLD;
 //                        changeList();
                         break;
                 }
@@ -536,7 +535,7 @@ public class Notices extends AppCompatActivity {
         switch (mDrawerItems.get(groupPosition).getName()) {
             case "Starred": //Starred
                 MainCategory = "Starred";
-                Category = "All";
+                Category = NOTICE_ALL;
                 mNoticeList.clear();
                 fetchNotices(null,Category,MainCategory,0,0,null,TYPE_STARRED);
 //                selectItem();
@@ -557,7 +556,7 @@ public class Notices extends AppCompatActivity {
                 mNoticeList.clear();
                 MainCategory = mDrawerItems.get(groupPosition).getName();
                 if(childPosition<0) {
-                    Category = "All";
+                    Category = NOTICE_ALL;
                 }
                 else {
                     Category = mDrawerItems.get(groupPosition).getCategories().get(childPosition);
@@ -596,16 +595,6 @@ public class Notices extends AppCompatActivity {
         }
     }
 
-    void cleanLogout(){
-        mEditor.clear();
-        mEditor.apply();
-        mSqlHelper.clear();
-        if (FirebaseMessaging.getInstance()!=null) {
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
-        }
-    }
     //TODO: Proper logout
     void logout(){
         final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
@@ -614,7 +603,18 @@ public class Notices extends AppCompatActivity {
         dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                mEditor.clear();
+                mEditor.apply();
+                mSqlHelper.clear();
+                mCookieJar.clear();
+                mCookieJar.clearSession();
+                if (FirebaseMessaging.getInstance()!=null) {
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic("Placement%20Office");
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
+                    FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
+                }
                 dialog.dismiss();
+                finish();
             }
         });
         dialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
@@ -630,7 +630,6 @@ public class Notices extends AppCompatActivity {
                 dialog.show();
             }
         }, 250);
-
     }
 
     @Override
@@ -719,14 +718,13 @@ public class Notices extends AppCompatActivity {
     }
     @Override
     public void onBackPressed(){
-        if (MainCategory.contains("All")){
+        if (MainCategory.contains(NOTICE_ALL)){
             AlertDialog.Builder dialog=new AlertDialog.Builder(this);
             dialog.setTitle("Exit");
             dialog.setMessage("Are you sure you want to exit?");
             dialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-//                    closeDialog();
                     finish();
                 }
             });

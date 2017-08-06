@@ -81,7 +81,7 @@ public class SearchActivity extends AppCompatActivity {
         parsing = new Parsing();
         sqlHelper=new SQLHelper(this);
         noticetype = "new";
-        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
+        searchUrl = Notices.NOTICES_URL+"search/"+noticetype+"/All/All/?q=";
         setTitle("Searched Results");
         handleIntent(getIntent());
         recyclerView = (RecyclerView) findViewById(R.id.search_list_view);
@@ -91,7 +91,7 @@ public class SearchActivity extends AppCompatActivity {
         starredList=new ArrayList<>();
         readList=new ArrayList<>();
 
-        SharedPreferences preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        SharedPreferences preferences=getSharedPreferences(Notices.PREFS_NAME, 0);
         csrftoken=preferences.getString("csrftoken","");
         CHANNELI_SESSID=preferences.getString("CHANNELI_SESSID","");
 
@@ -120,12 +120,12 @@ public class SearchActivity extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         noticetype="new";
-                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
+                        searchUrl = Notices.NOTICES_URL+"search/"+noticetype+"/All/All/?q=";
                         setNoticelist(searchUrl + query);
                         break;
                     case R.id.old_items:
                         noticetype="old";
-                        searchUrl = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q=";
+                        searchUrl = Notices.NOTICES_URL+"search/"+noticetype+"/All/All/?q=";
                         setNoticelist(searchUrl + query);
                         break;
                 }
@@ -247,7 +247,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void onTextSubmit(){
-        String url = MainActivity.UrlOfNotice+"search/"+noticetype+"/All/All/?q="+query;
+        String url = Notices.NOTICES_URL+"search/"+noticetype+"/All/All/?q="+query;
         Log.e("url sent for searching",url);
         setNoticelist(url);
     }
@@ -331,7 +331,7 @@ public class SearchActivity extends AppCompatActivity {
     }
     private void getStarredNotices(){
         if (isOnline()){
-            httpGet=new HttpGet(MainActivity.UrlOfNotice+"star_notice_list");
+            httpGet=new HttpGet(Notices.NOTICES_URL+"star_notice_list");
             try {
                 httpGet.addHeader("Cookie","csrftoken="+csrftoken);
                 httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -360,7 +360,7 @@ public class SearchActivity extends AppCompatActivity {
     }
     private void getReadNotices(){
         if (isOnline()){
-            httpGet=new HttpGet(MainActivity.UrlOfNotice+"read_notice_list/");
+            httpGet=new HttpGet(Notices.NOTICES_URL+"read_notice_list/");
             try {
                 httpGet.addHeader("Cookie","csrftoken="+csrftoken);
                 httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");

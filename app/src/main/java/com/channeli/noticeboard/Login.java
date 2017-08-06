@@ -335,7 +335,7 @@ public class Login extends AppCompatActivity {
             params.put("username",username);
             params.put("password",password);
             params.put("remember_me","on");
-            params.put("csrfmiddlewaretoken", getCookiesList(cookiePersistor.loadAll()).get("csrftoken"));
+            params.put("csrfmiddlewaretoken", getCookiesList(cookiePersistor.loadAll()).get(Notices.CSRF_TOKEN));
 
             new SynchronousPost() {
                 @Override
@@ -348,12 +348,12 @@ public class Login extends AppCompatActivity {
                 }
             }.getResponse(MainActivity.UrlOfLogin,null,params);
 
-            if (!getCookiesList(cookiePersistor.loadAll()).containsKey("CHANNELI_SESSID")){
+            if (!getCookiesList(cookiePersistor.loadAll()).containsKey(Notices.CHANNELI_SESSID)){
                 throw new IOException("");
             }
             mEditor.putString("username",username);
-            mEditor.putString("csrftoken",getCookiesList(cookiePersistor.loadAll()).get("csrftoken"));
-            mEditor.putString("CHANNELI_SESSID",getCookiesList(cookiePersistor.loadAll()).get("CHANNELI_SESSID"));
+            mEditor.putString(Notices.CSRF_TOKEN,getCookiesList(cookiePersistor.loadAll()).get(Notices.CSRF_TOKEN));
+            mEditor.putString(Notices.CHANNELI_SESSID,getCookiesList(cookiePersistor.loadAll()).get(Notices.CHANNELI_SESSID));
             mEditor.apply();
 
             new AsynchronousGet() {
