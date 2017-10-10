@@ -5,7 +5,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
 import android.view.Menu;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 
-public class SubscriptionSettings extends ActionBarActivity {
+public class SubscriptionSettings extends AppCompatActivity {
     SharedPreferences preferences;
     SharedPreferences.Editor editor;
     Set<String> subscriptions=new HashSet<>();

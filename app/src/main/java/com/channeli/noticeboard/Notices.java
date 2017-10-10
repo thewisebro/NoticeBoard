@@ -78,7 +78,7 @@ import utilities.SQLHelper;
 
 public class Notices extends AppCompatActivity {
 
-    public static final String CHANNELI_SESSID="CHANNELI_SESSID",CSRF_TOKEN="csrftoken";
+    public static final String CHANNELI_SESSID="CHANNELI_SESSID",CSRF_TOKEN="csrftoken",USERNAME="username";
     public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4;
     public static final String NOTICE_OLD = "old", NOTICE_NEW = "new", NOTICE_ALL="All";
 
@@ -87,9 +87,12 @@ public class Notices extends AppCompatActivity {
     public static final String LOGIN_URL = HOST_URL+"login/";
     public static final String PEOPLE_SEARCH_URL = HOST_URL+"peoplesearch/";
     public static final String PHOTO_URL = HOST_URL+"photo/";
+    public static final String READ_NOTICES_URL = NOTICES_URL+"read_notice_list/";
+    public static final String STARRED_NOTICES_URL = NOTICES_URL+"star_notice_list/";
     public static final String PREFS_NAME = "MyPrefsFile";
     public static final int BATCH_SIZE = 20;
     public static String NoticeType = NOTICE_NEW, MainCategory = NOTICE_ALL, Category=NOTICE_ALL;
+    public static int CurrentType = TYPE_LIST;
 
     private SharedPreferences mSharedPreferences;
     private SharedPreferences.Editor mEditor;
@@ -106,6 +109,7 @@ public class Notices extends AppCompatActivity {
     private CustomDrawerListViewAdapter mCustomDrawerListViewAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private BottomBar mBottomBar;
+    private EndlessRecyclerViewScrollListener mScrollListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,8 +124,10 @@ public class Notices extends AppCompatActivity {
         mSqlHelper = new SQLHelper(getApplicationContext());
         mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
-        mUser = new User(mSharedPreferences.getString("username","14115019"),
-                mSharedPreferences.getString(CSRF_TOKEN,""), mSharedPreferences.getString(CHANNELI_SESSID,"")
+        mUser = new User(
+                mSharedPreferences.getString(USERNAME,""),
+                mSharedPreferences.getString(CSRF_TOKEN,""),
+                mSharedPreferences.getString(CHANNELI_SESSID,"")
         );
         mNoticeList=new ArrayList<NoticeObject>();
         mStarredList=new ArrayList<NoticeObject>();
@@ -170,7 +176,7 @@ public class Notices extends AppCompatActivity {
                                             .cookieJar(mCookieJar)
                                             .build();
                                 }
-                            }.getResponse(Notices.NOTICES_URL + "read_notice_list",headers,null)
+                            }.getResponse(Notices.READ_NOTICES_URL,headers,null)
                                     .get("body")
                     );
                     mStarredList = Parsing.parseStarredNotices(
@@ -181,18 +187,14 @@ public class Notices extends AppCompatActivity {
                                             .cookieJar(mCookieJar)
                                             .build();
                                 }
-                            }.getResponse(Notices.NOTICES_URL + "star_notice_list",headers,null)
+                            }.getResponse(Notices.STARRED_NOTICES_URL,headers,null)
                                     .get("body"),
                             mReadList
                     );
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (type == Notices.TYPE_LIST ) {
-                                fetchNotices(noticeType, category, mainCategory, 0, BATCH_SIZE, query, type);
-                            } else {
-
-                            }
+                            fetchNotices(noticeType, category, mainCategory, 0, BATCH_SIZE, query, type);
                         }
                     });
                 }catch (JSONException e){
@@ -214,10 +216,9 @@ public class Notices extends AppCompatActivity {
         else {
             setTitle(mainCategory + " - " + category);
         }
-        mRecyclerView.stopScroll();
 
         if (type == TYPE_STARRED){
-//            mNoticeList.clear();
+            mNoticeList.clear();
             mNoticeList.addAll(mStarredList);
             populateListView();
             return;
@@ -395,14 +396,15 @@ public class Notices extends AppCompatActivity {
 
         LinearLayoutManager layoutManager=new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-        mRecyclerView.setOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
+        mScrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, RecyclerView view) {
-                if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && (!MainCategory.equals("Starred"))){
+                if(totalItemsCount>0 && totalItemsCount<=mNoticeList.size() && CurrentType==TYPE_LIST){
                     fetchNotices( NoticeType, Category, MainCategory, totalItemsCount, totalItemsCount + BATCH_SIZE, null, TYPE_LIST);
                 }
             }
-        });
+        };
+        mRecyclerView.setOnScrollListener(mScrollListener);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
 
         mSwipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorAccentDark)
@@ -411,7 +413,7 @@ public class Notices extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 mRecyclerView.setEnabled(false);
-                fetchFirstTimeNotices(NoticeType,Category, MainCategory,null,TYPE_LIST);
+                fetchFirstTimeNotices(NoticeType,Category, MainCategory,null,CurrentType);
             }
         });
     }
@@ -516,7 +518,7 @@ public class Notices extends AppCompatActivity {
         }
         mRecyclerView.setEnabled(true);
         mSwipeRefreshLayout.setRefreshing(false);
-        //mScrollListener.resetState()
+        mScrollListener.resetState();
     }
     private void populateDrawerList(){
         mDrawerItems.add(new DrawerItem("Starred", null));
@@ -537,6 +539,8 @@ public class Notices extends AppCompatActivity {
                 MainCategory = "Starred";
                 Category = NOTICE_ALL;
                 mNoticeList.clear();
+                CurrentType = TYPE_STARRED;
+                mBottomBar.setVisibility(View.GONE);
                 fetchNotices(null,Category,MainCategory,0,0,null,TYPE_STARRED);
 //                selectItem();
                 break;
@@ -561,8 +565,9 @@ public class Notices extends AppCompatActivity {
                 else {
                     Category = mDrawerItems.get(groupPosition).getCategories().get(childPosition);
                 }
+                CurrentType = TYPE_LIST;
+                mBottomBar.setVisibility(View.VISIBLE);
                 fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
-//                selectItem();
         }
     }
     public boolean checkDrawerColorChange(int pos){
