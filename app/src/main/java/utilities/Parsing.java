@@ -5,8 +5,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 import objects.DrawerItem;
 import objects.NoticeInfo;
@@ -14,9 +18,9 @@ import objects.NoticeObject;
 
 public final class Parsing {
 
-    public static ArrayList<DrawerItem> parseConstants(String constants) throws JSONException {
-        ArrayList<DrawerItem> list = new ArrayList<>();
-        ArrayList<String> constantsList=new ArrayList<>();
+    public static List<DrawerItem> parseConstants(String constants) throws JSONException {
+        List<DrawerItem> list = new ArrayList<>();
+        List<String> constantsList=new ArrayList<>();
         JSONObject jsonObject = new JSONObject(constants);
         JSONArray jsonArray = jsonObject.getJSONArray("order");
         for(int i=0;i<jsonArray.length();i++){
@@ -24,29 +28,24 @@ public final class Parsing {
         }
         Collections.sort(constantsList);
         for (String s: constantsList){
-            ArrayList<String> categories=new ArrayList<>();
+            List<String> categories=new ArrayList<>();
             JSONArray array=jsonObject.getJSONArray(s);
-            for(int i=0;i<array.length();i++)
-                categories.add(array.getString(i));
+            for(int i=0;i<array.length();i++) categories.add(array.getString(i));
             list.add(new DrawerItem(s,categories));
         }
         return list;
     }
 
-    private static boolean checkStar(int id, ArrayList<NoticeObject> list){
+    private static boolean checkStar(int id, Set<NoticeObject> list){
         for (NoticeObject n:list)
-            if (n.getId()==id)
-                return true;
+            if (n.getId()==id) return true;
         return false;
     }
-    private static boolean checkRead(int id, ArrayList<Integer> list){
-        for (Integer i:list)
-            if(i.intValue()==id)
-                return true;
-        return false;
+    private static boolean checkRead(int id, Set<Integer> list){
+        return list.contains(id);
     }
-    public static ArrayList<NoticeObject> parseNotices(String notices,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList) throws JSONException {
-        ArrayList<NoticeObject> noticeslist = new ArrayList<>();
+    public static List<NoticeObject> parseNotices(String notices,Set<NoticeObject> starredList, Set<Integer> readList) throws JSONException {
+        List<NoticeObject> noticeslist = new ArrayList<>();
         JSONArray jsonArray = new JSONArray(notices);
         NoticeObject notice=null;
         for(int i=0;i< jsonArray.length();i++){
@@ -63,8 +62,8 @@ public final class Parsing {
         }
         return noticeslist;
     }
-    public static ArrayList<NoticeObject> parseStarredNotices(String notices) throws JSONException {
-        ArrayList<NoticeObject> noticeslist = new ArrayList<>();
+    public static Set<NoticeObject> parseStarredNotices(String notices) throws JSONException {
+        Set<NoticeObject> noticeslist = new LinkedHashSet<>();
         JSONArray jsonArray = new JSONArray(notices);
         NoticeObject notice=null;
         for(int i=0;i< jsonArray.length();i++){
@@ -81,8 +80,8 @@ public final class Parsing {
         }
         return noticeslist;
     }
-    public static ArrayList<NoticeObject> parseStarredNotices(String notices,ArrayList<Integer> readNotices) throws JSONException {
-        ArrayList<NoticeObject> noticeslist = new ArrayList<>();
+    public static Set<NoticeObject> parseStarredNotices(String notices,Set<Integer> readNotices) throws JSONException {
+        Set<NoticeObject> noticeslist = new LinkedHashSet<>();
         JSONArray jsonArray = new JSONArray(notices);
         NoticeObject notice=null;
         for(int i=0;i< jsonArray.length();i++){
@@ -99,8 +98,8 @@ public final class Parsing {
         }
         return noticeslist;
     }
-    public static ArrayList<Integer> parseReadNotices(String ids) throws JSONException {
-        ArrayList<Integer> list = new ArrayList<>();
+    public static Set<Integer> parseReadNotices(String ids) throws JSONException {
+        Set<Integer> list = new HashSet<>();
         JSONObject jsonObject=new JSONObject(ids);
         Iterator<String> keys=jsonObject.keys();
         while(keys.hasNext()){
@@ -110,8 +109,8 @@ public final class Parsing {
         return list;
     }
 
-    public static ArrayList<NoticeObject> parseSearchNotices(String result,ArrayList<NoticeObject> starredList, ArrayList<Integer> readList) throws JSONException {
-        ArrayList<NoticeObject> noticeList = new ArrayList<NoticeObject>();
+    public static List<NoticeObject> parseSearchNotices(String result,Set<NoticeObject> starredList, Set<Integer> readList) throws JSONException {
+        List<NoticeObject> noticeList = new ArrayList<NoticeObject>();
         JSONArray jsonArray = new JSONArray(result);
         NoticeObject notice=null;
         JSONObject jsonObject=null;

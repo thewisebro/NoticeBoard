@@ -1,13 +1,12 @@
 package adapters;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
@@ -19,111 +18,146 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
-import com.channeli.noticeboard.MainActivity;
 import com.channeli.noticeboard.Notice;
+import com.channeli.noticeboard.Notices;
 import com.channeli.noticeboard.R;
-
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import connections.ConnectTaskHttpGet;
-import connections.ConnectTaskHttpPost;
-import objects.NoticeInfo;
+import connections.AsynchronousPost;
 import objects.NoticeObject;
 import objects.NoticeObjectViewHolder;
-import utilities.Parsing;
-import utilities.SQLHelper;
+import okhttp3.Cookie;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
 
 /**
  * Created by Ankush on 23-09-2016.
  */
 public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObjectViewHolder> {
-    private Context context;
-    private int viewLayoutId;
-    private ArrayList<NoticeObject> list;
-    private ArrayList<NoticeObject> starredNotices;
-    private ArrayList<Integer> readNotices;
-    final String noticeurl = MainActivity.UrlOfNotice+"get_notice/";
-    String csrftoken;
-    String CHANNELI_SESSID;
-    Parsing parsing;
+    private Context mContext;
+    private List<NoticeObject> mNoticeList;
+    private Set<NoticeObject> mStarredList;
+    private Set<Integer> mReadList;
+    private SharedPreferences mSharedPreferences;
+    private PersistentCookieJar mCookieJar;
+    private String mSessid;
+    private String mCsrfToken;
 
-    public CustomRecyclerViewAdapter(Context context,int viewLayoutId, ArrayList<NoticeObject> list
-            , ArrayList<NoticeObject> starredNotices, ArrayList<Integer> readNotices){
-        this.context=context;
-        this.viewLayoutId=viewLayoutId;
-        this.list=list;
-        this.starredNotices=starredNotices;
-        this.readNotices=readNotices;
-        SharedPreferences settings= context.getSharedPreferences(MainActivity.PREFS_NAME,0);
-        csrftoken=settings.getString("csrftoken","");
-        CHANNELI_SESSID=settings.getString("CHANNELI_SESSID","");
-        parsing=new Parsing();
+    public int viewLayoutId;
+
+    public CustomRecyclerViewAdapter(Context context, int layoutId, List<NoticeObject> list
+            , Set<NoticeObject> starredNotices, Set<Integer> readNotices){
+        mContext=context;
+        viewLayoutId=layoutId;
+        mNoticeList=list;
+        mStarredList=starredNotices;
+        mReadList=readNotices;
+        mSharedPreferences= context.getSharedPreferences(Notices.PREFS_NAME,0);
+        mCsrfToken=mSharedPreferences.getString("csrftoken","");
+        mSessid=mSharedPreferences.getString("CHANNELI_SESSID","");
+
+        //Set up Cookies for networking
+        SetCookieCache cookieCache = new SetCookieCache();
+        CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(mContext);
+        if (cookiePersistor.loadAll().isEmpty()){
+            List<Cookie> cookieList = new ArrayList<Cookie>(2);
+            cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+            cookieCache.addAll(cookieList);
+            cookiePersistor.saveAll(cookieList);
+        }
+        mCookieJar = new PersistentCookieJar(cookieCache,cookiePersistor);
+
     }
     @Override
     public NoticeObjectViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view= LayoutInflater.from(context).inflate(viewLayoutId,parent,false);
+        View view= LayoutInflater.from(mContext).inflate(viewLayoutId,parent,false);
         return new NoticeObjectViewHolder(view);
     }
-    void setRead(int id){
-        HttpPost post=new HttpPost(MainActivity.UrlOfNotice+"read_star_notice/"+
-                id+"/add_read/");
-        post.addHeader("Cookie","csrftoken="+csrftoken);
-        post.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        post.addHeader("Cookie","CHANNELI_SESSID="+CHANNELI_SESSID);
-        post.addHeader("CHANNELI_DEVICE","android");
-        post.addHeader("X-CSRFToken",csrftoken);
-        new ConnectTaskHttpPost().execute(post);
-        new SQLHelper(context).setRead(id);
+    void setRead(final NoticeObject noticeObject, final NoticeObjectViewHolder holder){
+        if (noticeObject == null) return;
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mCsrfToken);
+        new AsynchronousPost() {
+            @Override
+            public OkHttpClient setClient() {
+                return new OkHttpClient.Builder()
+                        .cookieJar(mCookieJar)
+                        .build();
+            }
+
+            @Override
+            public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                noticeObject.setRead(true);
+                mReadList.add(noticeObject.getId());
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        holder.view.setBackgroundDrawable(mContext.getResources().getDrawable(R.drawable.read_notice_bg));
+                        holder.subject.setTypeface(null, Typeface.NORMAL);
+                        holder.datetime.setTypeface(null, Typeface.NORMAL);
+                    }
+                });
+            }
+
+            @Override
+            public void onFail(Exception e) {
+
+            }
+        }.getResponse(Notices.READ_STAR_NOTICE_URL+noticeObject.getId()+"/add_read/",headers,null);
     }
-    void setStar(int id,boolean b){
-        String uri = MainActivity.UrlOfNotice + "read_star_notice/" + id;
-        if (b)
-            uri += "/add_starred/";
-        else
-            uri += "/remove_starred/";
-        HttpPost httpPost = new HttpPost(uri);
-        httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost.addHeader("Cookie", "csrftoken=" + csrftoken);
-        httpPost.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-        httpPost.addHeader("CHANNELI_DEVICE", "android");
-        httpPost.addHeader("X-CSRFToken=", csrftoken);
-        new ConnectTaskHttpPost().execute(httpPost);
-        new SQLHelper(context).setStar(id,b);
+    void setStar(final NoticeObject noticeObject, final boolean flag, final CompoundButton button){
+        if(noticeObject == null) return;
+        noticeObject.setStar(flag);
+        String url = Notices.READ_STAR_NOTICE_URL + noticeObject.getId();
+        if (flag) url += "/add_starred/";
+        else url += "/remove_starred/";
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mCsrfToken);
+        new AsynchronousPost() {
+            @Override
+            public OkHttpClient setClient() {
+                return new OkHttpClient.Builder()
+                        .cookieJar(mCookieJar)
+                        .build();
+            }
+
+            @Override
+            public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                if(flag) mStarredList.add(noticeObject);
+                else mStarredList.remove(noticeObject);
+            }
+
+            @Override
+            public void onFail(Exception e) {
+            }
+        }.getResponse(url,headers,null);
     }
 
-    String getNoticeInfoResult(int id){
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(noticeurl + id);
-        String url = stringBuilder.toString();
-        HttpGet httpGet = new HttpGet(url);
-        httpGet.addHeader("Cookie", "csrftoken=" + csrftoken);
-        httpGet.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpGet.addHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-        httpGet.addHeader("X-CSRFToken", csrftoken);
-        String result = "";
-        try {
-            result = new ConnectTaskHttpGet().execute(httpGet).get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
 
     @Override
     public void onBindViewHolder(final NoticeObjectViewHolder holder, int position) {
-        final NoticeObject noticeObject=list.get(position);
+        final NoticeObject noticeObject=mNoticeList.get(position);
         holder.subject.setText(noticeObject.getSubject());
         holder.category.setText(noticeObject.getCategory());
 
         //Set DateTime
         SimpleDateFormat inputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a MMM dd");
+        SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a MMM dd, yy");
         try {
             Date idate= inputDateFormat.parse(noticeObject.getDatetime_modified());
             String odate= outputDateFormat.format(idate);
@@ -137,13 +171,13 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
         //Highlight read notices
         if(noticeObject.getRead()) {
-            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.read_background));
+            holder.view.setBackgroundDrawable(mContext.getResources().getDrawable(R.drawable.read_background));
             holder.subject.setTypeface(null, Typeface.NORMAL);
             //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
             holder.datetime.setTypeface(null, Typeface.NORMAL);
         }
         else {
-            holder.view.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.background));
+            holder.view.setBackgroundDrawable(mContext.getResources().getDrawable(R.drawable.background));
             holder.subject.setTypeface(null, Typeface.BOLD);
             //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorAccentDark));
             holder.datetime.setTypeface(null,Typeface.BOLD);
@@ -169,19 +203,8 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             @Override
             public void onCheckedChanged(final CompoundButton compoundButton, final boolean b) {
                 if (checkChangeFlag[0]) {
-                    if (isOnline()) {
-                        setStar(noticeObject.getId(), b);
-                        noticeObject.setStar(b);
-                        if (b)
-                            starredNotices.add(noticeObject);
-                        else
-                            starredNotices.remove(noticeObject);
-                        checkChangeFlag[0] = false;
-                    } else {
-                        showNetworkError();
-                        checkChangeFlag[0] = false;
-                        compoundButton.setChecked(!b);
-                    }
+                    checkChangeFlag[0] = false;
+                    setStar(noticeObject,b,compoundButton);
                 }
             }
         });
@@ -190,101 +213,27 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //final ProgressDialog progressDialog= ProgressDialog.show(context,null,"Opening...",true,false);
-                final ProgressDialog progressDialog= new ProgressDialog(context);
-                progressDialog.setMessage("Opening...");
-                progressDialog.setIndeterminate(true);
-                progressDialog.setCancelable(false);
-                new Thread(){
-                    @Override
-                    public void run(){
-                        SQLHelper db = new SQLHelper(context);
-                        if (db.checkNoticeContent(noticeObject.getId(),noticeObject.getDatetime_modified())) {
-                            NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId(),noticeObject.getDatetime_modified());
-                            openNotice(noticeInfo);
-                            //progressDialog.dismiss();
-                            return;
-                        }
-                        if (isOnline()) {
-                            ((Activity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    progressDialog.show();
-                                }
-                            });
-                            try {               //For some server error, getting different result
-                                String result = getNoticeInfoResult(noticeObject.getId());
-                                if (!result.equals("")) {
-                                    if (!noticeObject.getRead()) {
-                                        ((Activity)context).runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                holder.view.setBackgroundDrawable(
-                                                        context.getResources().getDrawable(R.drawable.read_notice_bg));
-                                                holder.subject.setTypeface(null, Typeface.NORMAL);
-                                                holder.datetime.setTypeface(null, Typeface.NORMAL);
-                                                //holder.datetime.setTextColor(context.getResources().getColor(R.color.colorPrimaryDark));
-                                            }
-                                        });
-                                        noticeObject.setRead(true);
-                                        readNotices.add(noticeObject.getId());
-                                        setRead(noticeObject.getId());
-                                    }
-                                    NoticeInfo noticeInfo = parsing.parseNoticeInfo(result);
-                                    if (noticeInfo!=null) {
-                                        db.addNoticeInfo(noticeInfo);
-                                        openNotice(noticeInfo);
-                                        progressDialog.dismiss();
-                                        return;
-                                    }
-                                }
-                            }catch (Exception e){}
-                        }
-                        if (db.checkNoticeContent(noticeObject.getId())) {
-                            NoticeInfo noticeInfo = db.getNoticeInfo(noticeObject.getId());
-                            openNotice(noticeInfo);
-                        } else {
-                            showNetworkError();
-                        }
-                        db.close();
-                        progressDialog.dismiss();
-                    }
-                }.start();
+                setRead(noticeObject,holder);
+                Intent intent = new Intent(mContext, Notice.class);
+                intent.putExtra("id",noticeObject.getId());
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
             }
-
         });
 
     }
-    public void openNotice(NoticeInfo noticeInfo){
-        Intent intent = new Intent(context, Notice.class);
-        intent.putExtra("noticeinfo", noticeInfo);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-    }
     @Override
     public int getItemCount() {
-        return list.size();
-    }
-    public void showNetworkError(){
-        showMessage("Check Network Connection!");
+        return mNoticeList.size();
     }
     public void showMessage(String msg){
-        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) ((Activity)context).findViewById(R.id.main_content);
+        CoordinatorLayout coordinatorLayout= (CoordinatorLayout) ((Activity)mContext).findViewById(R.id.main_content);
         Snackbar snackbar=Snackbar.make(coordinatorLayout,msg,Snackbar.LENGTH_SHORT);
         TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
         tv.setGravity(Gravity.CENTER);
-        tv.setTextColor(context.getResources().getColor(R.color.colorPrimary));
-        tv.setHeight((int) context.getResources().getDimension(R.dimen.bottomBarHeight));
+        tv.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+        tv.setHeight((int) mContext.getResources().getDimension(R.dimen.bottomBarHeight));
         tv.setTypeface(null, Typeface.BOLD);
         snackbar.show();
-    }
-    public boolean isOnline() {
-
-        ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Activity.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if (networkInfo != null && networkInfo.isConnected())
-            return true;
-        else
-            return false;
     }
 }

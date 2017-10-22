@@ -1,73 +1,149 @@
 package com.channeli.noticeboard;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.webkit.WebView;
 import android.widget.TextView;
 
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+import com.squareup.leakcanary.LeakCanary;
+
+import org.json.JSONException;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import connections.AsynchronousGet;
 import objects.NoticeInfo;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import utilities.Parsing;
+import utilities.SQLHelper;
 
 public class Notice extends AppCompatActivity {
-    NoticeInfo noticeInfo;
+    private NoticeInfo mNoticeInfo;
+    private String mSessid;
+    private String mCsrfToken;
+    private CookieJar mCookieJar;
+    private SQLHelper mSqlHelper;
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(getApplication());
         setContentView(R.layout.notice);
-        Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
+
+        Toolbar toolbar= findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        Intent intent = getIntent();
-        noticeInfo= (NoticeInfo) intent.getSerializableExtra("noticeinfo");
-        final View view=findViewById(R.id.notice);
-        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                setHeaderViews();
-                setContent();
-                view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-            }
-        });
 
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        SharedPreferences sharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
+        mSessid = sharedPreferences.getString(Notices.CHANNELI_SESSID,"");
+        mCsrfToken = sharedPreferences.getString(Notices.CSRF_TOKEN,"");
+        mSqlHelper = new SQLHelper(this);
+
+        //Set up Cookies for networking
+        SetCookieCache cookieCache = new SetCookieCache();
+        CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
+        if (cookiePersistor.loadAll().isEmpty()){
+            List<Cookie> cookieList = new ArrayList<Cookie>(2);
+            cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+            cookieCache.addAll(cookieList);
+            cookiePersistor.saveAll(cookieList);
+        }
+        mCookieJar = new PersistentCookieJar(cookieCache,cookiePersistor);
+
+
+        fetchNotice(getIntent().getIntExtra("id",0));
+    }
+    void fetchNotice(int noticeId){
+        Map<String,String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        headers.put("X-CSRFToken", mCsrfToken);
+        new AsynchronousGet() {
+            @Override
+            public OkHttpClient setClient() {
+                return new OkHttpClient.Builder()
+                        .cookieJar(mCookieJar)
+                        .build();
+            }
+
+            @Override
+            public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                try {
+                    mNoticeInfo = Parsing.parseNoticeInfo(responseBody);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            setHeaderViews();
+                            setContent();
+                        }
+                    });
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    onFail(new Exception("Failed to parse notice. Please try again."));
+                }
+            }
+
+            @Override
+            public void onFail(Exception e) {
+                showMessage(e.getMessage());
+            }
+        }.getResponse(Notices.NOTICE_URL + noticeId, headers, null);
     }
     public void setHeaderViews(){
-        TextView subject= (TextView) findViewById(R.id.notice_subject);
-        TextView category= (TextView) findViewById(R.id.notice_category);
-        TextView date= (TextView) findViewById(R.id.notice_date);
-        subject.setText(noticeInfo.getSubject());
-        category.setText(noticeInfo.getCategory());
+        TextView subject = findViewById(R.id.notice_subject);
+        TextView category = findViewById(R.id.notice_category);
+        TextView date = findViewById(R.id.notice_date);
+        subject.setText(mNoticeInfo.getSubject());
+        category.setText(mNoticeInfo.getCategory());
         SimpleDateFormat inputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         SimpleDateFormat outputDateFormat = new SimpleDateFormat("hh:mm a dd-MMM-yyyy");
         try {
-            Date idate= inputDateFormat.parse(noticeInfo.getDatetime_modified());
-            String odate= outputDateFormat.format(idate);
+            Date idate = inputDateFormat.parse(mNoticeInfo.getDatetime_modified());
+            String odate = outputDateFormat.format(idate);
             date.setText(odate);
 
         } catch (ParseException e) {
             e.printStackTrace();
-            date.setText(noticeInfo.getDatetime_modified());
+            date.setText(mNoticeInfo.getDatetime_modified());
         }
-
     }
     public void setContent(){
-        String result=noticeInfo.getContent();
-        //String result = intent.getStringExtra("noticeinfo");
+        String result=mNoticeInfo.getContent();
         StringBuffer stringBuffer;
 
         if(result.contains("<img")  || result.contains("href")) {
             ArrayList<Integer> count = new ArrayList<>();
             stringBuffer = new StringBuffer(result);
-            //String add = "https://channeli.in";
             String add= "http://people.iitr.ernet.in";
 
             for(int index = result.indexOf("/media");
@@ -115,19 +191,46 @@ public class Notice extends AppCompatActivity {
         webView.getSettings().setSupportZoom(true);
         try {
             webView.loadData(result, "text/html", "utf-8");
-        }catch(Exception e){}
+        }catch(Exception e){
+            showMessage("Unable to fetch notice! Please try again");
+        }
     }
     @Override
     protected void onNewIntent(Intent intent){
         super.onNewIntent(intent);
         Notice.this.recreate();
     }
-    @Override
+
+    public void showMessage(final String msg){
+        new Handler(getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                CoordinatorLayout coordinatorLayout= findViewById(R.id.notice_coordinator_layout);
+                Snackbar snackbar=Snackbar.make(coordinatorLayout, msg, Snackbar.LENGTH_SHORT);
+                TextView tv= snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                tv.setGravity(Gravity.CENTER);
+                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+                tv.setTypeface(null, Typeface.BOLD);
+                snackbar.show();
+            }
+        });
+    }
+
+   /* @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_notice, menu);
+        return true;
+    }*/
+        @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
                 onBackPressed();
                 return true;
+            /*case R.id.archive:
+                archiveNotice();
+                return true;*/
         }
 
         return super.onOptionsItemSelected(item);

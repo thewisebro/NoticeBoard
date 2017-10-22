@@ -5,10 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,7 +18,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -37,9 +39,12 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import adapters.CustomRecyclerViewAdapter;
 import connections.AsynchronousGet;
@@ -48,20 +53,17 @@ import objects.NoticeObject;
 import okhttp3.Cookie;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
-import utilities.EndlessRecyclerViewScrollListener;
 import utilities.Parsing;
-import utilities.SQLHelper;
 
 public class Search extends AppCompatActivity {
 
 
     public static String NoticeType = Notices.NOTICE_NEW, MainCategory = Notices.NOTICE_ALL, Category = Notices.NOTICE_ALL;
-    private SQLHelper mSqlHelper;
     private RecyclerView mRecyclerView;
     private BottomBar mBottomBar;
-    private ArrayList<NoticeObject> mNoticeList;
-    private ArrayList<NoticeObject> mStarredList;
-    private ArrayList<Integer> mReadList;
+    private List<NoticeObject> mNoticeList;
+    private Set<NoticeObject> mStarredList;
+    private Set<Integer> mReadList;
     private SharedPreferences mSharedPreferences;
     private SharedPreferences.Editor mEditor;
     private PersistentCookieJar mCookieJar;
@@ -83,14 +85,14 @@ public class Search extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         //Initialise variables
-        mSqlHelper = new SQLHelper(getApplicationContext());
         mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
         mNoticeList = new ArrayList<>();
-        mStarredList = new ArrayList<>();
-        mReadList = new ArrayList<>();
+        mStarredList = Notices.getStarredList();
+        mReadList = Notices.getReadList();
         mSessid = mSharedPreferences.getString(Notices.CHANNELI_SESSID,"");
         mCsrfToken = mSharedPreferences.getString(Notices.CSRF_TOKEN,"");
+        mQuery = getIntent().getStringExtra("query");
 
         //Set up Cookies for networking
         SetCookieCache cookieCache = new SetCookieCache();
@@ -115,7 +117,8 @@ public class Search extends AppCompatActivity {
         setBottomBar();
 
         //Fetch
-        fetchFirstTimeNotices(mQuery);
+//        fetchFirstTimeNotices(mQuery);
+        fetchNotices(mQuery);
     }
     private void fetchFirstTimeNotices(String query){
         new Thread(){
@@ -183,7 +186,7 @@ public class Search extends AppCompatActivity {
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
                 try {
-                    ArrayList<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
+                    List<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
                     mRecyclerView.smoothScrollToPosition(0);
                     mNoticeList.clear();
                     mNoticeList.addAll(list);
@@ -195,12 +198,13 @@ public class Search extends AppCompatActivity {
                     });
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    onFail(new Exception("Failed to parse notices. Please try again."));
                 }
             }
 
             @Override
             public void onFail(Exception e) {
-
+                showMessage(e.getMessage());
             }
         }.getResponse(getSearchUrl(query), headers, null);
     }
@@ -245,7 +249,7 @@ public class Search extends AppCompatActivity {
     }
     public String getSearchUrl(String query) {
         return Notices.NOTICES_URL + TextUtils.join("/", new String[]{"search", NoticeType.replaceAll(" ", "%20"), MainCategory.replaceAll(" ", "%20")
-                , Category.replaceAll(" ", "%20"), "?=" + query});
+                , Category.replaceAll(" ", "%20"), "?q=" + query});
     }
 
     @Override
@@ -325,7 +329,7 @@ public class Search extends AppCompatActivity {
         return true;
     }
 
-    @Override
+/*    @Override
     protected void onNewIntent(Intent intent){
         handleIntent(intent);
     }
@@ -336,6 +340,22 @@ public class Search extends AppCompatActivity {
             mQuery = intent.getStringExtra(SearchManager.QUERY);
             mQuery = mQuery.replaceAll(" ","%20");
         }
+    }*/
+
+    public void showMessage(final String msg){
+        new Handler(getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                CoordinatorLayout coordinatorLayout= findViewById(R.id.main_content);
+                Snackbar snackbar=Snackbar.make(coordinatorLayout, msg, Snackbar.LENGTH_SHORT);
+                TextView tv= snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                tv.setGravity(Gravity.CENTER);
+                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+                tv.setTypeface(null, Typeface.BOLD);
+                snackbar.show();
+            }
+        });
     }
 
     @Override

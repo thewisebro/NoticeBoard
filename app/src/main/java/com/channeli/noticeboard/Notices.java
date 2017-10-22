@@ -9,12 +9,15 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -27,6 +30,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,7 +50,6 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.roughike.bottombar.BottomBar;
 import com.roughike.bottombar.OnTabSelectListener;
-import com.squareup.haha.perflib.Main;
 import com.squareup.leakcanary.LeakCanary;
 
 import org.json.JSONException;
@@ -55,8 +58,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,7 +84,7 @@ import utilities.SQLHelper;
 public class Notices extends AppCompatActivity {
 
     public static final String CHANNELI_SESSID="CHANNELI_SESSID",CSRF_TOKEN="csrftoken",USERNAME="username";
-    public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4;
+    public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4, TYPE_ARCHIVED=5;
     public static final String NOTICE_OLD = "old", NOTICE_NEW = "new", NOTICE_ALL="All";
 
     public static final String HOST_URL="http://people.iitr.ernet.in/";
@@ -89,6 +94,8 @@ public class Notices extends AppCompatActivity {
     public static final String PHOTO_URL = HOST_URL+"photo/";
     public static final String READ_NOTICES_URL = NOTICES_URL+"read_notice_list/";
     public static final String STARRED_NOTICES_URL = NOTICES_URL+"star_notice_list/";
+    public static final String READ_STAR_NOTICE_URL = NOTICES_URL+"read_star_notice/";
+    public static final String NOTICE_URL = NOTICES_URL + "get_notice/";
     public static final String PREFS_NAME = "MyPrefsFile";
     public static final int BATCH_SIZE = 20;
     public static String NoticeType = NOTICE_NEW, MainCategory = NOTICE_ALL, Category=NOTICE_ALL;
@@ -99,10 +106,10 @@ public class Notices extends AppCompatActivity {
     private User mUser;
     private PersistentCookieJar mCookieJar;
     private SQLHelper mSqlHelper;
-    private ArrayList<DrawerItem> mDrawerItems=new ArrayList<>();
-    private ArrayList<NoticeObject> mNoticeList;
-    private ArrayList<NoticeObject> mStarredList;
-    private ArrayList<Integer> mReadList;
+    private List<DrawerItem> mDrawerItems;
+    private static List<NoticeObject> mNoticeList;
+    private static Set<NoticeObject> mStarredList;
+    private static Set<Integer> mReadList;
     private CustomRecyclerViewAdapter mCustomRecyclerViewAdapter;
     private ActionBarDrawerToggle mDrawerToggle;
     private RecyclerView mRecyclerView;
@@ -110,6 +117,10 @@ public class Notices extends AppCompatActivity {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private BottomBar mBottomBar;
     private EndlessRecyclerViewScrollListener mScrollListener;
+
+    public static Set<NoticeObject> getStarredList(){ return mStarredList; }
+    public static Set<Integer> getReadList(){ return mReadList; }
+    public static List<NoticeObject> getNoticeList(){ return mNoticeList; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,9 +140,10 @@ public class Notices extends AppCompatActivity {
                 mSharedPreferences.getString(CSRF_TOKEN,""),
                 mSharedPreferences.getString(CHANNELI_SESSID,"")
         );
-        mNoticeList=new ArrayList<NoticeObject>();
-        mStarredList=new ArrayList<NoticeObject>();
-        mReadList=new ArrayList<Integer>();
+        mDrawerItems=new ArrayList<>();
+        mNoticeList=new ArrayList<>();
+        mStarredList=new LinkedHashSet<>();
+        mReadList=new HashSet<>();
 
         //Set up Cookies for networking
         SetCookieCache cookieCache = new SetCookieCache();
@@ -158,7 +170,6 @@ public class Notices extends AppCompatActivity {
         fetchUserDetails();
         fetchConstants();
         fetchFirstTimeNotices(Notices.NOTICE_NEW, Notices.NOTICE_ALL, Notices.NOTICE_ALL, null, Notices.TYPE_LIST);
-//        fetchNotices(NOTICE_NEW, NOTICE_ALL, NOTICE_ALL, 0, 20, "", TYPE_LIST);
     }
     private void fetchFirstTimeNotices(final String noticeType, final String category, final String mainCategory, final String query, final int type){
         new Thread(){
@@ -199,8 +210,22 @@ public class Notices extends AppCompatActivity {
                     });
                 }catch (JSONException e){
                     e.printStackTrace();
-                }catch (IOException e){
+                    showMessage("Failed to parse. Please try again.");
+                    new Handler(getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            populateListView();
+                        }
+                    });
+                } catch (IOException e) {
                     e.printStackTrace();
+                    showMessage("Check Network Connection");
+                    new Handler(getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            populateListView();
+                        }
+                    });
                 }
             }
         }.start();
@@ -218,8 +243,17 @@ public class Notices extends AppCompatActivity {
         }
 
         if (type == TYPE_STARRED){
+            mRecyclerView.smoothScrollToPosition(0);
             mNoticeList.clear();
             mNoticeList.addAll(mStarredList);
+            populateListView();
+            return;
+        }
+
+        if(type == TYPE_ARCHIVED){
+            mRecyclerView.smoothScrollToPosition(0);
+            mNoticeList.clear();
+            mNoticeList.addAll(mSqlHelper.getNotices());
             populateListView();
             return;
         }
@@ -240,7 +274,7 @@ public class Notices extends AppCompatActivity {
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
                 try {
-                    ArrayList<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
+                    List<NoticeObject> list = Parsing.parseNotices(responseBody, mStarredList, mReadList);
                     if (offset==0){
                         mRecyclerView.smoothScrollToPosition(0);
                         mNoticeList.clear();
@@ -254,12 +288,13 @@ public class Notices extends AppCompatActivity {
                     });
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    showMessage("Failed to parse notices. Please try again.");
                 }
             }
 
             @Override
             public void onFail(Exception e) {
-
+                showMessage(e.getMessage());
             }
         }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,query,type), headers, null);
     }
@@ -278,13 +313,13 @@ public class Notices extends AppCompatActivity {
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
                 try {
-                    mDrawerItems.addAll(new Parsing().parseConstants(responseBody));
+                    mDrawerItems.addAll(Parsing.parseConstants(responseBody));
                     if (mDrawerItems.size() > 0) {
-                        Set<String> constantSet = new HashSet<>(mDrawerItems.size());
-                        for (int i = 0; i < mDrawerItems.size(); i++) {
-                            Set<String> s = new HashSet<>(mDrawerItems.get(i).getCategories());
-                            mEditor.putStringSet(mDrawerItems.get(i).getName(), s);
-                            constantSet.add(mDrawerItems.get(i).getName());
+                        Set<String> constantSet = new HashSet<String>();
+                        for (DrawerItem item : mDrawerItems) {
+                            Set<String> s=new HashSet<String>(item.getCategories());
+                            mEditor.putStringSet(item.getName(),s);
+                            constantSet.add(item.getName());
                         }
                         mEditor.putStringSet("constants", constantSet);
                         mEditor.apply();
@@ -296,13 +331,26 @@ public class Notices extends AppCompatActivity {
                         }
                     });
                 } catch (JSONException e){
-
+                    onFail(e);
                 }
             }
 
             @Override
             public void onFail(Exception e) {
-
+                Set<String> constants=mSharedPreferences.getStringSet("constants", new HashSet<String>());
+                List<String> listConstants = new ArrayList<String>(constants);
+                Collections.sort(listConstants);
+                for (String s : listConstants) {
+                    List<String> list = new ArrayList<String>(mSharedPreferences.getStringSet(s,new HashSet<String>()));
+                    Collections.sort(list);
+                    mDrawerItems.add(new DrawerItem(s,list));
+                }
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        populateDrawerList();
+                    }
+                });
             }
         }.getResponse(Notices.NOTICES_URL + "get_constants/", headers, null);
     }
@@ -336,14 +384,13 @@ public class Notices extends AppCompatActivity {
                     });
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    onFail(new JSONException(""));
-                } catch (Exception e){
-                    e.printStackTrace();
+                    onFail(e);
                 }
             }
 
             @Override
             public void onFail(Exception e) {
+//                showMessage(e.getMessage());
 
             }
 
@@ -356,7 +403,7 @@ public class Notices extends AppCompatActivity {
         }.getResponse(Notices.PEOPLE_SEARCH_URL + "return_details/?username=" + mUser.getUsername(), headers, null);
     }
     private void fetchUserPhoto(){
-        RoundImageView imageView = (RoundImageView) findViewById(R.id.profile_picture);
+        RoundImageView imageView = findViewById(R.id.profile_picture);
         Glide.with(Notices.this).load(PHOTO_URL+mUser.getEnrollmentNo()).listener(new RequestListener<Drawable>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
@@ -365,7 +412,7 @@ public class Notices extends AppCompatActivity {
             @Override
             public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                 //Convert drawable to bitmap
-                Bitmap bitmap = null;
+                Bitmap bitmap;
                 if (resource instanceof BitmapDrawable) {
                     BitmapDrawable bitmapDrawable = (BitmapDrawable) resource;
                     if(bitmapDrawable.getBitmap() != null) {
@@ -390,7 +437,7 @@ public class Notices extends AppCompatActivity {
     }
 
     private void setListView(){
-        mRecyclerView = (RecyclerView) findViewById(R.id.list_view);
+        mRecyclerView = findViewById(R.id.list_view);
         mCustomRecyclerViewAdapter = new CustomRecyclerViewAdapter(Notices.this, R.layout.list_itemview, mNoticeList, mStarredList, mReadList);
         mRecyclerView.setAdapter(mCustomRecyclerViewAdapter);
 
@@ -405,14 +452,14 @@ public class Notices extends AppCompatActivity {
             }
         };
         mRecyclerView.setOnScrollListener(mScrollListener);
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
 
         mSwipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.colorAccentDark)
                 ,getResources().getColor(R.color.colorPrimaryDark));
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                mRecyclerView.setEnabled(false);
+//                mRecyclerView.setEnabled(false);
                 fetchFirstTimeNotices(NoticeType,Category, MainCategory,null,CurrentType);
             }
         });
@@ -516,16 +563,17 @@ public class Notices extends AppCompatActivity {
         else {
             findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
         }
-        mRecyclerView.setEnabled(true);
+//        mRecyclerView.setEnabled(true);
         mSwipeRefreshLayout.setRefreshing(false);
         mScrollListener.resetState();
     }
     private void populateDrawerList(){
-        mDrawerItems.add(new DrawerItem("Starred", null));
-        mDrawerItems.add(new DrawerItem("", null));
-        mDrawerItems.add(new DrawerItem("Notifications Settings", null));
-        mDrawerItems.add(new DrawerItem("Feedback", null));
-        mDrawerItems.add(new DrawerItem("Logout", null));
+        mDrawerItems.add(new DrawerItem("Starred", new ArrayList<String>()));
+//        mDrawerItems.add(new DrawerItem("Archived", null));
+        mDrawerItems.add(new DrawerItem("", new ArrayList<String>()));
+        mDrawerItems.add(new DrawerItem("Notifications Settings", new ArrayList<String>()));
+        mDrawerItems.add(new DrawerItem("Feedback", new ArrayList<String>()));
+        mDrawerItems.add(new DrawerItem("Logout", new ArrayList<String>()));
         mCustomDrawerListViewAdapter.notifyDataSetChanged();
     }
 /*    private void populateDrawerProfile(){
@@ -536,22 +584,48 @@ public class Notices extends AppCompatActivity {
 
         switch (mDrawerItems.get(groupPosition).getName()) {
             case "Starred": //Starred
-                MainCategory = "Starred";
-                Category = NOTICE_ALL;
-                mNoticeList.clear();
-                CurrentType = TYPE_STARRED;
-                mBottomBar.setVisibility(View.GONE);
-                fetchNotices(null,Category,MainCategory,0,0,null,TYPE_STARRED);
-//                selectItem();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        MainCategory = "Starred";
+                        Category = NOTICE_ALL;
+                        mNoticeList.clear();
+                        CurrentType = TYPE_STARRED;
+                        mBottomBar.setVisibility(View.GONE);
+                        fetchNotices(null,Category,MainCategory,0,0,null,TYPE_STARRED);
+                    }
+                },250);
+                break;
+            case "Archived" : //Archived Notices
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        MainCategory = "Archived";
+                        Category = NOTICE_ALL;
+                        mNoticeList.clear();
+                        CurrentType = TYPE_ARCHIVED;
+                        mBottomBar.setVisibility(View.GONE);
+                        fetchNotices(null,Category,MainCategory,0,0,null,TYPE_ARCHIVED);
+                    }
+                },250);
                 break;
             case "Notifications Settings":
-                Intent intent1=new Intent(Notices.this,SubscriptionSettings.class);
-                startActivity(intent1);
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startActivity(new Intent(Notices.this,SubscriptionSettings.class));
+                    }
+                },250);
                 break;
             case "Feedback": //Feedback
-                Intent intent2 = new Intent(Intent.ACTION_VIEW);
-                intent2.setData(Uri.parse("market://details?id=com.channeli.noticeboard"));
-                startActivity(intent2);
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse("market://details?id=com.channeli.noticeboard"));
+                        startActivity(intent);
+                    }
+                },250);
                 break;
             case "Logout": //Logout
                 logout();
@@ -619,6 +693,7 @@ public class Notices extends AppCompatActivity {
                     FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
                 }
                 dialog.dismiss();
+                startActivity(new Intent(Notices.this,Login.class));
                 finish();
             }
         });
@@ -644,7 +719,7 @@ public class Notices extends AppCompatActivity {
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         final MenuItem searchMenuItem=menu.findItem(R.id.search);
         final SearchView searchView = (SearchView) searchMenuItem.getActionView();
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, SearchActivity.class)));
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(new ComponentName(this, Search.class)));
         searchView.setIconified(false);
         //searchView.setSubmitButtonEnabled(true);
         searchView.setQueryHint("Search notices");
@@ -652,10 +727,12 @@ public class Notices extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 searchView.clearFocus();
-                //hideKeyboard();
                 searchView.setVisibility(View.INVISIBLE);
                 searchView.setVisibility(View.VISIBLE);
                 searchMenuItem.collapseActionView();
+                Intent intent = new Intent(Notices.this,Search.class);
+                intent.putExtra("query",query);
+                startActivity(intent);
                 return false;
             }
 
@@ -680,7 +757,6 @@ public class Notices extends AppCompatActivity {
                 searchView.clearFocus();
                 searchView.setQuery("", false);
                 searchView.setIconified(false);
-                //hideKeyboard();
                 searchView.setVisibility(View.INVISIBLE);
                 searchView.setVisibility(View.VISIBLE);
                 return true;
@@ -721,6 +797,21 @@ public class Notices extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    public void showMessage(final String msg){
+        new Handler(getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);
+                Snackbar snackbar=Snackbar.make(coordinatorLayout, msg, Snackbar.LENGTH_SHORT);
+                TextView tv= (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                tv.setGravity(Gravity.CENTER);
+                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                tv.setHeight((int) getResources().getDimension(R.dimen.bottomBarHeight));
+                tv.setTypeface(null, Typeface.BOLD);
+                snackbar.show();
+            }
+        });
+    }
     @Override
     public void onBackPressed(){
         if (MainCategory.contains(NOTICE_ALL)){
@@ -742,7 +833,7 @@ public class Notices extends AppCompatActivity {
             dialog.show();
         }
         else {
-            ExpandableListView listView= (ExpandableListView) findViewById(R.id.drawer_menu);
+            ExpandableListView listView= findViewById(R.id.drawer_menu);
             listView.getChildAt(0).performClick();
         }
     }

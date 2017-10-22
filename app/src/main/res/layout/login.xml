@@ -75,6 +75,7 @@
                     android:layout_below="@id/username_text_input_layout"
                     android:layout_centerHorizontal="true"
                     android:hint="Password"
+                    app:passwordToggleEnabled="true"
                     app:hintTextAppearance="@style/TextAppearence.App.TextInputLayout"
                     android:textColorHint="#80000000"
                     app:layout_widthPercent="75%"

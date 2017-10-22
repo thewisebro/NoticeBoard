@@ -16,7 +16,7 @@ import java.util.List;
 
 import objects.NoticeInfo;
 import objects.NoticeObject;
-import objects.noticeNotification;
+import objects.NoticeNotification;
 
 /**
  * Created by Ankush on 27-08-2016.
@@ -123,11 +123,6 @@ public class SQLHelper extends SQLiteOpenHelper{
         Cursor cursor=db.query(TABLE_NOTICES, null, null, null, null, null, null);
         return cursor.getCount();
     }
-    private void deleteLastNotice(){
-        SQLiteDatabase db=this.getWritableDatabase();
-        db.delete(TABLE_NOTICES,ROW_DATETIME + "= MIN("+ ROW_DATETIME + ")",null);
-        //db.close();
-    }
     public void clear(){
         SQLiteDatabase db=this.getWritableDatabase();
         db.delete(TABLE_NOTICES,null,null);
@@ -220,22 +215,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         //db.close();
         return list;
     }
-    public ArrayList<Integer> getReadNotices(){
-        SQLiteDatabase db=this.getReadableDatabase();
-        ArrayList<Integer> list=new ArrayList<Integer>();
-
-        Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID}, ROW_READ_STATUS+" = 1 ",null,null,null,ROW_DATETIME + " DESC");
-        if(cursor.moveToFirst()){
-            do{
-                list.add(new Integer(cursor.getInt(0)));
-            }while (cursor.moveToNext());
-        }
-        //db.close();
-        return list;
-    }
     public NoticeInfo getNoticeInfo(int id){
-        if (!checkNoticeContent(id))
-            return null;
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY,ROW_REFERENCE,ROW_CONTENT}
                 ,ROW_ID + "=" + id,null,null,null,null);
@@ -252,8 +232,6 @@ public class SQLHelper extends SQLiteOpenHelper{
         return null;
     }
     public NoticeInfo getNoticeInfo(int id, String date){
-        if (!checkNoticeContent(id))
-            return null;
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(TABLE_NOTICES,new String[]{ROW_ID,ROW_SUBJECT,ROW_DATETIME,ROW_CATEGORY,ROW_REFERENCE,ROW_CONTENT}
                 ,ROW_ID + "=" + id + " AND "+ROW_DATETIME+" = '"+ date +"'" ,null,null,null,null);
@@ -298,9 +276,6 @@ public class SQLHelper extends SQLiteOpenHelper{
         values.put(ROW_READ_STATUS,object.getRead());
         values.put(ROW_STAR_STATUS,object.getStar());
         values.put(ROW_NOTICE_TYPE,type);
-        /*int rows_affected=db.update(TABLE_NOTICES,values,ROW_ID+"="+object.getId(),null);
-        if (rows_affected==0)
-            db.insertWithOnConflict(TABLE_NOTICES, null, values,SQLiteDatabase.CONFLICT_IGNORE);*/
         int id= (int) db.insertWithOnConflict(TABLE_NOTICES,null,values,SQLiteDatabase.CONFLICT_IGNORE);
         if (id==-1) {
             if (type=="")
@@ -309,39 +284,6 @@ public class SQLHelper extends SQLiteOpenHelper{
         }
         //db.close();
     }
-    public void addNoticesList(ArrayList<NoticeObject> list,String type) throws ParseException {
-        for(NoticeObject object: list)
-            addNotice(object,type);
-        limit();
-    }
-    private boolean checkNotice(int id){
-        SQLiteDatabase db=this.getReadableDatabase();
-        Cursor cursor=db.query(TABLE_NOTICES, null, ROW_ID + "=" + id, null, null, null, null);
-        int count=cursor.getCount();
-        //db.close();
-        return (!(count==0));
-    }
-    public boolean checkNoticeContent(int id){
-        SQLiteDatabase db=this.getReadableDatabase();
-        Cursor cursor=db.query(TABLE_NOTICES, new String[]{ROW_CONTENT}, ROW_ID + "=" + id, null, null, null, null);
-        if(cursor.getCount()==0)
-            return false;
-        cursor.moveToFirst();
-        String c=cursor.getString(0);
-        //db.close();
-        return (!(c==null || c==""));
-    }
-    public boolean checkNoticeContent(int id,String date){
-        SQLiteDatabase db=this.getReadableDatabase();
-        Cursor cursor=db.query(TABLE_NOTICES, new String[]{ROW_CONTENT}
-                , ROW_ID + "=" + id + " AND "+ROW_DATETIME+" = '"+ date +"'", null, null, null, null);
-        if(cursor.getCount()==0)
-            return false;
-        cursor.moveToFirst();
-        String c=cursor.getString(0);
-        //db.close();
-        return (!(c==null || c==""));
-    }
     public void addNoticeInfo(NoticeInfo info){
         SQLiteDatabase db=this.getWritableDatabase();
         ContentValues values=new ContentValues();
@@ -349,28 +291,14 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.update(TABLE_NOTICES, values, ROW_ID + "=" + info.getId(), null);
         //db.close();
     }
-    public void setStar(int id, boolean b){
-        SQLiteDatabase db= this.getWritableDatabase();
-        ContentValues values=new ContentValues();
-        values.put(ROW_STAR_STATUS,b);
-        db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
-        //db.close();
-    }
-    public void setRead(int id){
-        SQLiteDatabase db= this.getWritableDatabase();
-        ContentValues values=new ContentValues();
-        values.put(ROW_READ_STATUS,true);
-        db.update(TABLE_NOTICES, values, ROW_ID + " = " + id, null);
-        //db.close();
-    }
-    public List<noticeNotification> getNotifications(){
-        List<noticeNotification> notifications=new ArrayList<>();
+    public List<NoticeNotification> getNotifications(){
+        List<NoticeNotification> notifications=new ArrayList<>();
         SQLiteDatabase db=this.getReadableDatabase();
         Cursor cursor=db.query(false,TABLE_NOTIFICATIONS,new String[]{ROW_MAIN_CATEGORY,ROW_CATEGORY,ROW_SUBJECT},null,null,null,null,null,null);
         if (cursor.moveToFirst()){
             do{
-                noticeNotification notification=
-                        new noticeNotification(cursor.getString(0),cursor.getString(1),cursor.getString(2));
+                NoticeNotification notification=
+                        new NoticeNotification(cursor.getString(0),cursor.getString(1),cursor.getString(2));
                 notifications.add(notification);
             }while(cursor.moveToNext());
         }
@@ -382,7 +310,7 @@ public class SQLHelper extends SQLiteOpenHelper{
         db.delete(TABLE_NOTIFICATIONS,null,null);
         //db.close();
     }
-    public void addNotification(noticeNotification notification){
+    public void addNotification(NoticeNotification notification){
         SQLiteDatabase db=this.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put(ROW_MAIN_CATEGORY,notification.getMain_category());

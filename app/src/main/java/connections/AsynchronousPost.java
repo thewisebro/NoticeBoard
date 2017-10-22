@@ -44,14 +44,13 @@ public abstract class AsynchronousPost {
 
         HttpUrl.Builder urlBuilder = HttpUrl.parse(url).newBuilder();
 
-        if (params==null) onFail(new IOException(""));
-
-        FormBody.Builder bodyBuilder = new FormBody.Builder();
-        for(Map.Entry<String,String> param : params.entrySet()){
-            bodyBuilder.add(param.getKey(),param.getValue());
+        if(params!=null) {
+            FormBody.Builder bodyBuilder = new FormBody.Builder();
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                bodyBuilder.add(param.getKey(), param.getValue());
+            }
+            requestBuilder.post(bodyBuilder.build());
         }
-        requestBuilder.post(bodyBuilder.build());
-
         //Provide url to requestBuilder
         requestBuilder.url(urlBuilder.build());
 

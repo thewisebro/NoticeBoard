@@ -2,7 +2,7 @@ package connections;
 
 import android.content.SharedPreferences;
 
-import com.channeli.noticeboard.MainActivity;
+import com.channeli.noticeboard.Notices;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -12,15 +12,11 @@ import java.util.Set;
 
 public class FCMIDService extends FirebaseInstanceIdService {
 
-    private static final String TAG = "FCMIDService";
-    private static final String FCM_APP_SERVER_URL =
-            MainActivity.UrlOfNotice+"fcm_register/";
-
     @Override
     public void onTokenRefresh() {
 
         // TODO: Implement this method to send any registration to your app's servers.
-        sendRegistrationToServer(getSharedPreferences(MainActivity.PREFS_NAME,0));
+        sendRegistrationToServer(getSharedPreferences(Notices.PREFS_NAME,0));
     }
 
     //Method to store the token on your server
@@ -32,9 +28,9 @@ public class FCMIDService extends FirebaseInstanceIdService {
         String token = FirebaseInstanceId.getInstance().getToken();
 
         String csrftoken=preferences.getString("csrftoken", "");
-        String CHANNELI_SESSID=preferences.getString("CHANNELI_SESSID","");
+        String channeli_sessid=preferences.getString("CHANNELI_SESSID","");
         //Check user logged in
-        if (CHANNELI_SESSID!=""){
+        if (channeli_sessid!=""){
 
             //Subscribe to topics
             Set<String> subscriptions = preferences.getStringSet("subscriptions",null);
@@ -48,28 +44,6 @@ public class FCMIDService extends FirebaseInstanceIdService {
             for (String s: subscriptions){
                 FirebaseMessaging.getInstance().subscribeToTopic(s.replace(" ","%20"));
             }
-            editor.putBoolean("FCM_isRegistered", true);
-            /*
-            //Code below is not necessary
-            //Code to register token with app server
-            try {
-                HttpPost httpPost=new HttpPost(FCM_APP_SERVER_URL);
-                httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-                httpPost.setHeader("Cookie", "csrftoken=" + csrftoken);
-                httpPost.setHeader("Cookie", "CHANNELI_SESSID=" + CHANNELI_SESSID);
-                httpPost.setHeader("CHANNELI_DEVICE", "android");
-                httpPost.setHeader("X-CSRFToken=", csrftoken);
-                List<NameValuePair> params=new ArrayList<>();
-                params.add(new BasicNameValuePair("token",token));
-                httpPost.setEntity(new UrlEncodedFormEntity(params));
-                String res=new ConnectTaskHttpPost().execute(httpPost).get();
-                if (res.contains("success") || res.contains("exists")) {
-                    editor.putBoolean("FCM_isRegistered", true);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }*/
-            editor.apply();
         }
     }
 }

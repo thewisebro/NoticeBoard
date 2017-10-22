@@ -69,16 +69,19 @@ public abstract class AsynchronousGet {
 
             @Override
             public void onResponse(Call call, final Response response) {
-                //TODO: Raise proper exception
-                if (!response.isSuccessful() && !response.isRedirect()) onFail(new IOException(""));
-                setCompletion(true);
 
+                setCompletion(true);
+                //TODO: Raise proper exception
+                if (!response.isSuccessful() && !response.isRedirect()) {
+                    onFail(new IOException("Failed to fetch data"));
+                    return;
+                }
                 try {
                     onSuccess(response.body().string(),response.headers(),response.code());
                 } catch (IOException e) {
                     e.printStackTrace();
                     //TODO: Raise proper exception
-                    onFail(new IOException(""));
+                    onFail(new IOException("Failed to fetch data"));
                 }
             }
         });

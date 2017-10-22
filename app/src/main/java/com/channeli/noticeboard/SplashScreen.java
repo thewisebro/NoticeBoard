@@ -3,12 +3,7 @@ package com.channeli.noticeboard;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.os.Handler;
-import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import com.franmontiel.persistentcookiejar.ClearableCookieJar;
@@ -18,15 +13,10 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.squareup.leakcanary.LeakCanary;
 
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import connections.AsynchronousGet;
-import connections.SessIDGet;
-import connections.SynchronousGet;
 import okhttp3.Cookie;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
@@ -51,7 +41,7 @@ public class SplashScreen  extends Activity{
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        mSharedPreferences = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME, 0);
         mEditor = mSharedPreferences.edit();
         mSessid = mSharedPreferences.getString(Notices.CHANNELI_SESSID, "");
         mCsrfToken = mSharedPreferences.getString(Notices.CSRF_TOKEN, "");
@@ -88,7 +78,7 @@ public class SplashScreen  extends Activity{
                         startActivity(intent);
                         finish();
                     } else{
-                        onFail(new Exception(""));
+                        onFail(new Exception("Login Fail"));
                     }
                 }
 

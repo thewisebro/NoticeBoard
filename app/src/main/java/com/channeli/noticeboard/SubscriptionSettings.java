@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.squareup.leakcanary.LeakCanary;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,13 +33,17 @@ public class SubscriptionSettings extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(getApplication());
         setContentView(R.layout.subscription_settings);
         Toolbar toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("Notification Settings");
-        preferences=getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        preferences=getSharedPreferences(Notices.PREFS_NAME, 0);
         editor=preferences.edit();
 
         Set<String> constantSet=preferences.getStringSet("constants", new HashSet<String>());

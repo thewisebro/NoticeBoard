@@ -11,6 +11,7 @@ import android.widget.TextView;
 import com.channeli.noticeboard.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import objects.DrawerItem;
 
@@ -18,12 +19,12 @@ import objects.DrawerItem;
  * Created by Ankush on 25-10-2016.
  */
 public class CustomDrawerListViewAdapter extends BaseExpandableListAdapter {
-    public ArrayList<DrawerItem> drawerItemList;
+    public List<DrawerItem> drawerItemList;
     Context context;
     LayoutInflater inflater;
     public int groupPos=0;
     public int childPos=-1;
-    public CustomDrawerListViewAdapter(ArrayList<DrawerItem> list,Context context){
+    public CustomDrawerListViewAdapter(List<DrawerItem> list,Context context){
         this.drawerItemList=list;
         this.context=context;
         inflater = (LayoutInflater) context

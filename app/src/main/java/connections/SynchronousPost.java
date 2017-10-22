@@ -61,7 +61,7 @@ public abstract class SynchronousPost {
         requestBuilder.post(bodyBuilder.build());
 
         Response response = getClient().newCall(requestBuilder.build()).execute();
-        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("");
+        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("Check Network Connection");
 
         responseMap.put("body",response.body().string());
         responseMap.put("headers",response.headers());

@@ -49,7 +49,7 @@ public abstract class SynchronousGet {
         }
 
         Response response = getClient().newCall(requestBuilder.build()).execute();
-        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("");
+        if (!response.isSuccessful() && !response.isRedirect()) throw new IOException("Check Network Connection");
 
         responseMap.put("headers",response.headers());
         responseMap.put("body",response.body().string());

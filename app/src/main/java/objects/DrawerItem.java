@@ -3,6 +3,7 @@ package objects;
 import com.channeli.noticeboard.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Ankush on 05-10-2016.
@@ -10,8 +11,8 @@ import java.util.ArrayList;
 public class DrawerItem {
     private String name;
     private int logo;
-    private ArrayList<String> categories;
-    public  DrawerItem(String name,ArrayList<String> categories){
+    private List<String> categories;
+    public  DrawerItem(String name,List<String> categories){
         this.name=name;
         this.categories=categories;
         setIcon();
@@ -38,6 +39,9 @@ public class DrawerItem {
         else if(name.contains("Starred")){
             this.logo=R.drawable.ic_star_black_24dp;
         }
+        else if(name.contains("Archived")){
+            this.logo=R.drawable.ic_archive_black_24dp;
+        }
         else if (name.contains("Notifications")){
             this.logo=R.drawable.ic_settings_black_24dp;
         }
@@ -50,5 +54,5 @@ public class DrawerItem {
     public int getIcon(){
         return this.logo;
     }
-    public ArrayList<String> getCategories() { return this.categories; }
+    public List<String> getCategories() { return this.categories; }
 }
