@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import connections.AsynchronousGet;
 import connections.SynchronousGet;
@@ -185,6 +186,9 @@ public class Login extends AppCompatActivity {
                 public OkHttpClient setClient() {
                     return new OkHttpClient.Builder()
                             .cookieJar(cookieJar)
+                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .readTimeout(30,TimeUnit.SECONDS)
+                            .writeTimeout(30,TimeUnit.SECONDS)
                             .followRedirects(false)
                             .followSslRedirects(false)
                             .build();
@@ -202,6 +206,9 @@ public class Login extends AppCompatActivity {
                 public OkHttpClient setClient() {
                     return new OkHttpClient.Builder()
                             .cookieJar(cookieJar)
+                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .readTimeout(30,TimeUnit.SECONDS)
+                            .writeTimeout(30,TimeUnit.SECONDS)
                             .followRedirects(false)
                             .followSslRedirects(false)
                             .build();

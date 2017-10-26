@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import adapters.CustomRecyclerViewAdapter;
 import connections.AsynchronousGet;
@@ -134,6 +135,9 @@ public class Search extends AppCompatActivity {
                                 public OkHttpClient setClient() {
                                     return new OkHttpClient.Builder()
                                             .cookieJar(mCookieJar)
+                                            .connectTimeout(10, TimeUnit.SECONDS)
+                                            .readTimeout(30,TimeUnit.SECONDS)
+                                            .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
                             }.getResponse(Notices.READ_NOTICES_URL,headers,null)
@@ -145,6 +149,9 @@ public class Search extends AppCompatActivity {
                                 public OkHttpClient setClient() {
                                     return new OkHttpClient.Builder()
                                             .cookieJar(mCookieJar)
+                                            .connectTimeout(10, TimeUnit.SECONDS)
+                                            .readTimeout(30,TimeUnit.SECONDS)
+                                            .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
                             }.getResponse(Notices.STARRED_NOTICES_URL,headers,null)
@@ -178,6 +185,9 @@ public class Search extends AppCompatActivity {
             public OkHttpClient setClient() {
                 return new OkHttpClient.Builder()
                         .cookieJar(mCookieJar)
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(30,TimeUnit.SECONDS)
+                        .writeTimeout(30,TimeUnit.SECONDS)
 //                        .followRedirects(false)
 //                        .followSslRedirects(false)
                         .build();

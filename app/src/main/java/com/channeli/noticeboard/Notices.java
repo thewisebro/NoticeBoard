@@ -65,6 +65,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import adapters.CustomDrawerListViewAdapter;
 import adapters.CustomRecyclerViewAdapter;
@@ -185,6 +186,9 @@ public class Notices extends AppCompatActivity {
                                 public OkHttpClient setClient() {
                                     return new OkHttpClient.Builder()
                                             .cookieJar(mCookieJar)
+                                            .connectTimeout(10, TimeUnit.SECONDS)
+                                            .readTimeout(30,TimeUnit.SECONDS)
+                                            .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
                             }.getResponse(Notices.READ_NOTICES_URL,headers,null)
@@ -307,6 +311,9 @@ public class Notices extends AppCompatActivity {
             public OkHttpClient setClient() {
                 return new OkHttpClient.Builder()
                         .cookieJar(mCookieJar)
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(30,TimeUnit.SECONDS)
+                        .writeTimeout(30,TimeUnit.SECONDS)
                         .build();
             }
 
@@ -398,6 +405,9 @@ public class Notices extends AppCompatActivity {
             public OkHttpClient setClient() {
                 return new OkHttpClient.Builder()
                         .cookieJar(mCookieJar)
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(30,TimeUnit.SECONDS)
+                        .writeTimeout(30,TimeUnit.SECONDS)
                         .build();
             }
         }.getResponse(Notices.PEOPLE_SEARCH_URL + "return_details/?username=" + mUser.getUsername(), headers, null);

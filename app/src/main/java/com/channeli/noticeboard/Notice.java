@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import connections.AsynchronousGet;
 import objects.NoticeInfo;
@@ -92,6 +93,9 @@ public class Notice extends AppCompatActivity {
             public OkHttpClient setClient() {
                 return new OkHttpClient.Builder()
                         .cookieJar(mCookieJar)
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(30,TimeUnit.SECONDS)
+                        .writeTimeout(30,TimeUnit.SECONDS)
                         .build();
             }
 
