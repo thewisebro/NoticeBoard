@@ -14,10 +14,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewTreeObserver;
 import android.webkit.WebView;
 import android.widget.TextView;
 
@@ -91,10 +88,14 @@ public class Notice extends AppCompatActivity {
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mCsrfToken);
+
+        //start loading
         final ProgressDialog pd =new ProgressDialog(Notice.this);
         pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
         pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         pd.show();
+        pd.setContentView(R.layout.progress);
+
         new AsynchronousGet() {
             @Override
             public OkHttpClient setClient() {
@@ -115,10 +116,12 @@ public class Notice extends AppCompatActivity {
                         public void run() {
                             setHeaderViews();
                             setContent();
-                            pd.dismiss();
+
+
                         }
                     });
-
+                    //end loading
+                    pd.dismiss();
                 } catch (JSONException e) {
                     e.printStackTrace();
                     onFail(new Exception("Failed to parse notice. Please try again."));
@@ -130,6 +133,7 @@ public class Notice extends AppCompatActivity {
                 new Handler(getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
+                        //end loading
                         pd.dismiss();
                     }
                 });
