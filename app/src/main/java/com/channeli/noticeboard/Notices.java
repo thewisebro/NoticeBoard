@@ -1,5 +1,6 @@
 package com.channeli.noticeboard;
 
+import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
@@ -265,6 +267,14 @@ public class Notices extends AppCompatActivity {
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mUser.getCsrfToken());
+
+        //start loading
+        final ProgressDialog pd =new ProgressDialog(Notices.this);
+        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
+        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        pd.show();
+        pd.setContentView(R.layout.progress);
+
         new AsynchronousGet() {
             @Override
             public OkHttpClient setClient() {
@@ -290,6 +300,9 @@ public class Notices extends AppCompatActivity {
                             populateListView();
                         }
                     });
+                    //end loading
+                    pd.dismiss();
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                     showMessage("Failed to parse notices. Please try again.");
@@ -298,6 +311,8 @@ public class Notices extends AppCompatActivity {
 
             @Override
             public void onFail(Exception e) {
+                //end loading
+                pd.dismiss();
                 showMessage(e.getMessage());
             }
         }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,query,type), headers, null);
@@ -586,9 +601,9 @@ public class Notices extends AppCompatActivity {
         mDrawerItems.add(new DrawerItem("Logout", new ArrayList<String>()));
         mCustomDrawerListViewAdapter.notifyDataSetChanged();
     }
-/*    private void populateDrawerProfile(){
+    /*    private void populateDrawerProfile(){
 
-    }*/
+        }*/
     private void clickListener(int groupPosition, int childPosition){
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawers();
 

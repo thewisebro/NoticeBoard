@@ -1,18 +1,19 @@
 package com.channeli.noticeboard;
 
+import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -39,10 +40,8 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -180,6 +179,15 @@ public class Search extends AppCompatActivity {
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mCsrfToken);
+
+        //start loading
+        final ProgressDialog pd =new ProgressDialog(Search.this);
+        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
+        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        pd.show();
+        pd.setContentView(R.layout.progress);
+
+
         new AsynchronousGet() {
             @Override
             public OkHttpClient setClient() {
@@ -206,6 +214,9 @@ public class Search extends AppCompatActivity {
                             populateListView();
                         }
                     });
+                    //end loading
+                    pd.dismiss();
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                     onFail(new Exception("Failed to parse notices. Please try again."));
@@ -214,6 +225,9 @@ public class Search extends AppCompatActivity {
 
             @Override
             public void onFail(Exception e) {
+
+                //end loading
+                pd.dismiss();
                 showMessage(e.getMessage());
             }
         }.getResponse(getSearchUrl(query), headers, null);
