@@ -91,10 +91,14 @@ public class Notice extends AppCompatActivity {
 
         //start loading
         final ProgressDialog pd =new ProgressDialog(Notice.this);
-        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
-        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        pd.show();
-        pd.setContentView(R.layout.progress);
+        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        pd.setMessage("Loading");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                pd.show();
+            }
+        });
 
         new AsynchronousGet() {
             @Override
@@ -111,17 +115,15 @@ public class Notice extends AppCompatActivity {
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
                 try {
                     mNoticeInfo = Parsing.parseNoticeInfo(responseBody);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            //end loading
+                            pd.dismiss();
                             setHeaderViews();
                             setContent();
-
-
                         }
                     });
-                    //end loading
-                    pd.dismiss();
                 } catch (JSONException e) {
                     e.printStackTrace();
                     onFail(new Exception("Failed to parse notice. Please try again."));
@@ -130,7 +132,7 @@ public class Notice extends AppCompatActivity {
 
             @Override
             public void onFail(Exception e) {
-                new Handler(getMainLooper()).post(new Runnable() {
+                runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         //end loading
@@ -224,7 +226,7 @@ public class Notice extends AppCompatActivity {
     }
 
     public void showMessage(final String msg){
-        new Handler(getMainLooper()).post(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 CoordinatorLayout coordinatorLayout= findViewById(R.id.notice_coordinator_layout);
@@ -238,6 +240,7 @@ public class Notice extends AppCompatActivity {
             }
         });
     }
+
 
    /* @Override
     public boolean onCreateOptionsMenu(Menu menu) {

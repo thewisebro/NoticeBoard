@@ -16,7 +16,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -38,6 +37,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ExpandableListView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -120,6 +121,7 @@ public class Notices extends AppCompatActivity {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private BottomBar mBottomBar;
     private EndlessRecyclerViewScrollListener mScrollListener;
+    private ProgressDialog mDialog;
 
     public static Set<NoticeObject> getStarredList(){ return mStarredList; }
     public static Set<Integer> getReadList(){ return mReadList; }
@@ -148,6 +150,10 @@ public class Notices extends AppCompatActivity {
         mStarredList=new LinkedHashSet<>();
         mReadList=new HashSet<>();
 
+        //Set up progress dialog box
+        mDialog = new ProgressDialog(Notices.this);
+        mDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mDialog.setMessage("Loading");
         //Set up Cookies for networking
         SetCookieCache cookieCache = new SetCookieCache();
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
@@ -178,6 +184,7 @@ public class Notices extends AppCompatActivity {
         new Thread(){
             @Override
             public void run(){
+                showDialog();
                 Map<String,String> headers = new HashMap<>();
                 headers.put("Content-Type", "application/x-www-form-urlencoded");
                 headers.put("X-CSRFToken", mUser.getCsrfToken());
@@ -208,6 +215,7 @@ public class Notices extends AppCompatActivity {
                                     .get("body"),
                             mReadList
                     );
+                    closeDialog();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -217,7 +225,8 @@ public class Notices extends AppCompatActivity {
                 }catch (JSONException e){
                     e.printStackTrace();
                     showMessage("Failed to parse. Please try again.");
-                    new Handler(getMainLooper()).post(new Runnable() {
+                    closeDialog();
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             populateListView();
@@ -226,7 +235,8 @@ public class Notices extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                     showMessage("Check Network Connection");
-                    new Handler(getMainLooper()).post(new Runnable() {
+                    closeDialog();
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             populateListView();
@@ -238,6 +248,7 @@ public class Notices extends AppCompatActivity {
     }
 
     private void fetchNotices(String noticeType, String category, String mainCategory, final int offset, int count, String query, int type){
+
 
         mRecyclerView.stopScroll();
 
@@ -264,16 +275,10 @@ public class Notices extends AppCompatActivity {
             return;
         }
 
+        showDialog();
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mUser.getCsrfToken());
-
-        //start loading
-        final ProgressDialog pd =new ProgressDialog(Notices.this);
-        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
-        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        pd.show();
-        pd.setContentView(R.layout.progress);
 
         new AsynchronousGet() {
             @Override
@@ -294,25 +299,23 @@ public class Notices extends AppCompatActivity {
                         mNoticeList.clear();
                     }
                     mNoticeList.addAll(list);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             populateListView();
                         }
                     });
-                    //end loading
-                    pd.dismiss();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                     showMessage("Failed to parse notices. Please try again.");
                 }
+                closeDialog();
             }
 
             @Override
             public void onFail(Exception e) {
-                //end loading
-                pd.dismiss();
+                closeDialog();
                 showMessage(e.getMessage());
             }
         }.getResponse(generateUrl(noticeType,category,mainCategory,offset,count,0,query,type), headers, null);
@@ -346,7 +349,7 @@ public class Notices extends AppCompatActivity {
                         mEditor.putStringSet("constants", constantSet);
                         mEditor.apply();
                     }
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             populateDrawerList();
@@ -367,7 +370,7 @@ public class Notices extends AppCompatActivity {
                     Collections.sort(list);
                     mDrawerItems.add(new DrawerItem(s,list));
                 }
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         populateDrawerList();
@@ -396,7 +399,7 @@ public class Notices extends AppCompatActivity {
                     mEditor.putString("enrollment_no", mUser.getEnrollmentNo());
                     mEditor.apply();
 
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             ((TextView) findViewById(R.id.name)).setText(mUser.getName());
@@ -485,6 +488,7 @@ public class Notices extends AppCompatActivity {
             @Override
             public void onRefresh() {
 //                mRecyclerView.setEnabled(false);
+                mSwipeRefreshLayout.setRefreshing(false);
                 fetchFirstTimeNotices(NoticeType,Category, MainCategory,null,CurrentType);
             }
         });
@@ -565,11 +569,9 @@ public class Notices extends AppCompatActivity {
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = NOTICE_NEW;
-//                        changeList();
                         break;
                     case R.id.old_items:
                         NoticeType = NOTICE_OLD;
-//                        changeList();
                         break;
                 }
                 fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
@@ -589,7 +591,6 @@ public class Notices extends AppCompatActivity {
             findViewById(R.id.no_notice).setVisibility(View.VISIBLE);
         }
 //        mRecyclerView.setEnabled(true);
-        mSwipeRefreshLayout.setRefreshing(false);
         mScrollListener.resetState();
     }
     private void populateDrawerList(){
@@ -700,7 +701,7 @@ public class Notices extends AppCompatActivity {
     }
 
     //TODO: Proper logout
-    void logout(){
+    public void logout(){
         final AlertDialog.Builder dialog=new AlertDialog.Builder(this);
         dialog.setTitle("Logout");
         dialog.setMessage("Are you sure you want to Logout?");
@@ -735,6 +736,23 @@ public class Notices extends AppCompatActivity {
                 dialog.show();
             }
         }, 250);
+    }
+
+    private void showDialog(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mDialog.show();
+            }
+        });
+    }
+    private void closeDialog(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mDialog.dismiss();
+            }
+        });
     }
 
     @Override
@@ -823,7 +841,7 @@ public class Notices extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
     public void showMessage(final String msg){
-        new Handler(getMainLooper()).post(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 CoordinatorLayout coordinatorLayout= (CoordinatorLayout) findViewById(R.id.main_content);

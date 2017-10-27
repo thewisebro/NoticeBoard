@@ -71,6 +71,7 @@ public class Search extends AppCompatActivity {
     private String mCsrfToken;
     private String mQuery;
     private CustomRecyclerViewAdapter mCustomRecyclerViewAdapter;
+    private ProgressDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +94,11 @@ public class Search extends AppCompatActivity {
         mSessid = mSharedPreferences.getString(Notices.CHANNELI_SESSID,"");
         mCsrfToken = mSharedPreferences.getString(Notices.CSRF_TOKEN,"");
         mQuery = getIntent().getStringExtra("query");
+
+        //Set up progress dialog box
+        mDialog =new ProgressDialog(Search.this);
+        mDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mDialog.setMessage("Loading");
 
         //Set up Cookies for networking
         SetCookieCache cookieCache = new SetCookieCache();
@@ -180,13 +186,7 @@ public class Search extends AppCompatActivity {
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mCsrfToken);
 
-        //start loading
-        final ProgressDialog pd =new ProgressDialog(Search.this);
-        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
-        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        pd.show();
-        pd.setContentView(R.layout.progress);
-
+        showDialog();
 
         new AsynchronousGet() {
             @Override
@@ -208,14 +208,13 @@ public class Search extends AppCompatActivity {
                     mRecyclerView.smoothScrollToPosition(0);
                     mNoticeList.clear();
                     mNoticeList.addAll(list);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    closeDialog();
+                    runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             populateListView();
                         }
                     });
-                    //end loading
-                    pd.dismiss();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -225,9 +224,7 @@ public class Search extends AppCompatActivity {
 
             @Override
             public void onFail(Exception e) {
-
-                //end loading
-                pd.dismiss();
+                closeDialog();
                 showMessage(e.getMessage());
             }
         }.getResponse(getSearchUrl(query), headers, null);
@@ -274,6 +271,22 @@ public class Search extends AppCompatActivity {
     public String getSearchUrl(String query) {
         return Notices.NOTICES_URL + TextUtils.join("/", new String[]{"search", NoticeType.replaceAll(" ", "%20"), MainCategory.replaceAll(" ", "%20")
                 , Category.replaceAll(" ", "%20"), "?q=" + query});
+    }
+    private void showDialog(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mDialog.show();
+            }
+        });
+    }
+    private void closeDialog(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mDialog.dismiss();
+            }
+        });
     }
 
     @Override
@@ -367,7 +380,7 @@ public class Search extends AppCompatActivity {
     }*/
 
     public void showMessage(final String msg){
-        new Handler(getMainLooper()).post(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 CoordinatorLayout coordinatorLayout= findViewById(R.id.main_content);
