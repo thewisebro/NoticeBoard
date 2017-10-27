@@ -1,8 +1,11 @@
 package com.channeli.noticeboard;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -88,6 +91,10 @@ public class Notice extends AppCompatActivity {
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mCsrfToken);
+        final ProgressDialog pd =new ProgressDialog(Notice.this);
+        pd.setProgressStyle(android.R.style.Widget_ProgressBar_Small);
+        pd.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        pd.show();
         new AsynchronousGet() {
             @Override
             public OkHttpClient setClient() {
@@ -108,6 +115,7 @@ public class Notice extends AppCompatActivity {
                         public void run() {
                             setHeaderViews();
                             setContent();
+                            pd.dismiss();
                         }
                     });
 
@@ -119,6 +127,12 @@ public class Notice extends AppCompatActivity {
 
             @Override
             public void onFail(Exception e) {
+                new Handler(getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        pd.dismiss();
+                    }
+                });
                 showMessage(e.getMessage());
             }
         }.getResponse(Notices.NOTICE_URL + noticeId, headers, null);
