@@ -16,11 +16,15 @@ android {
         applicationId "com.channeli.noticeboard"
         minSdkVersion 17
         targetSdkVersion 26
-        versionCode 18
-        versionName "1.2"
+        versionCode 19
+        versionName "2.0"
         signingConfig signingConfigs.config
     }
     buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

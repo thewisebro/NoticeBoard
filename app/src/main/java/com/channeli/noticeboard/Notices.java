@@ -12,7 +12,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
@@ -37,8 +36,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ExpandableListView;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -87,20 +84,8 @@ import utilities.SQLHelper;
 
 public class Notices extends AppCompatActivity {
 
-    public static final String CHANNELI_SESSID="CHANNELI_SESSID",CSRF_TOKEN="csrftoken",USERNAME="username";
     public static final int TYPE_LIST = 1, TYPE_SEARCH = 2, TYPE_STARRED = 3, TYPE_READ = 4, TYPE_ARCHIVED=5;
     public static final String NOTICE_OLD = "old", NOTICE_NEW = "new", NOTICE_ALL="All";
-
-    public static final String HOST_URL="http://people.iitr.ernet.in/";
-    public static final String NOTICES_URL = HOST_URL+"notices/";
-    public static final String LOGIN_URL = HOST_URL+"login/";
-    public static final String PEOPLE_SEARCH_URL = HOST_URL+"peoplesearch/";
-    public static final String PHOTO_URL = HOST_URL+"photo/";
-    public static final String READ_NOTICES_URL = NOTICES_URL+"read_notice_list/";
-    public static final String STARRED_NOTICES_URL = NOTICES_URL+"star_notice_list/";
-    public static final String READ_STAR_NOTICE_URL = NOTICES_URL+"read_star_notice/";
-    public static final String NOTICE_URL = NOTICES_URL + "get_notice/";
-    public static final String PREFS_NAME = "MyPrefsFile";
     public static final int BATCH_SIZE = 20;
     public static String NoticeType = NOTICE_NEW, MainCategory = NOTICE_ALL, Category=NOTICE_ALL;
     public static int CurrentType = TYPE_LIST;
@@ -138,12 +123,12 @@ public class Notices extends AppCompatActivity {
 
         //Initialize instance variables
         mSqlHelper = new SQLHelper(getApplicationContext());
-        mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
+        mSharedPreferences = getSharedPreferences(Constants.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
         mUser = new User(
-                mSharedPreferences.getString(USERNAME,""),
-                mSharedPreferences.getString(CSRF_TOKEN,""),
-                mSharedPreferences.getString(CHANNELI_SESSID,"")
+                mSharedPreferences.getString("username",""),
+                mSharedPreferences.getString(Constants.CSRF_TOKEN,""),
+                mSharedPreferences.getString(Constants.CHANNELI_SESSID,"")
         );
         mDrawerItems=new ArrayList<>();
         mNoticeList=new ArrayList<>();
@@ -159,8 +144,8 @@ public class Notices extends AppCompatActivity {
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name(CSRF_TOKEN).value(mUser.getCsrfToken()).domain(Notices.HOST_URL).build());
-            cookieList.add(new Cookie.Builder().name(CHANNELI_SESSID).value(mUser.getChanneliSessid()).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CSRF_TOKEN).value(mUser.getCsrfToken()).domain(Constants.DOMAIN_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CHANNELI_SESSID).value(mUser.getChanneliSessid()).domain(Constants.DOMAIN_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
@@ -189,7 +174,7 @@ public class Notices extends AppCompatActivity {
                 headers.put("Content-Type", "application/x-www-form-urlencoded");
                 headers.put("X-CSRFToken", mUser.getCsrfToken());
                 try {
-                    mReadList = Parsing.parseReadNotices(
+                    Set<Integer> readList = Parsing.parseReadNotices(
                             (String) new SynchronousGet() {
                                 @Override
                                 public OkHttpClient setClient() {
@@ -200,21 +185,32 @@ public class Notices extends AppCompatActivity {
                                             .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
-                            }.getResponse(Notices.READ_NOTICES_URL,headers,null)
+                            }.getResponse(Constants.READ_NOTICES_URL,headers,null)
                                     .get("body")
                     );
-                    mStarredList = Parsing.parseStarredNotices(
+                    mReadList.clear();
+                    mReadList.addAll(readList);
+                    readList.clear();
+
+                    Set<NoticeObject> starredList = Parsing.parseStarredNotices(
                             (String) new SynchronousGet() {
                                 @Override
                                 public OkHttpClient setClient() {
                                     return new OkHttpClient.Builder()
                                             .cookieJar(mCookieJar)
+                                            .connectTimeout(10, TimeUnit.SECONDS)
+                                            .readTimeout(30,TimeUnit.SECONDS)
+                                            .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
-                            }.getResponse(Notices.STARRED_NOTICES_URL,headers,null)
+                            }.getResponse(Constants.STARRED_NOTICES_URL,headers,null)
                                     .get("body"),
                             mReadList
                     );
+                    mStarredList.clear();
+                    mStarredList.addAll(starredList);
+                    starredList.clear();
+
                     closeDialog();
                     runOnUiThread(new Runnable() {
                         @Override
@@ -285,6 +281,9 @@ public class Notices extends AppCompatActivity {
             public OkHttpClient setClient() {
                 return new OkHttpClient.Builder()
                         .cookieJar(mCookieJar)
+                        .connectTimeout(20, TimeUnit.SECONDS)
+                        .readTimeout(30,TimeUnit.SECONDS)
+                        .writeTimeout(30,TimeUnit.SECONDS)
 //                        .followRedirects(false)
 //                        .followSslRedirects(false)
                         .build();
@@ -377,7 +376,7 @@ public class Notices extends AppCompatActivity {
                     }
                 });
             }
-        }.getResponse(Notices.NOTICES_URL + "get_constants/", headers, null);
+        }.getResponse(Constants.NOTICES_URL + "get_constants/", headers, null);
     }
     private void fetchUserDetails(){
         Map<String,String> headers = new HashMap<>();
@@ -428,11 +427,11 @@ public class Notices extends AppCompatActivity {
                         .writeTimeout(30,TimeUnit.SECONDS)
                         .build();
             }
-        }.getResponse(Notices.PEOPLE_SEARCH_URL + "return_details/?username=" + mUser.getUsername(), headers, null);
+        }.getResponse(Constants.PEOPLE_SEARCH_URL + "return_details/?username=" + mUser.getUsername(), headers, null);
     }
     private void fetchUserPhoto(){
         RoundImageView imageView = findViewById(R.id.profile_picture);
-        Glide.with(Notices.this).load(PHOTO_URL+mUser.getEnrollmentNo()).listener(new RequestListener<Drawable>() {
+        Glide.with(Notices.this).load(Constants.PHOTO_URL+mUser.getEnrollmentNo()).listener(new RequestListener<Drawable>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                 return false;
@@ -562,19 +561,25 @@ public class Notices extends AppCompatActivity {
     }
     private void setBottomBar(){
         mBottomBar = (BottomBar) findViewById(R.id.bottom_bar);
+        final boolean[] bottomBarSetUp = {true};
         mBottomBar.setOnTabSelectListener(new OnTabSelectListener() {
             @Override
             public void onTabSelected(int itemId) {
 //                refreshScroll = true;
+                if(bottomBarSetUp[0]){
+                    bottomBarSetUp[0] =false;
+                    return;
+                }
                 switch (itemId) {
                     case R.id.new_items:
                         NoticeType = NOTICE_NEW;
+                        fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
                         break;
                     case R.id.old_items:
                         NoticeType = NOTICE_OLD;
+                        fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
                         break;
                 }
-                fetchNotices(NoticeType,Category,MainCategory,0,BATCH_SIZE,null,TYPE_LIST);
             }
         });
     }
@@ -683,18 +688,18 @@ public class Notices extends AppCompatActivity {
     private String generateUrl(String noticeType, String category, String mainCategory, Integer offset, Integer count, int nextId,String query, int type){
         switch (type){
             case TYPE_LIST: {
-                return Notices.NOTICES_URL + TextUtils.join("/", new String[]{ "list_notices", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
+                return Constants.NOTICES_URL + TextUtils.join("/", new String[]{ "list_notices", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
                         , category.replaceAll(" ", "%20"), String.valueOf(offset), String.valueOf(count), String.valueOf(nextId)});
             }
             case TYPE_SEARCH: {
-                return NOTICES_URL + TextUtils.join("/", new String[]{ "search", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
+                return Constants.NOTICES_URL + TextUtils.join("/", new String[]{ "search", noticeType.replaceAll(" ", "%20"), mainCategory.replaceAll(" ", "%20")
                         , category.replaceAll(" ", "%20"), "?=" + query });
             }
             case TYPE_STARRED: {
-                return NOTICES_URL + "star_notice_list";
+                return Constants.NOTICES_URL + "star_notice_list";
             }
             case TYPE_READ: {
-                return NOTICES_URL + "read_notice_list";
+                return Constants.NOTICES_URL + "read_notice_list";
             }
             default: return null;
         }
@@ -718,6 +723,32 @@ public class Notices extends AppCompatActivity {
                     FirebaseMessaging.getInstance().unsubscribeFromTopic("Authorities");
                     FirebaseMessaging.getInstance().unsubscribeFromTopic("Departments");
                 }
+
+                Map<String,String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+                headers.put("X-CSRFToken", mUser.getCsrfToken());
+                new AsynchronousGet() {
+                    @Override
+                    public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
+                    }
+
+                    @Override
+                    public void onFail(Exception e) {
+//                showMessage(e.getMessage());
+
+                    }
+
+                    @Override
+                    public OkHttpClient setClient() {
+                        return new OkHttpClient.Builder()
+                                .cookieJar(mCookieJar)
+                                .connectTimeout(10, TimeUnit.SECONDS)
+                                .readTimeout(30,TimeUnit.SECONDS)
+                                .writeTimeout(30,TimeUnit.SECONDS)
+                                .build();
+                    }
+                }.getResponse(Constants.LOGOUT_URL, headers, null);
+
                 dialog.dismiss();
                 startActivity(new Intent(Notices.this,Login.class));
                 finish();

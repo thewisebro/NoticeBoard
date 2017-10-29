@@ -3,12 +3,8 @@ package com.channeli.noticeboard;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -64,9 +60,9 @@ public class Notice extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        SharedPreferences sharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
-        mSessid = sharedPreferences.getString(Notices.CHANNELI_SESSID,"");
-        mCsrfToken = sharedPreferences.getString(Notices.CSRF_TOKEN,"");
+        SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREFS_NAME,0);
+        mSessid = sharedPreferences.getString(Constants.CHANNELI_SESSID,"");
+        mCsrfToken = sharedPreferences.getString(Constants.CSRF_TOKEN,"");
         mSqlHelper = new SQLHelper(this);
 
         //Set up Cookies for networking
@@ -74,8 +70,8 @@ public class Notice extends AppCompatActivity {
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
-            cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CSRF_TOKEN).value(mCsrfToken).domain(Constants.DOMAIN_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CHANNELI_SESSID).value(mSessid).domain(Constants.DOMAIN_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
@@ -141,7 +137,7 @@ public class Notice extends AppCompatActivity {
                 });
                 showMessage(e.getMessage());
             }
-        }.getResponse(Notices.NOTICE_URL + noticeId, headers, null);
+        }.getResponse(Constants.NOTICE_URL + noticeId, headers, null);
     }
     public void setHeaderViews(){
         TextView subject = findViewById(R.id.notice_subject);

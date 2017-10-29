@@ -43,7 +43,7 @@ public class SubscriptionSettings extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("Notification Settings");
-        preferences=getSharedPreferences(Notices.PREFS_NAME, 0);
+        preferences=getSharedPreferences(Constants.PREFS_NAME, 0);
         editor=preferences.edit();
 
         Set<String> constantSet=preferences.getStringSet("constants", new HashSet<String>());

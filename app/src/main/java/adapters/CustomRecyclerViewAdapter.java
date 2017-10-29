@@ -18,8 +18,8 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.channeli.noticeboard.Constants;
 import com.channeli.noticeboard.Notice;
-import com.channeli.noticeboard.Notices;
 import com.channeli.noticeboard.R;
 import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
@@ -64,7 +64,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         mNoticeList=list;
         mStarredList=starredNotices;
         mReadList=readNotices;
-        mSharedPreferences= context.getSharedPreferences(Notices.PREFS_NAME,0);
+        mSharedPreferences= context.getSharedPreferences(Constants.PREFS_NAME,0);
         mCsrfToken=mSharedPreferences.getString("csrftoken","");
         mSessid=mSharedPreferences.getString("CHANNELI_SESSID","");
 
@@ -73,8 +73,8 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(mContext);
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
-            cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CSRF_TOKEN).value(mCsrfToken).domain(Constants.DOMAIN_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CHANNELI_SESSID).value(mSessid).domain(Constants.DOMAIN_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
@@ -86,8 +86,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
         View view= LayoutInflater.from(mContext).inflate(viewLayoutId,parent,false);
         return new NoticeObjectViewHolder(view);
     }
-    void setRead(final NoticeObject noticeObject, final NoticeObjectViewHolder holder){
+    void setRead(NoticeObject noticeObject, final NoticeObjectViewHolder holder){
         if (noticeObject == null) return;
+        noticeObject.setRead(true);
+        mReadList.add(noticeObject.getId());
+        holder.view.setBackgroundDrawable(mContext.getResources().getDrawable(R.drawable.read_notice_bg));
+        holder.subject.setTypeface(null, Typeface.NORMAL);
+        holder.datetime.setTypeface(null, Typeface.NORMAL);
+
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("X-CSRFToken", mCsrfToken);
@@ -101,28 +107,23 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
-                noticeObject.setRead(true);
-                mReadList.add(noticeObject.getId());
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        holder.view.setBackgroundDrawable(mContext.getResources().getDrawable(R.drawable.read_notice_bg));
-                        holder.subject.setTypeface(null, Typeface.NORMAL);
-                        holder.datetime.setTypeface(null, Typeface.NORMAL);
-                    }
-                });
+
             }
 
             @Override
             public void onFail(Exception e) {
 
             }
-        }.getResponse(Notices.READ_STAR_NOTICE_URL+noticeObject.getId()+"/add_read/",headers,null);
+        }.getResponse(Constants.READ_STAR_NOTICE_URL+noticeObject.getId()+"/add_read/",headers,null);
     }
-    void setStar(final NoticeObject noticeObject, final boolean flag, final CompoundButton button){
+    void setStar(NoticeObject noticeObject, boolean flag, final CompoundButton button){
         if(noticeObject == null) return;
         noticeObject.setStar(flag);
-        String url = Notices.READ_STAR_NOTICE_URL + noticeObject.getId();
+        button.setChecked(flag);
+        if(flag) mStarredList.add(noticeObject);
+        else mStarredList.remove(noticeObject);
+
+        String url = Constants.READ_STAR_NOTICE_URL + noticeObject.getId();
         if (flag) url += "/add_starred/";
         else url += "/remove_starred/";
         Map<String,String> headers = new HashMap<>();
@@ -138,8 +139,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
 
             @Override
             public void onSuccess(String responseBody, Headers responseHeaders, int responseCode) {
-                if(flag) mStarredList.add(noticeObject);
-                else mStarredList.remove(noticeObject);
+
             }
 
             @Override

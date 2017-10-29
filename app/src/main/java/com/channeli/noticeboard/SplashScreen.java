@@ -15,6 +15,7 @@ import com.squareup.leakcanary.LeakCanary;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import connections.AsynchronousGet;
 import connections.FCMIDService;
@@ -24,7 +25,6 @@ import okhttp3.OkHttpClient;
 import utilities.SQLHelper;
 
 public class SplashScreen  extends Activity{
-    private static int SPLASH_TIME_OUT = 1000;
     private String mSessid;
     private String mCsrfToken;
     private SharedPreferences mSharedPreferences;
@@ -42,10 +42,10 @@ public class SplashScreen  extends Activity{
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME, 0);
+        mSharedPreferences = getSharedPreferences(Constants.PREFS_NAME, 0);
         mEditor = mSharedPreferences.edit();
-        mSessid = mSharedPreferences.getString(Notices.CHANNELI_SESSID, "");
-        mCsrfToken = mSharedPreferences.getString(Notices.CSRF_TOKEN, "");
+        mSessid = mSharedPreferences.getString(Constants.CHANNELI_SESSID, "");
+        mCsrfToken = mSharedPreferences.getString(Constants.CSRF_TOKEN, "");
 
 
         SetCookieCache cookieCache = new SetCookieCache();
@@ -56,8 +56,8 @@ public class SplashScreen  extends Activity{
         if (!mSessid.isEmpty()){
             if (cookiePersistor.loadAll().isEmpty()){
                 List<Cookie> cookieList = new ArrayList<Cookie>(2);
-                cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
-                cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+                cookieList.add(new Cookie.Builder().name(Constants.CSRF_TOKEN).value(mCsrfToken).domain(Constants.DOMAIN_URL).build());
+                cookieList.add(new Cookie.Builder().name(Constants.CHANNELI_SESSID).value(mSessid).domain(Constants.DOMAIN_URL).build());
                 cookieCache.addAll(cookieList);
                 cookiePersistor.saveAll(cookieList);
             }
@@ -67,6 +67,9 @@ public class SplashScreen  extends Activity{
                 public OkHttpClient setClient() {
                     return new OkHttpClient.Builder()
                             .cookieJar(mCookieJar)
+                            .connectTimeout(20, TimeUnit.SECONDS)
+                            .readTimeout(30,TimeUnit.SECONDS)
+                            .writeTimeout(30,TimeUnit.SECONDS)
                             .followRedirects(false)
                             .followSslRedirects(false)
                             .build();
@@ -89,7 +92,7 @@ public class SplashScreen  extends Activity{
                     //Go to login page
                     goToLogin();
                 }
-            }.getResponse(Notices.LOGIN_URL,null,null);
+            }.getResponse(Constants.LOGIN_URL,null,null);
         } else{
             goToLogin();
         }

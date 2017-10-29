@@ -2,6 +2,7 @@ package connections;
 
 import android.content.SharedPreferences;
 
+import com.channeli.noticeboard.Constants;
 import com.channeli.noticeboard.Notices;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
@@ -16,7 +17,7 @@ public class FCMIDService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
 
         // TODO: Implement this method to send any registration to your app's servers.
-        sendRegistrationToServer(getSharedPreferences(Notices.PREFS_NAME,0));
+        sendRegistrationToServer(getSharedPreferences(Constants.PREFS_NAME,0));
     }
 
     //Method to store the token on your server

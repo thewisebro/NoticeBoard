@@ -6,10 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
@@ -86,13 +83,13 @@ public class Search extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         //Initialise variables
-        mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME,0);
+        mSharedPreferences = getSharedPreferences(Constants.PREFS_NAME,0);
         mEditor = mSharedPreferences.edit();
         mNoticeList = new ArrayList<>();
         mStarredList = Notices.getStarredList();
         mReadList = Notices.getReadList();
-        mSessid = mSharedPreferences.getString(Notices.CHANNELI_SESSID,"");
-        mCsrfToken = mSharedPreferences.getString(Notices.CSRF_TOKEN,"");
+        mSessid = mSharedPreferences.getString(Constants.CHANNELI_SESSID,"");
+        mCsrfToken = mSharedPreferences.getString(Constants.CSRF_TOKEN,"");
         mQuery = getIntent().getStringExtra("query");
 
         //Set up progress dialog box
@@ -105,8 +102,8 @@ public class Search extends AppCompatActivity {
         CookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         if (cookiePersistor.loadAll().isEmpty()){
             List<Cookie> cookieList = new ArrayList<Cookie>(2);
-            cookieList.add(new Cookie.Builder().name(Notices.CSRF_TOKEN).value(mCsrfToken).domain(Notices.HOST_URL).build());
-            cookieList.add(new Cookie.Builder().name(Notices.CHANNELI_SESSID).value(mSessid).domain(Notices.HOST_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CSRF_TOKEN).value(mCsrfToken).domain(Constants.DOMAIN_URL).build());
+            cookieList.add(new Cookie.Builder().name(Constants.CHANNELI_SESSID).value(mSessid).domain(Constants.DOMAIN_URL).build());
             cookieCache.addAll(cookieList);
             cookiePersistor.saveAll(cookieList);
         }
@@ -145,7 +142,7 @@ public class Search extends AppCompatActivity {
                                             .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
-                            }.getResponse(Notices.READ_NOTICES_URL,headers,null)
+                            }.getResponse(Constants.READ_NOTICES_URL,headers,null)
                                     .get("body")
                     );
                     mStarredList = Parsing.parseStarredNotices(
@@ -159,7 +156,7 @@ public class Search extends AppCompatActivity {
                                             .writeTimeout(30,TimeUnit.SECONDS)
                                             .build();
                                 }
-                            }.getResponse(Notices.STARRED_NOTICES_URL,headers,null)
+                            }.getResponse(Constants.STARRED_NOTICES_URL,headers,null)
                                     .get("body"),
                             mReadList
                     );
@@ -269,7 +266,7 @@ public class Search extends AppCompatActivity {
         mRecyclerView.setEnabled(true);
     }
     public String getSearchUrl(String query) {
-        return Notices.NOTICES_URL + TextUtils.join("/", new String[]{"search", NoticeType.replaceAll(" ", "%20"), MainCategory.replaceAll(" ", "%20")
+        return Constants.NOTICES_URL + TextUtils.join("/", new String[]{"search", NoticeType.replaceAll(" ", "%20"), MainCategory.replaceAll(" ", "%20")
                 , Category.replaceAll(" ", "%20"), "?q=" + query});
     }
     private void showDialog(){

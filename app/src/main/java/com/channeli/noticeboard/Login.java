@@ -10,7 +10,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -33,23 +32,16 @@ import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.squareup.leakcanary.LeakCanary;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import connections.AsynchronousGet;
 import connections.SynchronousGet;
 import connections.SynchronousPost;
 import okhttp3.Cookie;
-import okhttp3.Headers;
 import okhttp3.OkHttpClient;
-import utilities.SQLHelper;
-
 
 public class Login extends AppCompatActivity {
     private SharedPreferences mSharedPreferences;
@@ -64,7 +56,7 @@ public class Login extends AppCompatActivity {
         LeakCanary.install(getApplication());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.login);
-        mSharedPreferences = getSharedPreferences(Notices.PREFS_NAME, 0);
+        mSharedPreferences = getSharedPreferences(Constants.PREFS_NAME, 0);
         mEditor = mSharedPreferences.edit();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         mCoordinatorLayout= (CoordinatorLayout) findViewById(R.id.login_container);
@@ -186,48 +178,48 @@ public class Login extends AppCompatActivity {
                 public OkHttpClient setClient() {
                     return new OkHttpClient.Builder()
                             .cookieJar(cookieJar)
-                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .connectTimeout(20, TimeUnit.SECONDS)
                             .readTimeout(30,TimeUnit.SECONDS)
                             .writeTimeout(30,TimeUnit.SECONDS)
                             .followRedirects(false)
                             .followSslRedirects(false)
                             .build();
                 }
-            }.getResponse(Notices.LOGIN_URL,null,null);
+            }.getResponse(Constants.LOGIN_URL,null,null);
 
             Map<String,String> params = new HashMap<>();
             params.put("username",username);
             params.put("password",password);
             params.put("remember_me","on");
-            params.put("csrfmiddlewaretoken", getCookiesList(cookiePersistor.loadAll()).get(Notices.CSRF_TOKEN));
+            params.put("csrfmiddlewaretoken", getCookiesList(cookiePersistor.loadAll()).get(Constants.CSRF_TOKEN));
 
             new SynchronousPost() {
                 @Override
                 public OkHttpClient setClient() {
                     return new OkHttpClient.Builder()
                             .cookieJar(cookieJar)
-                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .connectTimeout(20, TimeUnit.SECONDS)
                             .readTimeout(30,TimeUnit.SECONDS)
                             .writeTimeout(30,TimeUnit.SECONDS)
                             .followRedirects(false)
                             .followSslRedirects(false)
                             .build();
                 }
-            }.getResponse(Notices.LOGIN_URL,null,params);
+            }.getResponse(Constants.LOGIN_URL,null,params);
 
-            if (!getCookiesList(cookiePersistor.loadAll()).containsKey(Notices.CHANNELI_SESSID)){
+            if (!getCookiesList(cookiePersistor.loadAll()).containsKey(Constants.CHANNELI_SESSID)){
                 throw new IOException("Wrong Credentials");
             }
             mEditor.putString("username",username);
-            mEditor.putString(Notices.CSRF_TOKEN,getCookiesList(cookiePersistor.loadAll()).get(Notices.CSRF_TOKEN));
-            mEditor.putString(Notices.CHANNELI_SESSID,getCookiesList(cookiePersistor.loadAll()).get(Notices.CHANNELI_SESSID));
+            mEditor.putString(Constants.CSRF_TOKEN,getCookiesList(cookiePersistor.loadAll()).get(Constants.CSRF_TOKEN));
+            mEditor.putString(Constants.CHANNELI_SESSID,getCookiesList(cookiePersistor.loadAll()).get(Constants.CHANNELI_SESSID));
             mEditor.apply();
 
             startActivity(new Intent(Login.this,Notices.class));
             finish();
         } catch (IOException e) {
             e.printStackTrace();
-            showMessage(e.getMessage());
+            showMessage("Check Network Connection");
         }
     }
 
