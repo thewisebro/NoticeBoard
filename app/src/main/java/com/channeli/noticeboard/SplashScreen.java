@@ -52,7 +52,7 @@ public class SplashScreen  extends Activity{
         SharedPrefsCookiePersistor cookiePersistor = new SharedPrefsCookiePersistor(getApplication());
         mCookieJar = new PersistentCookieJar( cookieCache, cookiePersistor);
 
-        new FCMIDService().sendRegistrationToServer(mSharedPreferences);
+        new FCMIDService().sendRegistrationToServer(this);
         if (!mSessid.isEmpty()){
             if (cookiePersistor.loadAll().isEmpty()){
                 List<Cookie> cookieList = new ArrayList<Cookie>(2);

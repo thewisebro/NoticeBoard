@@ -118,10 +118,14 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
     }
     void setStar(NoticeObject noticeObject, boolean flag, final CompoundButton button){
         if(noticeObject == null) return;
-        noticeObject.setStar(flag);
-        button.setChecked(flag);
-        if(flag) mStarredList.add(noticeObject);
-        else mStarredList.remove(noticeObject);
+
+        if(flag){
+            mStarredList.add(noticeObject);
+            noticeObject.setStar(true);
+        }else{
+            mStarredList.remove(noticeObject);
+            noticeObject.setStar(false);
+        }
 
         String url = Constants.READ_STAR_NOTICE_URL + noticeObject.getId();
         if (flag) url += "/add_starred/";
@@ -183,6 +187,7 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
             holder.datetime.setTypeface(null,Typeface.BOLD);
         }
 
+        holder.star.setChecked(noticeObject.getStar());
 
         final boolean[] checkChangeFlag = {false};
         holder.star.setOnTouchListener(new View.OnTouchListener() {
@@ -208,7 +213,6 @@ public class CustomRecyclerViewAdapter extends RecyclerView.Adapter<NoticeObject
                 }
             }
         });
-        holder.star.setChecked(noticeObject.getStar());
 
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override

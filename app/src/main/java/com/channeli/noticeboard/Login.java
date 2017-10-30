@@ -208,7 +208,8 @@ public class Login extends AppCompatActivity {
             }.getResponse(Constants.LOGIN_URL,null,params);
 
             if (!getCookiesList(cookiePersistor.loadAll()).containsKey(Constants.CHANNELI_SESSID)){
-                throw new IOException("Wrong Credentials");
+                showMessage("Wrong Credentials");
+                return;
             }
             mEditor.putString("username",username);
             mEditor.putString(Constants.CSRF_TOKEN,getCookiesList(cookiePersistor.loadAll()).get(Constants.CSRF_TOKEN));

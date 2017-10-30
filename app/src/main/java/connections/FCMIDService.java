@@ -1,9 +1,11 @@
 package connections;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.channeli.noticeboard.Constants;
 import com.channeli.noticeboard.Notices;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -17,18 +19,19 @@ public class FCMIDService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
 
         // TODO: Implement this method to send any registration to your app's servers.
-        sendRegistrationToServer(getSharedPreferences(Constants.PREFS_NAME,0));
+//        sendRegistrationToServer(getSharedPreferences(Constants.PREFS_NAME,0));
     }
 
     //Method to store the token on your server
-    public void sendRegistrationToServer(SharedPreferences preferences) {
+    public void sendRegistrationToServer(Context context) {
 
+        SharedPreferences preferences = context.getSharedPreferences(Constants.PREFS_NAME,0);
         SharedPreferences.Editor editor= preferences.edit();
 
+        FirebaseApp.initializeApp(context);
         //Getting registration token
         String token = FirebaseInstanceId.getInstance().getToken();
 
-        String csrftoken=preferences.getString("csrftoken", "");
         String channeli_sessid=preferences.getString("CHANNELI_SESSID","");
         //Check user logged in
         if (channeli_sessid!=""){
@@ -41,6 +44,7 @@ public class FCMIDService extends FirebaseInstanceIdService {
                 subscriptions.add("Authorities");
                 subscriptions.add("Departments");
                 editor.putStringSet("subscriptions", subscriptions);
+                editor.apply();
             }
             for (String s: subscriptions){
                 FirebaseMessaging.getInstance().subscribeToTopic(s.replace(" ","%20"));
